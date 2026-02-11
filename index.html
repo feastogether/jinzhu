@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>真珠 台灣佳味 - 在線點餐</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --pearl-green: #004d40;
+            --pearl-gold: #b89150;
+            --pearl-red: #a2202b;
+            --pearl-cream: #fdfaf5;
+        }
+        body { background-color: var(--pearl-cream); font-family: "Noto Sans TC", sans-serif; }
+        .btn-pearl { background-color: var(--pearl-green); color: white; }
+        .btn-pearl:hover { background-color: #00332a; }
+        .text-pearl-green { color: var(--pearl-green); }
+        .border-pearl-gold { border-color: var(--pearl-gold); }
+        .category-active { background-color: var(--pearl-green); color: white; border-radius: 99px; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <header class="bg-white border-b-4 border-pearl-gold p-4 sticky top-0 z-50 text-center">
+        <div id="logo-container" class="flex justify-center mb-1">
+            <h1 class="text-2xl font-bold tracking-widest text-pearl-green">真珠 <span class="text-lg text-pearl-gold font-normal">台灣佳味</span></h1>
+        </div>
+    </header>
+
+    <main id="app" class="max-w-xl mx-auto p-4 pb-24">
+        
+        <section id="step-1" class="space-y-6 py-4">
+            <div class="bg-white p-6 rounded-xl shadow-md border border-stone-200">
+                <h2 class="text-xl font-bold mb-6 text-center text-pearl-green border-b pb-4 font-serif">顧客用餐資訊</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">訂位姓名</label>
+                        <input type="text" id="custName" class="w-full border-stone-300 border p-3 rounded-lg focus:ring-2 focus:ring-pearl-green outline-none" placeholder="請輸入姓名">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">聯絡電話</label>
+                        <input type="tel" id="custPhone" class="w-full border-stone-300 border p-3 rounded-lg focus:ring-2 focus:ring-pearl-green outline-none" placeholder="0912-345-678">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">大人人數</label>
+                            <input type="number" id="adults" value="2" min="1" class="w-full border-stone-300 border p-3 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">兒童人數</label>
+                            <input type="number" id="children" value="0" min="0" class="w-full border-stone-300 border p-3 rounded-lg">
+                        </div>
+                    </div>
+                    <div class="flex items-center p-3 bg-stone-50 rounded-lg">
+                        <input type="checkbox" id="highChair" class="w-5 h-5 accent-pearl-green mr-3">
+                        <label for="highChair" class="text-sm font-medium">需要兒童安全座椅</label>
+                    </div>
+                </div>
+                <button onclick="startOrdering()" class="w-full mt-8 btn-pearl py-4 rounded-lg font-bold text-lg shadow-lg">開始點餐</button>
+            </div>
+        </section>
+
+        <section id="step-2" class="hidden">
+            <nav id="category-nav" class="flex gap-4 overflow-x-auto py-4 no-scrollbar sticky top-[72px] bg-pearl-cream z-40">
+                </nav>
+
+            <div id="menu-container" class="space-y-4 mt-2">
+                </div>
+
+            <div class="fixed bottom-6 left-4 right-4 bg-white shadow-2xl rounded-full p-2 flex justify-between items-center border border-stone-200 max-w-xl mx-auto">
+                <div class="pl-6">
+                    <span class="text-sm text-gray-500">已選擇</span>
+                    <span id="cart-count" class="text-xl font-bold text-pearl-green ml-1">0</span>
+                    <span class="text-sm text-gray-500">項餐點</span>
+                </div>
+                <button onclick="submitFinalOrder()" class="bg-pearl-gold text-white px-8 py-3 rounded-full font-bold hover:bg-opacity-90 transition">
+                    確認送出
+                </button>
+            </div>
+        </section>
+
+        <section id="step-3" class="hidden py-16 text-center">
+            <div class="bg-white p-10 rounded-3xl shadow-xl border border-stone-100">
+                <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">✓</div>
+                <h2 class="text-2xl font-bold text-pearl-green mb-2">訂單傳送成功！</h2>
+                <p class="text-stone-500 mb-8">餐點已送至廚房，請稍候片刻，<br>服務人員將與您確認餐點細項。</p>
+                <button onclick="location.reload()" class="text-pearl-gold font-medium hover:underline font-serif italic">← 返回首頁</button>
+            </div>
+        </section>
+    </main>
+
+    <div id="set-menu-modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-stone-100">
+                <h3 id="modal-title" class="text-xl font-bold text-pearl-green">套餐細項選擇</h3>
+                <p id="modal-limit-info" class="text-sm text-pearl-gold font-medium mt-1"></p>
+            </div>
+            <div id="modal-options" class="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+                </div>
+            <div class="p-4 bg-stone-50 flex gap-3">
+                <button onclick="closeModal()" class="flex-1 py-3 bg-stone-200 rounded-lg font-bold">取消</button>
+                <button id="modal-confirm-btn" class="flex-1 py-3 bg-pearl-green text-white rounded-lg font-bold">確認加入</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 配置 Supabase (請填寫您的資訊) ===
+        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentCart = [];
+        let categories = [];
+        let menuItems = [];
+        let guestData = {};
+
+        // 1. 初始化讀取
+        async function init() {
+            // 讀取分類
+            const { data: catData } = await _supabase.from('categories').select('*').eq('is_visible', true).order('sort_order');
+            categories = catData || [];
+            
+            // 讀取餐點
+            const { data: itemData } = await _supabase.from('menu_items').select('*, set_menu_options(*)').eq('is_hidden', false);
+            menuItems = itemData || [];
+
+            renderCategoryNav();
+        }
+
+        // 2. 切換至點餐
+        function startOrdering() {
+            guestData.name = document.getElementById('custName').value;
+            guestData.phone = document.getElementById('custPhone').value;
+            guestData.adults = document.getElementById('adults').value;
+            guestData.children = document.getElementById('children').value;
+            guestData.highChair = document.getElementById('highChair').checked;
+
+            if (!guestData.name || !guestData.phone) {
+                alert("請填寫姓名與電話以開始點餐");
+                return;
+            }
+
+            document.getElementById('step-1').classList.add('hidden');
+            document.getElementById('step-2').classList.remove('hidden');
+            renderMenuItems();
+        }
+
+        // 3. 渲染分類
+        function renderCategoryNav() {
+            const nav = document.getElementById('category-nav');
+            nav.innerHTML = `<button onclick="filterMenu('all')" class="px-6 py-2 whitespace-nowrap font-medium category-active">全部內容</button>`;
+            categories.forEach(cat => {
+                nav.innerHTML += `<button onclick="filterMenu('${cat.id}')" class="px-6 py-2 whitespace-nowrap font-medium text-stone-500 hover:text-pearl-green">${cat.name}</button>`;
+            });
+        }
+
+        // 4. 渲染餐點
+        function renderMenuItems(catId = 'all') {
+            const container = document.getElementById('menu-container');
+            container.innerHTML = "";
+            
+            const filtered = catId === 'all' ? menuItems : menuItems.filter(i => i.category_id === catId);
+
+            filtered.forEach(item => {
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-pearl-gold flex justify-between items-center group">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg">${item.name}</h3>
+                            <p class="text-sm text-stone-400 line-clamp-1">${item.description || ''}</p>
+                            <p class="text-pearl-green font-bold mt-2 font-serif">$${item.price}</p>
+                        </div>
+                        <button onclick="handleItemClick('${item.id}')" class="w-10 h-10 rounded-full bg-stone-100 text-pearl-green font-bold text-2xl flex items-center justify-center hover:bg-pearl-green hover:text-white transition">+</button>
+                    </div>
+                `;
+            });
+        }
+
+        // 5. 點擊處理 (區分單點或套餐)
+        let tempSelectedItem = null;
+        let tempSetOptions = [];
+
+        function handleItemClick(itemId) {
+            const item = menuItems.find(i => i.id === itemId);
+            if (item.is_set_menu && item.set_menu_options.length > 0) {
+                // 開啟套餐選擇
+                tempSelectedItem = item;
+                tempSetOptions = [];
+                document.getElementById('set-menu-modal').classList.remove('hidden');
+                document.getElementById('modal-title').innerText = item.name;
+                document.getElementById('modal-limit-info').innerText = `請選擇 ${item.selection_limit} 項菜餚`;
+                
+                const optBox = document.getElementById('modal-options');
+                optBox.innerHTML = item.set_menu_options.map(opt => `
+                    <div onclick="toggleOption(this, '${opt.option_name}')" class="p-4 border rounded-lg cursor-pointer hover:border-pearl-gold transition">
+                        ${opt.option_name}
+                    </div>
+                `).join('');
+                
+                document.getElementById('modal-confirm-btn').onclick = () => {
+                    if (tempSetOptions.length !== item.selection_limit) {
+                        alert(`請選滿 ${item.selection_limit} 項`);
+                        return;
+                    }
+                    addToCart(item, tempSetOptions);
+                    closeModal();
+                };
+            } else {
+                addToCart(item);
+            }
+        }
+
+        function toggleOption(el, name) {
+            if (tempSetOptions.includes(name)) {
+                tempSetOptions = tempSetOptions.filter(n => n !== name);
+                el.classList.remove('border-pearl-gold', 'bg-pearl-cream', 'ring-1', 'ring-pearl-gold');
+            } else {
+                if (tempSetOptions.length < tempSelectedItem.selection_limit) {
+                    tempSetOptions.push(name);
+                    el.classList.add('border-pearl-gold', 'bg-pearl-cream', 'ring-1', 'ring-pearl-gold');
+                }
+            }
+        }
+
+        function addToCart(item, options = null) {
+            currentCart.push({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                options: options
+            });
+            document.getElementById('cart-count').innerText = currentCart.length;
+        }
+
+        function closeModal() {
+            document.getElementById('set-menu-modal').classList.add('hidden');
+        }
+
+        // 6. 提交訂單
+        async function submitFinalOrder() {
+            if (currentCart.length === 0) return alert("購物車內尚無餐點");
+            
+            const total = currentCart.reduce((sum, i) => sum + Number(i.price), 0);
+            
+            const { error } = await _supabase.from('orders').insert([{
+                customer_name: guestData.name,
+                phone: guestData.phone,
+                adults: guestData.adults,
+                children: guestData.children,
+                needs_high_chair: guestData.highChair,
+                total_price: total,
+                order_content: currentCart,
+                status: 'pending'
+            }]);
+
+            if (error) {
+                alert("提交失敗，請檢查網路連線");
+                console.error(error);
+            } else {
+                document.getElementById('step-2').classList.add('hidden');
+                document.getElementById('step-3').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
