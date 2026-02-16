@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>真珠 台灣佳味-線上點餐</title>
+    <title>真珠 台灣佳味 - 線上點餐</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -12,27 +12,18 @@
         body { background-color: var(--p-cream); font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
         
-        /* 分類導覽按鈕樣式 */
         .cat-btn { border: 1.5px solid var(--p-green); color: var(--p-green); background-color: white; transition: all 0.2s; }
         .cat-active { background-color: var(--p-green) !important; color: #ffffff !important; border-color: var(--p-gold) !important; font-weight: bold; }
         
-        /* 核心動作按鈕 - 強制白色文字與陰影 */
         .btn-primary { background-color: var(--p-green) !important; color: #ffffff !important; box-shadow: 0 4px 12px rgba(0, 77, 64, 0.3); }
-        .btn-primary:active { transform: scale(0.96); }
-
-        /* 返回首頁按鈕 - 綠色邊框深色字體 */
         .btn-outline { border: 2px solid var(--p-green); color: var(--p-green) !important; background-color: transparent; transition: all 0.2s; }
         .btn-outline:active { background-color: var(--p-green); color: #ffffff !important; }
 
-        /* 選擇與口味選取狀態 */
         .opt-selected { border: 3px solid var(--p-gold) !important; background-color: #fdf6e9 !important; color: var(--p-green); font-weight: bold; transform: scale(1.01); }
         .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: #ffffff !important; font-weight: bold; }
 
-        /* 照片處理 */
         .img-contain { width: 100%; height: 100%; object-fit: contain; background: white; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* 動畫 */
         .slide-up { animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
@@ -50,63 +41,74 @@
                 <h2 class="text-2xl font-bold text-p-green text-center mb-8 font-serif text-3xl">顧客預定登記</h2>
                 <div class="space-y-5">
                     <input type="text" id="custName" placeholder="訂位人姓名" class="w-full border-2 p-4 rounded-2xl bg-stone-50 outline-none focus:border-p-green text-lg">
-                    <input type="tel" id="custPhone" placeholder="訂位人電話" class="w-full border-2 p-4 rounded-2xl bg-stone-50 outline-none focus:border-p-green text-lg">
-                    <button onclick="startOrder()" class="w-full btn-primary py-5 rounded-2xl font-bold text-xl transition">
-                        開始點餐
-                    </button>
+                    <input type="tel" id="custPhone" placeholder="聯絡電話" class="w-full border-2 p-4 rounded-2xl bg-stone-50 outline-none focus:border-p-green text-lg">
+                    <button onclick="startOrder()" class="w-full btn-primary py-5 rounded-2xl font-bold text-xl transition active:scale-95">開始點餐</button>
                 </div>
             </div>
         </section>
 
         <section id="step-2" class="hidden">
-            <div id="cat-nav" class="flex gap-3 overflow-x-auto py-4 sticky top-[88px] bg-p-cream z-40 no-scrollbar"></div>
-            <div id="menu-grid" class="grid grid-cols-1 gap-6 mt-2"></div>
+            <div id="cat-nav" class="flex gap-3 overflow-x-auto py-4 sticky top-[88px] bg-p-cream z-40 no-scrollbar border-b border-stone-100"></div>
+            <div id="menu-grid" class="grid grid-cols-1 gap-6 mt-4"></div>
         </section>
 
         <section id="step-3" class="hidden py-16 text-center px-4">
             <div class="bg-white p-10 rounded-[3rem] shadow-2xl border-t-8 border-p-green text-center">
                 <div class="text-7xl mb-6">🥢</div>
-                <h2 class="text-2xl font-bold text-p-green mb-4 font-serif text-3xl">已收到您的預定餐點</h2>
-                <p class="text-stone-500 mb-10 font-medium leading-relaxed text-lg">
-                    如有任何問題歡迎致電：<br>
-                    <b class="text-p-gold text-2xl tracking-wider">04-3702-7538</b><br>
-                    真珠台中文心店 誠摯歡迎您
-                </p>
-                <button onclick="location.reload()" class="w-full max-w-xs mx-auto btn-outline py-4 rounded-full font-bold text-lg shadow-sm transition active:scale-95">
-                    返回預定首頁
-                </button>
+                <h2 class="text-2xl font-bold text-p-green mb-4 font-serif">已收到您的預定餐點</h2>
+                <p class="text-stone-500 mb-8 font-medium">如有任何問題歡迎致電：<br><b class="text-p-gold text-2xl">04-3702-7538</b><br>真珠台中文心店 誠摯歡迎您</p>
+                <button onclick="location.reload()" class="bg-p-green text-white px-12 py-4 rounded-full font-bold shadow-lg">返回首頁</button>
             </div>
         </section>
     </main>
 
     <div id="detail-modal" class="fixed inset-0 bg-black/90 z-[100] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[92vh] slide-up">
-            <div class="h-64 bg-white relative border-b flex-shrink-0">
+            <div class="h-60 bg-white relative border-b flex-shrink-0">
                 <img id="detail-img" src="" class="img-contain">
                 <button onclick="closeDetail()" class="absolute top-4 right-4 bg-black/30 text-white w-10 h-10 rounded-full text-2xl flex items-center justify-center shadow-lg">&times;</button>
             </div>
-            
             <div class="p-6 overflow-y-auto flex-1 bg-white">
-                <div class="mb-6">
-                    <h3 id="detail-title" class="text-2xl font-bold text-p-green mb-1 font-serif"></h3>
-                    <p id="detail-desc" class="text-stone-500 text-sm leading-relaxed"></p>
-                </div>
+                <h3 id="detail-title" class="text-2xl font-bold text-p-green mb-1 font-serif"></h3>
+                <p id="detail-desc" class="text-stone-500 text-sm leading-relaxed mb-6"></p>
                 <div id="flavor-container" class="space-y-6 mb-8"></div>
                 <div id="set-group-container" class="space-y-8 border-t pt-6"></div>
             </div>
-
             <div class="p-5 bg-stone-50 flex gap-4 border-t flex-shrink-0">
                 <button onclick="closeDetail()" class="flex-1 py-4 text-stone-400 font-bold text-lg">取消</button>
-                <button id="add-btn" class="flex-1 btn-primary py-4 rounded-full font-bold text-lg shadow-md transition active:scale-95">
-                    確認加入點餐
-                </button>
+                <button id="add-btn" class="flex-1 btn-primary py-4 rounded-full font-bold text-lg shadow-md transition active:scale-95">確認加入點餐</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="preview-modal" class="fixed inset-0 bg-black/90 z-[110] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col max-h-[85vh] slide-up">
+            <div class="p-6 border-b bg-stone-50 text-center">
+                <h3 class="text-xl font-bold text-p-green font-serif">預覽點餐明細</h3>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <div id="preview-list" class="space-y-4"></div>
+                <div class="mt-8 border-t pt-4">
+                    <label class="block text-sm font-bold text-p-green mb-2">訂單備註 (如需去蔥、慶生需求請註明)</label>
+                    <textarea id="order-note" class="w-full border-2 rounded-2xl p-4 bg-stone-50 text-sm outline-none focus:border-p-gold h-24 resize-none" placeholder="請輸入備註內容..."></textarea>
+                </div>
+            </div>
+            <div class="p-6 bg-white border-t space-y-3">
+                <div class="flex justify-between items-center px-2">
+                    <span class="font-bold text-stone-400">總計金額</span>
+                    <span class="text-2xl font-black text-p-gold" id="preview-total">$0</span>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="closePreview()" class="flex-1 py-4 text-stone-400 font-bold border rounded-full">再點一些</button>
+                    <button onclick="finalSubmit()" class="flex-1 btn-primary py-4 rounded-full font-bold text-lg shadow-lg active:scale-95">確認預定</button>
+                </div>
             </div>
         </div>
     </div>
 
     <div id="cart-bar" class="fixed bottom-6 left-4 right-4 max-w-xl mx-auto z-50 hidden">
-        <button onclick="submitOrder()" class="w-full btn-primary p-2 rounded-full shadow-2xl flex justify-between items-center pr-2 pl-8 border-2 border-white/20 active:scale-95 transition">
-            <span class="font-bold tracking-widest text-lg font-serif">送出預定清單</span>
+        <button onclick="openPreview()" class="w-full btn-primary p-2 rounded-full shadow-2xl flex justify-between items-center pr-2 pl-8 border-2 border-white/20 active:scale-95 transition">
+            <span class="font-bold tracking-widest text-lg font-serif">查看預定明細</span>
             <div id="cart-count" class="bg-p-gold text-white w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-inner">0</div>
         </button>
     </div>
@@ -150,11 +152,12 @@
             if(el) el.classList.add('cat-active');
             const grid = document.getElementById('menu-grid');
             grid.innerHTML = menuData.filter(i => i.category_id === cid).map(i => `
-                <div class="bg-white rounded-3xl overflow-hidden shadow-sm flex h-36 border border-stone-100 clickable" onclick="openDetail('${i.id}')">
-                    <div class="w-36 h-full bg-white flex-shrink-0"><img src="${i.image_url || ''}" class="img-contain"></div>
-                    <div class="p-4 flex flex-col justify-between flex-1 overflow-hidden">
-                        <div><h3 class="font-bold text-p-green text-lg font-serif truncate">${i.name}</h3><p class="text-[11px] text-stone-400 line-clamp-2 mt-1 leading-relaxed">${i.description || '經典傳承台式風味。'}</p></div>
-                        <div class="flex justify-between items-end"><span class="text-p-gold font-bold font-serif text-lg">$${i.price}</span><span class="text-[10px] bg-stone-100 text-stone-400 px-3 py-1 rounded-full font-bold">點選</span></div>
+                <div class="bg-white rounded-3xl overflow-hidden shadow-sm flex h-36 border border-stone-100" onclick="openDetail('${i.id}')">
+                    <div class="w-36 bg-white flex-shrink-0"><img src="${i.image_url || ''}" class="img-contain"></div>
+                    <div class="p-4 flex flex-col justify-between flex-1">
+                        <h3 class="font-bold text-p-green text-lg font-serif truncate">${i.name}</h3>
+                        <p class="text-[11px] text-stone-400 line-clamp-2">${i.description || ''}</p>
+                        <div class="flex justify-between items-end"><span class="text-p-gold font-bold font-serif text-lg">$${i.price}</span><span class="text-[10px] bg-stone-100 text-stone-400 px-3 py-1 rounded-full">點選</span></div>
                     </div>
                 </div>`).join('');
         }
@@ -166,16 +169,13 @@
             document.getElementById('detail-img').src = tempItem.image_url || '';
             document.getElementById('detail-title').innerText = tempItem.name;
             document.getElementById('detail-desc').innerText = tempItem.description || "真切滋味，誠摯款待。";
-            
             renderFlavorList(tempItem.item_flavor_relation, 'flavor-container', 'main');
-
             const setArea = document.getElementById('set-group-container');
             setArea.innerHTML = tempItem.is_set_menu ? tempItem.set_menu_groups.map(g => {
                 sels.groups[g.id] = []; 
-                return `<div><div class="flex justify-between items-center mb-4 font-serif"><p class="font-bold text-p-green border-l-4 border-p-gold pl-3 text-lg">${g.group_name}</p><span class="text-[10px] bg-stone-100 text-stone-400 px-2 py-1 rounded">必選 ${g.selection_limit} 項</span></div>
+                return `<div><div class="flex justify-between items-center mb-4"><p class="font-bold text-p-green border-l-4 border-p-gold pl-3 text-lg font-serif">${g.group_name}</p><span class="text-[10px] bg-stone-100 text-stone-400 px-2 py-1 rounded">必選 ${g.selection_limit} 項</span></div>
                         <div class="grid grid-cols-1 gap-3">${g.set_menu_contents.map(c => renderSetOptionUI(c.menu_items, g.id, g.selection_limit)).join('')}</div></div>`;
             }).join('') : "";
-
             document.getElementById('detail-modal').classList.remove('hidden');
             document.getElementById('add-btn').onclick = confirmAdd;
         }
@@ -190,12 +190,12 @@
 
         function renderSetOptionUI(item, groupId, limit) {
             const hasFlavor = item.item_flavor_relation?.length > 0;
-            return `<div class="set-option-card border-2 border-stone-50 rounded-2xl overflow-hidden transition-all">
+            return `<div class="set-option-card border-2 border-stone-50 rounded-2xl overflow-hidden">
                     <div onclick="handleSetPick(this, '${groupId}', '${item.id}', '${item.name}', ${limit}, ${hasFlavor})" class="p-4 bg-stone-50 flex justify-between items-center cursor-pointer">
                         <span class="font-bold text-stone-700">${item.name}</span>
                         ${hasFlavor ? '<span class="text-[10px] text-p-gold font-bold">● 可調整口味</span>' : ''}
                     </div>
-                    <div id="flavor-sub-${item.id}" class="bg-stone-100/50 p-4 hidden space-y-4 border-t border-white"></div>
+                    <div id="flavor-sub-${item.id}" class="bg-stone-100/50 p-4 hidden border-t border-white"></div>
                 </div>`;
         }
 
@@ -203,30 +203,17 @@
             Array.from(el.parentElement.children).forEach(c => c.classList.remove('flavor-selected'));
             el.classList.add('flavor-selected');
             if(type === 'main') sels.flavors[gid] = name;
-            else {
-                for(let g in sels.groups) {
-                    const target = sels.groups[g].find(x => x.id === optId);
-                    if(target) target.flavorNote = name;
-                }
-            }
+            else { for(let g in sels.groups) { const target = sels.groups[g].find(x => x.id === optId); if(target) target.flavorNote = name; } }
         }
 
         function handleSetPick(el, gid, itemId, itemName, limit, hasFlavor) {
             const card = el.parentElement;
             const subArea = document.getElementById(`flavor-sub-${itemId}`);
             if(limit === 1) {
-                Array.from(card.parentElement.children).forEach(s => { 
-                    s.classList.remove('opt-selected'); 
-                    const sub = s.querySelector('div[id^="flavor-sub-"]');
-                    if(sub) sub.classList.add('hidden');
-                });
+                Array.from(card.parentElement.children).forEach(s => { s.classList.remove('opt-selected'); const sub = s.querySelector('div[id^="flavor-sub-"]'); if(sub) sub.classList.add('hidden'); });
                 card.classList.add('opt-selected');
                 sels.groups[gid] = [{ id: itemId, name: itemName, flavorNote: '' }];
-                if(hasFlavor) {
-                    const original = menuData.find(m => m.id === itemId);
-                    subArea.innerHTML = ''; renderFlavorList(original.item_flavor_relation, subArea.id, 'sub', itemId);
-                    subArea.classList.remove('hidden');
-                }
+                if(hasFlavor) { const original = menuData.find(m => m.id === itemId); subArea.innerHTML = ''; renderFlavorList(original.item_flavor_relation, subArea.id, 'sub', itemId); subArea.classList.remove('hidden'); }
             } else {
                 let groupSels = sels.groups[gid];
                 const idx = groupSels.findIndex(x => x.id === itemId);
@@ -234,11 +221,7 @@
                 else if(groupSels.length < limit) {
                     groupSels.push({ id: itemId, name: itemName, flavorNote: '' });
                     card.classList.add('opt-selected');
-                    if(hasFlavor) {
-                        const original = menuData.find(m => m.id === itemId);
-                        subArea.innerHTML = ''; renderFlavorList(original.item_flavor_relation, subArea.id, 'sub', itemId);
-                        subArea.classList.remove('hidden');
-                    }
+                    if(hasFlavor) { const original = menuData.find(m => m.id === itemId); subArea.innerHTML = ''; renderFlavorList(original.item_flavor_relation, subArea.id, 'sub', itemId); subArea.classList.remove('hidden'); }
                 }
             }
         }
@@ -246,7 +229,7 @@
         function confirmAdd() {
             if(tempItem.is_set_menu) {
                 for(let g of tempItem.set_menu_groups) {
-                    if(!sels.groups[g.id] || sels.groups[g.id].length < g.selection_limit) return alert(`【${g.group_name}】組別尚未選滿！`);
+                    if(!sels.groups[g.id] || sels.groups[g.id].length < g.selection_limit) return alert(`【${g.group_name}】尚未選滿！`);
                     for(let p of sels.groups[g.id]) {
                         const original = menuData.find(m => m.id === p.id);
                         if(original.item_flavor_relation?.length > 0 && !p.flavorNote) return alert(`請為【${p.name}】選擇口味。`);
@@ -254,22 +237,69 @@
                 }
             }
             if(tempItem.item_flavor_relation?.length > 0 && Object.keys(sels.flavors).length < tempItem.item_flavor_relation.length) return alert("請選擇客製化口味。");
-            
             const fn = Object.values(sels.flavors).join('/');
             const sn = Object.values(sels.groups).flat().map(x => x.name + (x.flavorNote ? ` [${x.flavorNote}]` : '')).join('、');
-            cart.push({ name: `${tempItem.name}${fn ? ` [${fn}]` : ''}${sn ? ` (${sn})` : ''}`, price: tempItem.price });
-            document.getElementById('cart-count').innerText = cart.length;
+            cart.push({ name: `${tempItem.name}${fn ? ` [${fn}]` : ''}${sn ? ` (${sn})` : ''}`, price: Number(tempItem.price) });
+            updateCartCount();
             closeDetail();
         }
 
-        function closeDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
-
-        async function submitOrder() {
-            if(!cart.length) return alert("購物車目前沒有餐點喔！");
-            const total = cart.reduce((s,i) => s + Number(i.price), 0);
-            const { error } = await _s.from('orders').insert([{ customer_name: guest.name, phone: guest.phone, order_content: cart, total_price: total }]);
-            if(!error) { document.getElementById('step-2').classList.add('hidden'); document.getElementById('cart-bar').classList.add('hidden'); document.getElementById('step-3').classList.remove('hidden'); window.scrollTo(0,0); }
+        // --- 預覽與刪除邏輯 ---
+        function updateCartCount() {
+            document.getElementById('cart-count').innerText = cart.length;
         }
+
+        function openPreview() {
+            if(!cart.length) return alert("您的清單目前是空的喔");
+            const list = document.getElementById('preview-list');
+            list.innerHTML = cart.map((item, idx) => `
+                <div class="flex justify-between items-start bg-stone-50 p-4 rounded-2xl border border-stone-100 shadow-sm">
+                    <div class="flex-1">
+                        <p class="font-bold text-p-green">${item.name}</p>
+                        <p class="text-p-gold font-serif text-sm mt-1">$${item.price}</p>
+                    </div>
+                    <button onclick="removeItem(${idx})" class="text-red-300 hover:text-red-500 p-2 text-lg">✕</button>
+                </div>
+            `).join('');
+            calculatePreviewTotal();
+            document.getElementById('preview-modal').classList.remove('hidden');
+        }
+
+        function calculatePreviewTotal() {
+            const total = cart.reduce((s, i) => s + i.price, 0);
+            document.getElementById('preview-total').innerText = `$${total}`;
+        }
+
+        function removeItem(idx) {
+            cart.splice(idx, 1);
+            updateCartCount();
+            if(!cart.length) { closePreview(); } else { openPreview(); }
+        }
+
+        function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); }
+
+        async function finalSubmit() {
+            if(!cart.length) return alert("購物車目前沒有餐點喔！");
+            const total = cart.reduce((s,i) => s + i.price, 0);
+            const note = document.getElementById('order-note').value;
+            const { error } = await _s.from('orders').insert([{ 
+                customer_name: guest.name, 
+                phone: guest.phone, 
+                order_content: cart, 
+                total_price: total,
+                status: 'pending',
+                note: note // 存儲備註功能
+            }]);
+            if(!error) {
+                closePreview();
+                document.getElementById('step-2').classList.add('hidden');
+                document.getElementById('cart-bar').classList.add('hidden');
+                document.getElementById('step-3').classList.remove('hidden');
+                window.scrollTo(0,0);
+            }
+        }
+
+        function closeDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
     </script>
 </body>
 </html>
