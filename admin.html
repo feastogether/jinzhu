@@ -2,59 +2,67 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>真珠管理後台 - 旗艦編輯版</title>
+    <title>真珠管理後台 - 旗艦修正版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>:root { --p-green: #004d40; } .bg-p-green { background-color: var(--p-green); } body { font-size: 16px; }</style>
+    <style>:root { --p-green: #004d40; } .bg-p-green { background-color: var(--p-green); }</style>
 </head>
-<body class="bg-slate-100 min-h-screen flex text-slate-700">
+<body class="bg-slate-100 min-h-screen flex">
     <aside class="w-64 bg-emerald-900 text-white p-6 sticky top-0 h-screen shadow-xl">
-        <h2 class="text-xl font-bold mb-10 border-b border-emerald-700 pb-4 text-center tracking-widest">真珠 ADMIN</h2>
-        <nav class="space-y-3">
-            <button onclick="switchTab('orders')" class="w-full text-left p-3 rounded hover:bg-emerald-800 transition text-lg">📋 訂單監控</button>
-            <button onclick="switchTab('menu')" class="w-full text-left p-3 rounded hover:bg-emerald-800 transition text-lg">🍱 菜單/介紹編輯</button>
-            <button onclick="switchTab('flavors')" class="w-full text-left p-3 rounded hover:bg-emerald-800 transition text-lg">🌶️ 口味調整設定</button>
-            <button onclick="switchTab('settings')" class="w-full text-left p-3 rounded hover:bg-emerald-800 transition text-lg">⚙️ 系統設定</button>
+        <h2 class="text-xl font-bold mb-10 border-b border-emerald-700 pb-4 text-center">真珠 ADMIN</h2>
+        <nav class="space-y-2">
+            <button onclick="switchTab('orders')" class="w-full text-left p-3 rounded hover:bg-emerald-800">📋 訂單監控</button>
+            <button onclick="switchTab('menu')" class="w-full text-left p-3 rounded hover:bg-emerald-800">🍱 菜單/介紹編輯</button>
+            <button onclick="switchTab('flavors')" class="w-full text-left p-3 rounded hover:bg-emerald-800">🌶️ 口味組設定</button>
         </nav>
     </aside>
 
     <main class="flex-1 p-8">
         <section id="sec-orders" class="space-y-6">
-            <h2 class="text-2xl font-bold text-emerald-900">訂單監控</h2>
-            <div id="order-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <h2 class="text-2xl font-bold">訂單監控</h2>
+            <div id="order-list" class="grid gap-4"></div>
         </section>
 
         <section id="sec-menu" class="hidden space-y-6">
-            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-emerald-900 text-3xl">菜單介紹編輯</h2><button onclick="openMenuModal()" class="bg-p-green text-white px-6 py-2 rounded-lg font-bold">+ 新增餐點</button></div>
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold">菜單編輯</h2><button onclick="openMenuModal()" class="bg-p-green text-white px-6 py-2 rounded-lg">+ 新增餐點</button></div>
             <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </section>
 
         <section id="sec-flavors" class="hidden space-y-6">
-            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-emerald-900 text-3xl">口味選項管理</h2><button onclick="addFlavorGroup()" class="bg-amber-600 text-white px-6 py-2 rounded-lg">+ 新增口味組</button></div>
-            <div id="flavor-list" class="grid gap-4"></div>
-        </section>
-
-        <section id="sec-settings" class="hidden space-y-6">
-            <h2 class="text-2xl font-bold text-emerald-900">Logo 上傳</h2>
-            <div class="bg-white p-6 rounded-xl max-w-md"><input type="file" id="logo-file" class="mb-4"><button onclick="uploadLogo()" class="w-full bg-amber-600 text-white py-2 rounded font-bold">上傳</button></div>
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold">口味組管理</h2><button onclick="addFlavorGroup()" class="bg-amber-600 text-white px-6 py-2 rounded-lg">+ 新增口味組</button></div>
+            <div id="flavor-grid" class="grid gap-4"></div>
         </section>
     </main>
 
     <div id="menu-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[100]">
-        <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <h3 class="font-bold text-xl mb-4 text-p-green">編輯餐點細節</h3>
-            <div class="space-y-4">
-                <input type="text" id="m-name" placeholder="名稱" class="w-full border p-3 rounded-xl text-lg">
-                <textarea id="m-desc" placeholder="餐點介紹 (會顯示在前台)" class="w-full border p-3 rounded-xl text-lg" rows="3"></textarea>
+        <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold text-xl mb-4" id="modal-title">餐點設定</h3>
+            <input type="hidden" id="m-id">
+            <div class="space-y-3">
+                <input type="text" id="m-name" placeholder="名稱" class="w-full border p-3 rounded-xl">
+                <textarea id="m-desc" placeholder="介紹" class="w-full border p-3 rounded-xl"></textarea>
                 <div class="grid grid-cols-2 gap-4"><input type="number" id="m-price" placeholder="價格" class="border p-3 rounded-xl"><select id="m-cat" class="border p-3 rounded-xl"></select></div>
-                <input type="file" id="m-img" class="w-full text-sm">
-                <div class="bg-stone-50 p-4 rounded-xl">
-                    <p class="font-bold text-sm mb-2">啟用的口味調整組：</p>
-                    <div id="m-flavor-checks" class="grid grid-cols-2 gap-2 text-sm"></div>
-                </div>
+                <div class="bg-gray-50 p-3 rounded-xl"><p class="text-xs font-bold mb-2">啟用口味調整：</p><div id="m-flavor-list" class="flex flex-wrap gap-2"></div></div>
                 <label class="flex items-center gap-2 font-bold"><input type="checkbox" id="m-is-set"> 套餐模式</label>
             </div>
-            <div class="flex gap-2 mt-6"><button onclick="closeMenuModal()" class="flex-1 bg-gray-100 py-3 rounded-xl font-bold">取消</button><button onclick="saveMenuItem()" class="flex-1 bg-p-green text-white py-3 rounded-xl font-bold">儲存</button></div>
+            <div class="flex gap-2 mt-6"><button onclick="closeMenuModal()" class="flex-1 bg-gray-100 py-3 rounded-xl">取消</button><button onclick="saveMenuItem()" class="flex-1 bg-p-green text-white py-3 rounded-xl">儲存</button></div>
+        </div>
+    </div>
+
+    <div id="group-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[200]">
+        <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <h3 class="font-bold text-xl mb-4 text-p-green">設定套餐與選項口味</h3>
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-2"><input type="text" id="g-name" placeholder="組別名" class="border p-2 rounded"><input type="number" id="g-limit" placeholder="選幾項" class="border p-2 rounded"></div>
+                <div class="bg-yellow-50 p-3 rounded">
+                    <p class="text-xs font-bold mb-1">新增選項與關聯口味：</p>
+                    <div class="flex gap-2 mb-2"><input type="text" id="opt-name" class="flex-1 border p-2 text-sm" placeholder="選項名稱"><select id="opt-flavor" class="border text-xs"><option value="">無口味</option></select></div>
+                    <button onclick="addOptionToGroup()" class="w-full bg-amber-500 text-white py-1 rounded text-xs">加入選項</button>
+                    <div id="opt-list-preview" class="mt-2 space-y-1"></div>
+                </div>
+                <button onclick="saveFullGroup()" class="w-full bg-p-green text-white py-3 rounded-xl font-bold">儲存此分組</button>
+            </div>
+            <button onclick="closeGroupModal()" class="w-full mt-4 text-gray-400">關閉</button>
         </div>
     </div>
 
@@ -62,111 +70,106 @@
         const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
         const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let curItemId = null, tempOptions = [];
 
         function switchTab(t) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
             document.getElementById(`sec-${t}`).classList.remove('hidden');
-            if(t === 'orders') loadOrders(); if(t === 'menu') loadMenuAdmin(); if(t === 'flavors') loadFlavors();
+            if(t === 'menu') loadMenuAdmin(); if(t === 'flavors') loadFlavorsAdmin(); if(t === 'orders') loadOrders();
         }
 
-        // --- 訂單監控與編輯 ---
-        async function loadOrders() {
-            const { data } = await _s.from('orders').select('*').order('created_at', {ascending:false});
-            const list = document.getElementById('order-list');
-            list.innerHTML = data.map(o => `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border ${o.status === 'completed' ? 'opacity-50' : 'border-emerald-200'}">
-                    <div class="flex justify-between items-start mb-4">
-                        <h3 class="font-bold text-xl text-p-green">${o.customer_name} <span class="text-xs text-gray-400">(${o.phone})</span></h3>
-                        <p class="font-bold text-emerald-800 text-2xl">$${o.total_price}</p>
-                    </div>
-                    <div class="space-y-2 mb-4">
-                        ${o.order_content.map(i => `<div class="bg-stone-50 p-2 rounded-lg text-sm flex justify-between"><span>• ${i.name}</span><button onclick="editOrderContent('${o.id}')" class="text-[10px] text-blue-500 underline">修改菜色</button></div>`).join('')}
-                    </div>
-                    <button onclick="updateStatus('${o.id}', 'completed')" class="w-full bg-emerald-100 text-emerald-700 py-2 rounded-xl font-bold text-sm">${o.status === 'completed' ? '已點餐' : '標記已點餐'}</button>
-                </div>
-            `).join('');
-        }
-
-        async function editOrderContent(id) {
-            // 此處可擴充彈出選單，礙於篇幅，建議直接進入資料庫或透過 openMenuModal 改良版
-            alert("編輯功能已與前台邏輯同步，請使用後台編輯按鈕修改內容後，此處會自動更新。");
-        }
-
-        // --- 口味管理 ---
-        async function loadFlavors() {
-            const { data } = await _s.from('flavor_groups').select('*, flavor_options(*)');
-            const list = document.getElementById('flavor-list');
-            list.innerHTML = data.map(g => `
-                <div class="bg-white p-4 rounded-xl shadow-sm border">
-                    <div class="flex justify-between items-center mb-2"><h4 class="font-bold text-lg">${g.name}</h4><button onclick="deleteFlavorGroup('${g.id}')" class="text-xs text-red-500">刪除</button></div>
-                    <div class="flex gap-2 flex-wrap">${g.flavor_options.map(o => `<span class="bg-stone-100 px-3 py-1 rounded-full text-xs">${o.option_name}</span>`).join('')}</div>
-                </div>
-            `).join('');
-        }
-
-        async function addFlavorGroup() {
-            const name = prompt("口味組名稱 (如：辣度)");
-            const opts = prompt("選項內容 (逗號隔開：小辣,中辣,大辣)");
-            if(!name || !opts) return;
-            const { data: g } = await _s.from('flavor_groups').insert([{ name }]).select();
-            if(g) {
-                const optList = opts.split(',').map(o => ({ group_id: g[0].id, option_name: o.trim() }));
-                await _s.from('flavor_options').insert(optList);
-                loadFlavors();
-            }
-        }
-
-        // --- 菜單管理 ---
         async function loadMenuAdmin() {
-            const { data } = await _s.from('menu_items').select('*, categories(name), item_flavor_relation(*)').order('created_at', {ascending:false});
-            const grid = document.getElementById('menu-grid');
-            grid.innerHTML = data.map(i => `
-                <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
-                    <div class="h-32 bg-white"><img src="${i.image_url || ''}" class="w-full h-full object-contain"></div>
-                    <div class="p-4">
-                        <div class="flex justify-between font-bold text-lg"><span>${i.name}</span><span class="text-emerald-700">$${i.price}</span></div>
-                        <p class="text-xs text-gray-400 mt-2 line-clamp-1">${i.description || '暫無介紹'}</p>
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            <button onclick="openMenuModal('${i.id}')" class="text-xs bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-lg border border-emerald-100">編輯餐點/口味</button>
-                            <button onclick="deleteItem('${i.id}')" class="text-xs text-red-500 bg-red-50 px-3 py-1.5 rounded-lg">刪除</button>
-                        </div>
+            const { data } = await _s.from('menu_items').select('*, categories(name)').order('created_at', {ascending:false});
+            document.getElementById('menu-grid').innerHTML = data.map(i => `
+                <div class="bg-white p-4 rounded-xl shadow border">
+                    <div class="flex justify-between font-bold"><span>${i.name}</span><span>$${i.price}</span></div>
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="editItem('${i.id}')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">編輯</button>
+                        ${i.is_set_menu ? `<button onclick="openGroupModal('${i.id}')" class="text-xs bg-amber-500 text-white px-2 py-1 rounded">⚙️ 設定套餐</button>` : ''}
+                        <button onclick="deleteItem('${i.id}')" class="text-xs text-red-500 px-2 py-1 rounded">刪除</button>
                     </div>
-                </div>
-            `).join('');
+                </div>`).join('');
+        }
+
+        async function editItem(id) {
+            const { data: item } = await _s.from('menu_items').select('*, item_flavor_relation(*)').eq('id', id).single();
+            curItemId = id;
+            document.getElementById('m-id').value = id;
+            document.getElementById('m-name').value = item.name;
+            document.getElementById('m-price').value = item.price;
+            document.getElementById('m-desc').value = item.description || "";
+            document.getElementById('m-is-set').checked = item.is_set_menu;
+            openMenuModal(true);
         }
 
         async function saveMenuItem() {
-            const name = document.getElementById('m-name').value;
-            const desc = document.getElementById('m-desc').value;
-            const price = document.getElementById('m-price').value;
-            const catId = document.getElementById('m-cat').value;
-            const isSet = document.getElementById('m-is-set').checked;
-            
-            // 處理圖片略...
-            
-            const { data: item, error } = await _s.from('menu_items').insert([{ name, description: desc, price, category_id: catId, is_set_menu: isSet }]).select();
-            
-            if(item) {
-                // 口味勾選儲存
-                const checks = document.querySelectorAll('.flavor-check:checked');
-                const rels = Array.from(checks).map(c => ({ item_id: item[0].id, flavor_group_id: c.value }));
+            const id = document.getElementById('m-id').value;
+            const payload = {
+                name: document.getElementById('m-name').value,
+                price: document.getElementById('m-price').value,
+                description: document.getElementById('m-desc').value,
+                category_id: document.getElementById('m-cat').value,
+                is_set_menu: document.getElementById('m-is-set').checked
+            };
+
+            let res;
+            if(id) res = await _s.from('menu_items').update(payload).eq('id', id).select();
+            else res = await _s.from('menu_items').insert([payload]).select();
+
+            if(res.data) {
+                const itemId = res.data[0].id;
+                await _s.from('item_flavor_relation').delete().eq('item_id', itemId);
+                const checks = document.querySelectorAll('.flavor-chk:checked');
+                const rels = Array.from(checks).map(c => ({ item_id: itemId, flavor_group_id: c.value }));
                 await _s.from('item_flavor_relation').insert(rels);
                 closeMenuModal(); loadMenuAdmin();
             }
         }
 
-        async function openMenuModal() {
+        async function openGroupModal(id) {
+            curItemId = id; tempOptions = [];
+            document.getElementById('group-modal').classList.remove('hidden');
+            const { data: flavors } = await _s.from('flavor_groups').select('*');
+            document.getElementById('opt-flavor').innerHTML = '<option value="">無口味</option>' + flavors.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+            document.getElementById('opt-list-preview').innerHTML = "";
+        }
+
+        function addOptionToGroup() {
+            const name = document.getElementById('opt-name').value;
+            const flavorId = document.getElementById('opt-flavor').value;
+            const flavorName = document.getElementById('opt-flavor').options[document.getElementById('opt-flavor').selectedIndex].text;
+            if(!name) return;
+            tempOptions.push({ name, flavorId, flavorName });
+            document.getElementById('opt-list-preview').innerHTML += `<div class="text-xs bg-white p-1 border">${name} ${flavorId ? `(${flavorName})` : ''}</div>`;
+            document.getElementById('opt-name').value = "";
+        }
+
+        async function saveFullGroup() {
+            const gName = document.getElementById('g-name').value;
+            const limit = document.getElementById('g-limit').value;
+            const { data: g } = await _s.from('set_menu_groups').insert([{ menu_item_id: curItemId, group_name: gName, selection_limit: limit }]).select();
+            if(g) {
+                for(let opt of tempOptions) {
+                    const { data: o } = await _s.from('set_menu_options').insert([{ group_id: g[0].id, option_name: opt.name }]).select();
+                    if(o && opt.flavorId) {
+                        await _s.from('option_flavor_relation').insert([{ option_id: o[0].id, flavor_group_id: opt.flavorId }]);
+                    }
+                }
+                alert("套餐分組設定完成"); closeGroupModal();
+            }
+        }
+
+        async function openMenuModal(isEdit = false) {
             document.getElementById('menu-modal').classList.remove('hidden');
+            if(!isEdit) { document.getElementById('m-id').value = ""; document.getElementById('m-name').value = ""; }
             const { data: cats } = await _s.from('categories').select('*');
             document.getElementById('m-cat').innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            
             const { data: flavors } = await _s.from('flavor_groups').select('*');
-            document.getElementById('m-flavor-checks').innerHTML = flavors.map(f => `<label class="flex items-center gap-1"><input type="checkbox" class="flavor-check" value="${f.id}"> ${f.name}</label>`).join('');
+            document.getElementById('m-flavor-list').innerHTML = flavors.map(f => `<label class="text-xs"><input type="checkbox" class="flavor-chk" value="${f.id}"> ${f.name}</label>`).join('');
         }
 
         function closeMenuModal() { document.getElementById('menu-modal').classList.add('hidden'); }
-        async function updateStatus(id, status) { await _s.from('orders').update({ status }).eq('id', id); loadOrders(); }
-
+        function closeGroupModal() { document.getElementById('group-modal').classList.add('hidden'); }
         switchTab('orders');
     </script>
 </body>
