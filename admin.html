@@ -16,21 +16,25 @@
         .sidebar-btn-active { background-color: var(--p-green); color: white !important; border-left: 4px solid var(--p-gold); }
         .img-contain { object-fit: contain; background: white; }
         
-        /* 修正：為上方分類選單加入可見拉桿 */
+        /* 分類選單拉桿美化 */
         #edit-cat-nav { 
             display: flex; 
             overflow-x: auto; 
             white-space: nowrap; 
             padding-bottom: 10px;
-            scrollbar-width: thin; /* Firefox */
+            scrollbar-width: thin;
             scrollbar-color: var(--p-gold) #f1f1f1;
         }
-        #edit-cat-nav::-webkit-scrollbar { height: 6px; }
+        #edit-cat-nav::-webkit-scrollbar { height: 8px; }
         #edit-cat-nav::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        #edit-cat-nav::-webkit-scrollbar-thumb { background: var(--p-gold); border-radius: 10px; }
+        #edit-cat-nav::-webkit-scrollbar-thumb { background: var(--p-gold); border-radius: 10px; border: 2px solid #f1f1f1; }
 
         .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; }
         .opt-selected { border: 2.5px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
+        
+        /* 確認更新按鈕文字顏色強化 */
+        .btn-update-final { background-color: var(--p-gold) !important; color: #ffffff !important; text-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .btn-update-final:hover { background-color: #a37f45 !important; }
     </style>
 </head>
 <body class="min-h-screen flex text-slate-700">
@@ -50,10 +54,10 @@
         <section id="sec-orders" class="space-y-6">
             <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">訂單監控</h2><button onclick="exportXls()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">📊 導出 Excel</button></div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div><label class="block text-xs font-bold text-stone-400 mb-1">搜尋姓名/電話</label><input type="text" id="filter-search" class="w-full border p-2 rounded-lg"></div>
+                <div><label class="block text-xs font-bold text-stone-400 mb-1">搜尋姓名/電話</label><input type="text" id="filter-search" class="w-full border p-2 rounded-lg" placeholder="請輸入..."></div>
                 <div><label class="block text-xs font-bold text-stone-400 mb-1">日期</label><input type="date" id="filter-date" class="w-full border p-2 rounded-lg"></div>
                 <div><label class="block text-xs font-bold text-stone-400 mb-1">狀態</label><select id="filter-status" class="w-full border p-2 rounded-lg"><option value="all">全部</option><option value="pending">待處理</option><option value="synced">已完成</option></select></div>
-                <div class="flex gap-2"><button onclick="loadOrders()" class="flex-1 bg-p-green text-white py-2 rounded-lg font-bold">篩選</button><button onclick="resetFilters()" class="px-4 border py-2 rounded-lg text-stone-400">重置</button></div>
+                <div class="flex gap-2"><button onclick="loadOrders()" class="flex-1 bg-p-green text-white py-2 rounded-lg font-bold shadow">篩選</button><button onclick="resetFilters()" class="px-4 border py-2 rounded-lg text-stone-400">重置</button></div>
             </div>
             <div id="order-list" class="grid grid-cols-1 xl:grid-cols-2 gap-6"></div>
         </section>
@@ -68,16 +72,18 @@
         <div class="bg-white w-full max-w-6xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[95vh]">
             <div class="p-6 bg-p-green text-white flex justify-between items-center"><h3 class="text-xl font-bold font-serif">後台修改訂單</h3><button onclick="closeEditModal()" class="text-2xl">✕</button></div>
             <div class="flex flex-1 overflow-hidden">
-                <div class="w-2/3 border-r p-4 bg-stone-50 flex flex-col">
-                    <div id="edit-cat-nav" class="mb-4 pb-2 border-b"></div>
-                    <div id="edit-menu-grid" class="grid grid-cols-3 gap-3 overflow-y-auto no-scrollbar"></div>
+                <div class="w-2/3 border-r p-4 bg-stone-50 flex flex-col overflow-hidden">
+                    <div id="edit-cat-nav" class="mb-2 border-b"></div>
+                    <div id="edit-menu-grid" class="grid grid-cols-3 gap-3 overflow-y-auto no-scrollbar pt-2"></div>
                 </div>
                 <div class="w-1/3 p-4 flex flex-col bg-white">
-                    <h4 class="font-bold mb-4 border-b pb-2 text-stone-400 uppercase text-xs tracking-widest">點餐清單 (點擊內容可修改)</h4>
+                    <h4 class="font-bold mb-4 border-b pb-2 text-stone-400 uppercase text-xs tracking-widest">當前清單 (點擊內容可修改)</h4>
                     <div id="edit-cart-list" class="flex-1 space-y-2 overflow-y-auto text-sm no-scrollbar"></div>
                     <div class="border-t pt-4 mt-4">
                         <div class="flex justify-between text-xl font-bold text-p-green mb-4"><span>總計</span><span id="edit-total-price">$0</span></div>
-                        <button onclick="saveOrderChange()" class="w-full bg-p-gold text-white py-4 rounded-xl font-bold shadow-lg transition active:scale-95">確認儲存更新</button>
+                        <button onclick="saveOrderChange()" class="w-full btn-update-final py-4 rounded-xl font-bold shadow-lg transition active:scale-95">
+                            確認儲存更新
+                        </button>
                     </div>
                 </div>
             </div>
@@ -95,17 +101,14 @@
         </div>
     </div>
 
-    <div id="set-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[200]"><div class="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl overflow-y-auto max-h-[90vh]"><h3 class="font-bold text-xl mb-4 text-p-green border-b pb-2 font-serif text-center">套餐分組設定</h3><div class="space-y-5"><div class="grid grid-cols-2 gap-2"><input id="g-name" placeholder="組名" class="border p-3 rounded-xl bg-stone-50"><input id="g-limit" type="number" value="1" class="border p-3 rounded-xl bg-stone-50 text-center"></div><div class="bg-emerald-50 p-4 rounded-2xl border"><select id="item-picker" class="w-full border p-3 mb-3 rounded-xl bg-white"></select><button onclick="addSetPick()" class="w-full bg-emerald-600 text-white py-2 rounded-xl text-sm font-bold shadow-sm">+ 加入子項目</button><div id="temp-pick-display" class="mt-4 space-y-2"></div></div><button onclick="saveFullSet()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold text-lg shadow-lg">儲存此分組</button><div class="border-t pt-4 mt-6"><p class="text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">已設定分組</p><div id="saved-groups-view" class="space-y-3"></div></div></div><button onclick="closeSetModal()" class="mt-8 text-stone-400 w-full underline text-center">完成關閉</button></div></div>
-    <div id="menu-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[100]"><div class="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl overflow-y-auto max-h-[85vh]"><h3 class="font-bold text-xl mb-6 text-p-green border-l-4 border-p-gold pl-3 font-serif">編輯餐點資訊</h3><input type="hidden" id="m-id"><div class="space-y-4"><input id="m-name" placeholder="餐點名稱" class="w-full border p-3 rounded-xl bg-stone-50 text-lg font-bold"><textarea id="m-desc" placeholder="餐點介紹" class="w-full border p-3 rounded-xl bg-stone-50 h-24"></textarea><div class="grid grid-cols-2 gap-4"><input id="m-price" type="number" placeholder="價格" class="border p-3 rounded-xl bg-stone-50"><select id="m-cat" class="border p-3 rounded-xl bg-stone-50"></select></div><div class="bg-stone-100 p-4 rounded-2xl"><p class="text-xs font-bold text-stone-500 mb-3 uppercase tracking-widest">口味客製勾選</p><div id="flv-checks" class="grid grid-cols-2 gap-3 text-xs"></div></div><div class="p-2 border-2 border-dashed rounded-xl border-stone-200"><label class="block text-xs font-bold text-gray-400 mb-1">照片上傳</label><input type="file" id="m-img" class="w-full text-xs"></div><label class="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl cursor-pointer font-bold"><input type="checkbox" id="m-is-set" class="accent-p-green"> 這是「套餐」模式</label></div><div class="flex gap-3 mt-8"><button onclick="closeMenuModal()" class="flex-1 bg-gray-100 py-3 rounded-2xl font-bold text-gray-400">取消</button><button onclick="saveItem()" class="flex-1 bg-p-green text-white py-3 rounded-2xl font-bold shadow-md">確認儲存</button></div></div></div>
-
     <script>
         const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
         const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        let allMenuItems = [], allCategories = [], curEditOrder = null, editCart = [], curPicks = [];
+        let allMenuItems = [], allCategories = [], curEditOrder = null, editCart = [];
         let curEditItem = null, curEditPopSels = { flavors: {}, groups: {} };
-        let reEditIndex = -1; // 記錄目前修改的是清單中第幾個
+        let reEditIndex = -1;
 
         async function switchTab(t) {
             document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
@@ -115,7 +118,7 @@
             if(t==='orders') loadOrders(); if(t==='menu') { await loadCats(); loadMenu(); } if(t==='categories') loadCats(); if(t==='flavors') loadFlvs(); if(t==='settings') loadSettings();
         }
 
-        // --- 訂單與改單核心邏輯 ---
+        // --- 訂單統計 ---
         async function loadOrders() {
             const search = document.getElementById('filter-search').value;
             const date = document.getElementById('filter-date').value;
@@ -132,7 +135,10 @@
                     <div class="bg-amber-50 p-3 rounded-xl border border-amber-100 mb-4"><p class="text-[10px] font-bold text-amber-700">備註</p><p class="text-sm text-stone-600">${o.note || '無'}</p></div>
                     <div class="space-y-1 mb-6 text-sm text-stone-500 bg-stone-50 p-4 rounded-2xl">${o.order_content.map(i => `• ${i.name}`).join('<br>')}</div>
                     <div class="flex flex-col gap-2">
-                        <div class="flex gap-3"><button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 text-stone-600 py-3 rounded-xl font-bold text-sm">修改內容</button><button onclick="sync('${o.id}')" class="flex-1 bg-p-green text-white py-3 rounded-xl text-sm font-bold shadow-md">${o.status==='synced'?'已完成同步':'標記已完成'}</button></div>
+                        <div class="flex gap-3">
+                            <button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 text-stone-600 py-3 rounded-xl font-bold text-sm">修改內容</button>
+                            <button onclick="sync('${o.id}')" class="flex-1 bg-p-green text-white py-3 rounded-xl text-sm font-bold shadow-md">${o.status==='synced'?'已完成同步':'標記已完成'}</button>
+                        </div>
                         <button onclick="delOrder('${o.id}')" class="w-full py-2 text-red-400 text-[10px] font-bold border border-red-50 rounded-lg">永久刪除訂單</button>
                     </div>
                 </div>`).join('');
@@ -155,10 +161,8 @@
             document.getElementById('edit-menu-grid').innerHTML = allMenuItems.filter(i => i.category_id === cid).map(i => `<div onclick="openEditPop('${i.id}')" class="bg-white p-3 rounded-xl border border-stone-100 cursor-pointer hover:border-p-gold shadow-sm flex flex-col justify-between"><div class="font-bold text-xs line-clamp-2">${i.name}</div><div class="text-p-gold font-bold text-xs mt-2">$${i.price}</div></div>`).join('');
         }
 
-        // 修改點選邏輯：傳入 itemId 與選擇性的 index (若是修改現有項目)
         function openEditPop(itemId, index = -1) {
             reEditIndex = index;
-            // 如果是從清單點擊，則需要解析名稱找回原始項目
             if (index > -1) {
                 const baseName = editCart[index].name.split(" [")[0].split(" (")[0];
                 curEditItem = allMenuItems.find(i => i.name === baseName);
@@ -167,41 +171,36 @@
             }
 
             if (!curEditItem) return;
-
             curEditPopSels = { flavors: {}, groups: {} };
             const container = document.getElementById('edit-pop-content');
             container.innerHTML = "";
 
-            // 判斷是否需要開啟彈窗
             const hasFlavors = curEditItem.item_flavor_relation?.length > 0;
             const isSet = curEditItem.is_set_menu && curEditItem.set_menu_groups?.length > 0;
 
-            // BUG 修正：如果不是套餐且沒口味，直接加入不跳窗
+            // BUG 修正：非套餐單品直接加入
             if (!hasFlavors && !isSet && index === -1) {
                 addEditCartFinal(curEditItem.name, curEditItem.price);
                 return;
             }
 
-            // 解析原始選項 (若是修改模式)
             let prevGroups = [];
             if (index > -1) {
                 const rawMatch = editCart[index].name.match(/\((.*?)\)/);
                 if (rawMatch) prevGroups = rawMatch[1].split("、");
             }
 
-            // 1. 口味
             if (hasFlavors) {
                 container.innerHTML += curEditItem.item_flavor_relation.map(r => `<div><p class="text-[10px] text-stone-400 mb-2 uppercase tracking-tighter">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o => `<div onclick="setEditPopFlv(this, '${r.flavor_groups.id}', '${o.option_name}')" class="px-4 py-1.5 border border-stone-200 rounded-full text-xs cursor-pointer bg-stone-50 transition">${o.option_name}</div>`).join('')}</div></div>`).join('');
             }
 
-            // 2. 套餐：帶入原本點過的內容
             if (isSet) {
                 container.innerHTML += curEditItem.set_menu_groups.map(g => {
                     curEditPopSels.groups[g.id] = [];
                     return `<div><p class="text-[10px] text-p-green font-bold mb-2 uppercase tracking-widest">${g.group_name} (必選 ${g.selection_limit})</p><div class="grid grid-cols-2 gap-2">${g.set_menu_contents.map(c => {
-                        const isPreSelected = prevGroups.includes(c.menu_items.name);
-                        if (isPreSelected) curEditPopSels.groups[g.id].push({ name: c.menu_items.name });
-                        return `<div onclick="setEditPopGroup(this, '${g.id}', '${c.menu_items.name}', ${g.selection_limit})" class="p-3 bg-stone-50 border rounded-xl text-[11px] cursor-pointer text-center font-bold ${isPreSelected ? 'opt-selected' : ''}">${c.menu_items.name}</div>`;
+                        const isSelected = prevGroups.includes(c.menu_items.name);
+                        if (isSelected) curEditPopSels.groups[g.id].push({ name: c.menu_items.name });
+                        return `<div onclick="setEditPopGroup(this, '${g.id}', '${c.menu_items.name}', ${g.selection_limit})" class="p-3 bg-stone-50 border rounded-xl text-[11px] cursor-pointer text-center font-bold ${isSelected ? 'opt-selected' : ''}">${c.menu_items.name}</div>`;
                     }).join('')}</div></div>`;
                 }).join('');
             }
@@ -232,18 +231,16 @@
             const gn = Object.values(curEditPopSels.groups).flat().map(x => x.name).join('、');
             const finalName = `${curEditItem.name}${fn ? ` [${fn}]` : ""}${gn ? ` (${gn})` : ""}`;
             
-            if (reEditIndex > -1) {
-                editCart[reEditIndex] = { name: finalName, price: Number(curEditItem.price) };
-            } else {
-                addEditCartFinal(finalName, curEditItem.price);
-            }
+            if (reEditIndex > -1) { editCart[reEditIndex] = { name: finalName, price: Number(curEditItem.price) }; }
+            else { addEditCartFinal(finalName, curEditItem.price); }
             closeEditPop(); refreshEditCart();
         }
 
         function addEditCartFinal(name, price) { editCart.push({ name, price: Number(price) }); refreshEditCart(); }
         
         function refreshEditCart() {
-            document.getElementById('edit-cart-list').innerHTML = editCart.map((i, idx) => `
+            const container = document.getElementById('edit-cart-list');
+            container.innerHTML = editCart.map((i, idx) => `
                 <div class="flex flex-col bg-stone-50 p-3 rounded-xl border border-stone-100 mb-2 relative">
                     <div onclick="openEditPop(null, ${idx})" class="cursor-pointer pr-8">
                         <span class="font-bold text-xs text-p-green underline decoration-dotted decoration-p-gold underline-offset-4">${i.name}</span>
@@ -251,34 +248,36 @@
                     </div>
                     <button onclick="editCart.splice(${idx},1);refreshEditCart();" class="absolute top-2 right-2 text-red-400 hover:text-red-600 font-bold px-2 text-lg">✕</button>
                 </div>`).join('');
-            document.getElementById('edit-total-price').innerText = `$${editCart.reduce((s, i) => s + Number(i.price), 0)}`;
+            
+            // 金額自動重算修復
+            const total = editCart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+            document.getElementById('edit-total-price').innerText = `$${total}`;
         }
 
+        async function saveOrderChange() {
+            // 確認儲存時計算最新總額
+            const finalTotal = editCart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+            const { error } = await _s.from('orders').update({ 
+                order_content: editCart, 
+                total_price: finalTotal 
+            }).eq('id', curEditOrder.id);
+            
+            if(!error) { alert("訂單與金額已成功更新！"); closeEditModal(); loadOrders(); }
+        }
+
+        // --- 其他維護邏輯保持原狀 ---
         function closeEditPop() { document.getElementById('edit-flavor-popup').classList.add('hidden'); }
         function closeEditModal() { document.getElementById('order-edit-modal').classList.add('hidden'); }
-        async function delOrder(id) { if(confirm('確定刪除此筆訂單嗎？')) { await _s.from('orders').delete().eq('id', id); loadOrders(); } }
-        async function saveOrderChange() { const { error } = await _s.from('orders').update({ order_content: editCart, total_price: editCart.reduce((s, i) => s + Number(i.price), 0) }).eq('id', curEditOrder.id); if(!error) { closeEditModal(); loadOrders(); } }
+        async function delOrder(id) { if(confirm('確定刪除？')) { await _s.from('orders').delete().eq('id', id); loadOrders(); } }
         async function sync(id) { await _s.from('orders').update({ status: 'synced' }).eq('id', id); loadOrders(); }
-
-        // --- 基礎設施保持原狀但修復同步問題 ---
-        async function loadCats() {
-            const { data } = await _s.from('categories').select('*').order('sort_order', {ascending: true});
-            document.getElementById('cat-list-table').innerHTML = data.map(c => `<tr class="border-b"><td class="p-4"><input type="number" value="${c.sort_order || 0}" onchange="updateCatSort('${c.id}', this.value)" class="w-16 border rounded p-1 text-xs"></td><td class="p-4 font-bold text-p-green">${c.name}</td><td class="p-4"><label class="inline-flex items-center cursor-pointer"><input type="checkbox" ${c.is_visible ? 'checked' : ''} onchange="updateCatVisibility('${c.id}', this.checked)" class="sr-only peer"><div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-p-green relative"></div></label></td><td class="p-4"><button onclick="delCat('${c.id}')" class="text-red-500 text-xs">刪除</button></td></tr>`).join('');
-            document.getElementById('menu-cat-filter').innerHTML = '<option value="all">所有分類</option>' + data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
+        async function loadCats() { const { data } = await _s.from('categories').select('*').order('sort_order', {ascending: true}); document.getElementById('cat-list-table').innerHTML = data.map(c => `<tr class="border-b"><td class="p-4"><input type="number" value="${c.sort_order || 0}" onchange="updateCatSort('${c.id}', this.value)" class="w-16 border rounded p-1 text-center text-xs"></td><td class="p-4 font-bold text-p-green">${c.name}</td><td class="p-4"><label class="inline-flex items-center cursor-pointer"><input type="checkbox" ${c.is_visible ? 'checked' : ''} onchange="updateCatVisibility('${c.id}', this.checked)" class="sr-only peer"><div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-p-green relative"></div></label></td><td class="p-4"><button onclick="delCat('${c.id}')" class="text-red-500 text-xs">刪除</button></td></tr>`).join(''); document.getElementById('menu-cat-filter').innerHTML = '<option value="all">所有分類</option>' + data.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); }
         async function updateCatSort(id, v) { await _s.from('categories').update({ sort_order: parseInt(v) }).eq('id', id); loadCats(); }
         async function updateCatVisibility(id, b) { await _s.from('categories').update({ is_visible: b }).eq('id', id); loadCats(); }
         async function addCat() { const n = document.getElementById('new-cat').value; if(n) await _s.from('categories').insert([{ name: n, sort_order: 99 }]); document.getElementById('new-cat').value=""; loadCats(); }
-        async function delCat(id) { if(confirm('刪除？')) { await _s.from('categories').delete().eq('id', id); loadCats(); } }
-        async function loadMenu() {
-            const search = document.getElementById('menu-search').value.toLowerCase();
-            const catF = document.getElementById('menu-cat-filter').value;
-            const { data } = await _s.from('menu_items').select('*, categories(name)').order('created_at', {ascending:false});
-            const filtered = data.filter(i => i.name.toLowerCase().includes(search) && (catF === 'all' || i.category_id === catF));
-            document.getElementById('menu-grid').innerHTML = filtered.map(i => `<div class="bg-white rounded-3xl shadow-sm border p-4"><div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden"><img src="${i.image_url || ''}" class="max-h-full max-w-full object-contain"></div><div class="flex justify-between font-bold mb-1"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="text-[10px] text-stone-400 mb-4">${i.categories?.name || '一般'}</div><div class="flex gap-2"><button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-stone-600 text-xs font-bold">編輯</button>${i.is_set_menu ? `<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold">⚙️ 套餐</button>` : ''}<button onclick="delItem('${i.id}')" class="px-2 text-red-200">✕</button></div></div>`).join('');
-        }
+        async function delCat(id) { if(confirm('刪？')) { await _s.from('categories').delete().eq('id', id); loadCats(); } }
+        async function loadMenu() { const s = document.getElementById('menu-search').value.toLowerCase(); const cf = document.getElementById('menu-cat-filter').value; const { data } = await _s.from('menu_items').select('*, categories(name)').order('created_at', {ascending:false}); const filtered = data.filter(i => i.name.toLowerCase().includes(s) && (cf === 'all' || i.category_id === cf)); document.getElementById('menu-grid').innerHTML = filtered.map(i => `<div class="bg-white rounded-3xl shadow-sm border p-4"><div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden"><img src="${i.image_url || ''}" class="max-h-full max-w-full object-contain"></div><div class="flex justify-between font-bold mb-1"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="text-[10px] text-stone-400 mb-4 font-bold tracking-widest">${i.categories?.name || '一般'}</div><div class="flex gap-2"><button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-stone-600 text-xs font-bold">編輯</button>${i.is_set_menu ? `<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold">⚙️ 套餐</button>` : ''}<button onclick="delItem('${i.id}')" class="px-2 text-red-200">✕</button></div></div>`).join(''); }
         async function editItem(id) { const { data: i } = await _s.from('menu_items').select('*, item_flavor_relation(*)').eq('id', id).single(); curItem = id; document.getElementById('m-id').value = id; document.getElementById('m-name').value = i.name; document.getElementById('m-price').value = i.price; document.getElementById('m-desc').value = i.description || ''; document.getElementById('m-is-set').checked = i.is_set_menu; await openMenuModal(true); setTimeout(() => { i.item_flavor_relation.forEach(r => { const c = document.querySelector(`.flv-chk[value="${r.flavor_group_id}"]`); if(c) c.checked=true; }); }, 500); }
-        async function openMenuModal(isEdit) { document.getElementById('menu-modal').classList.remove('hidden'); if(!isEdit) document.getElementById('m-id').value = ""; const { data: cats } = await _s.from('categories').select('*').order('sort_order'); document.getElementById('m-cat').innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); const { data: flvs } = await _s.from('flavor_groups').select('*'); document.getElementById('flv-checks').innerHTML = flvs.map(f => `<label class="flex items-center gap-1 cursor-pointer text-xs"><input type="checkbox" class="flv-chk accent-p-green" value="${f.id}"> ${f.name}</label>`).join(''); }
+        async function openMenuModal(e) { document.getElementById('menu-modal').classList.remove('hidden'); if(!e) document.getElementById('m-id').value = ""; const { data: c } = await _s.from('categories').select('*').order('sort_order'); document.getElementById('m-cat').innerHTML = c.map(x => `<option value="${x.id}">${x.name}</option>`).join(''); const { data: f } = await _s.from('flavor_groups').select('*'); document.getElementById('flv-checks').innerHTML = f.map(x => `<label class="flex items-center gap-1 cursor-pointer text-xs"><input type="checkbox" class="flv-chk accent-p-green" value="${x.id}"> ${x.name}</label>`).join(''); }
         async function saveItem() { const id = document.getElementById('m-id').value; const file = document.getElementById('m-img').files[0]; let url = ""; if(file) { const path = `items/${Date.now()}.png`; await _s.storage.from('assets').upload(path, file); const { data } = _s.storage.from('assets').getPublicUrl(path); url = data.publicUrl; } const p = { name: document.getElementById('m-name').value, price: document.getElementById('m-price').value, description: document.getElementById('m-desc').value, category_id: document.getElementById('m-cat').value, is_set_menu: document.getElementById('m-is-set').checked }; if(url) p.image_url = url; const { data: saved } = id ? await _s.from('menu_items').update(p).eq('id', id).select() : await _s.from('menu_items').insert([p]).select(); if(saved) { await _s.from('item_flavor_relation').delete().eq('item_id', saved[0].id); const rels = Array.from(document.querySelectorAll('.flv-chk:checked')).map(c => ({ item_id: saved[0].id, flavor_group_id: c.value })); if(rels.length) await _s.from('item_flavor_relation').insert(rels); closeMenuModal(); loadMenu(); } }
         async function openSetModal(id) { curItem = id; curPicks = []; document.getElementById('set-modal').classList.remove('hidden'); const { data } = await _s.from('menu_items').select('*').eq('is_set_menu', false).order('name'); document.getElementById('item-picker').innerHTML = data.map(i => `<option value="${i.id}">${i.name}</option>`).join(''); loadSavedSets(); }
         function addSetPick() { const el = document.getElementById('item-picker'); curPicks.push({ id: el.value, name: el.options[el.selectedIndex].text }); document.getElementById('temp-pick-display').innerHTML += `<div class="bg-white border p-2 rounded-xl text-xs shadow-sm">● ${el.options[el.selectedIndex].text}</div>`; }
@@ -293,7 +292,17 @@
         function closeMenuModal() { document.getElementById('menu-modal').classList.add('hidden'); }
         function closeSetModal() { document.getElementById('set-modal').classList.add('hidden'); }
         function resetFilters() { document.getElementById('filter-search').value=''; document.getElementById('filter-date').value=''; document.getElementById('filter-status').value='all'; loadOrders(); }
-        function exportXls() { const exportData = window.ordersRef.map(o => { const row = { '時間': new Date(o.created_at).toLocaleString(), '客戶': o.customer_name, '電話': o.phone, '總計': o.total_price, '備註': o.note || '' }; o.order_content.forEach((item, idx) => { row[`品項 ${idx + 1}`] = item.name; }); return row; }); const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "報表"); XLSX.writeFile(wb, `真珠訂單報表_${new Date().toLocaleDateString()}.xlsx`); }
+        async function exportXls() { 
+            const exportData = window.ordersRef.map(o => { 
+                const row = { '時間': new Date(o.created_at).toLocaleString(), '客戶': o.customer_name, '電話': o.phone, '總計': o.total_price, '備註': o.note || '' }; 
+                o.order_content.forEach((item, idx) => { row[`品項 ${idx + 1}`] = item.name; }); 
+                return row; 
+            }); 
+            const ws = XLSX.utils.json_to_sheet(exportData); 
+            const wb = XLSX.utils.book_new(); 
+            XLSX.utils.book_append_sheet(wb, ws, "報表"); 
+            XLSX.writeFile(wb, `真珠訂單報表_${new Date().toLocaleDateString()}.xlsx`); 
+        }
 
         switchTab('orders');
     </script>
