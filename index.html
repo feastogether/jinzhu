@@ -19,45 +19,53 @@
         body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--p-cream); }
         .font-serif { font-family: 'Noto Serif TC', serif; }
         
-        /* 導覽列：強制改為純白背景 */
-        .navbar-custom { background-color: #ffffff !important; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        /* 1. 頂部導覽列：純白背景 */
+        .navbar-custom { background-color: #ffffff !important; box-shadow: 0 2px 10px rgba(0,0,0,0.05); height: 60px; display: flex; align-items: center; }
         .navbar-brand img { max-height: 40px; }
         .btn-primary { background-color: var(--p-green) !important; border-color: var(--p-green) !important; color: #fff !important; }
         
-        /* 全屏背景 KV */
+        /* 2. 全屏背景 KV */
         .kv-section { position: relative; height: 100vh; width: 100%; overflow: hidden; transition: all 0.7s ease-in-out; }
         .kv-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 1; }
         #kv-bg { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.8s ease; }
         .kv-hidden { height: 0px !important; }
 
-        /* 首頁標題文字 */
+        /* 3. 首頁標題文字 */
         .main-title { font-size: 2.2rem; letter-spacing: 0.15em; text-shadow: 0 2px 10px rgba(0,0,0,0.3); font-weight: 700; color: #ffffff; }
         .sub-title { font-size: 1rem; letter-spacing: 0.4em; color: rgba(255,255,255,0.9); font-weight: 300; margin-top: 0.5rem; }
 
-        /* 登記卡片 */
+        /* 4. 登記卡片 */
         .order-card { margin-top: -160px; position: relative; z-index: 10; background: rgba(255,255,255,0.98); box-shadow: 0 20px 50px rgba(0,0,0,0.15); border-radius: 2rem; }
         
-        /* 彈窗優化 */
+        /* 5. 分類導覽修正：背景改為與底色融合，解決重疊問題 */
+        .sticky-nav { 
+            position: sticky; 
+            top: 60px; /* 緊貼 Header 高度 */
+            z-index: 40; 
+            background-color: rgba(249, 245, 240, 0.95); /* 改為米色背景帶透明度 */
+            backdrop-filter: blur(8px); 
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 12px 8px;
+        }
+        
+        /* 6. 菜單容器：增加上方間距防止重疊第一道菜 */
+        #menu-grid { padding-top: 10px; }
+
+        /* 其它組件優化 */
         .modal-btn-small { padding: 0.6rem !important; font-size: 0.9rem !important; border-radius: 10px !important; }
         .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; font-weight: bold; }
         .opt-selected { border: 2px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
-
         .img-contain { width: 100%; height: 100%; object-fit: contain; background: white; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* 分類導覽：進入點餐後緊貼白色 Header */
-        .sticky-nav { position: sticky; top: 56px; z-index: 40; background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); border-bottom: 1px solid #eee; }
-        
-        .cat-btn { border: 1px solid var(--p-green); color: var(--p-green); background-color: white; transition: all 0.2s; font-size: 0.85rem; }
+        .cat-btn { border: 1px solid var(--p-green); color: var(--p-green); background-color: white; transition: all 0.2s; font-size: 0.85rem; padding: 6px 18px; border-radius: 999px; }
         .cat-active { background-color: var(--p-green) !important; color: #ffffff !important; border-color: var(--p-gold) !important; }
-        
         input::placeholder { color: #ccc; font-size: 0.9rem; }
     </style>
 </head>
 <body class="pb-24 text-slate-800">
 
     <header class="header_wrap fixed-top navbar-custom shadow-sm" style="z-index: 100;">
-        <div class="container flex justify-center py-2">
+        <div class="container flex justify-center">
             <a class="navbar-brand" href="#" onclick="location.reload()">
                 <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="logo">
             </a>
@@ -75,7 +83,7 @@
         </div>
     </div>
 
-    <main id="main-content" class="max-w-xl mx-auto p-4 relative z-20">
+    <main id="main-content" class="max-w-xl mx-auto p-4 relative z-20 transition-all duration-500">
         <section id="step-1" class="animate__animated animate__slideInUp">
             <div class="order-card p-7 md:p-10 border border-white">
                 <h2 class="text-xl font-bold text-p-green text-center mb-8 font-serif tracking-widest">顧客預定登記</h2>
@@ -96,8 +104,8 @@
         </section>
 
         <section id="step-2" class="hidden">
-            <div id="cat-nav" class="flex gap-2 overflow-x-auto py-3 sticky-nav no-scrollbar mb-2 px-2"></div>
-            <div id="menu-grid" class="grid grid-cols-1 gap-5 mt-4"></div>
+            <div id="cat-nav" class="flex gap-2 overflow-x-auto sticky-nav no-scrollbar mb-4"></div>
+            <div id="menu-grid" class="grid grid-cols-1 gap-5"></div>
         </section>
 
         <section id="step-3" class="hidden py-16 text-center px-4 mt-10">
@@ -143,14 +151,8 @@
                 </div>
             </div>
             <div class="p-4 bg-white border-t">
-                <div class="flex justify-between items-center px-2 mb-3">
-                    <span class="text-xs text-stone-400">總計</span>
-                    <span class="text-lg font-black text-p-gold" id="preview-total">$0</span>
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="closePreview()" class="w-20 modal-btn-small text-stone-400 border">返回</button>
-                    <button onclick="finalSubmit()" class="flex-1 modal-btn-small btn-primary font-bold shadow-md">確認送出預定</button>
-                </div>
+                <div class="flex justify-between items-center px-2 mb-3"><span class="text-xs text-stone-400">總計</span><span class="text-lg font-black text-p-gold" id="preview-total">$0</span></div>
+                <div class="flex gap-2"><button onclick="closePreview()" class="w-20 modal-btn-small text-stone-400 border">返回</button><button onclick="finalSubmit()" class="flex-1 modal-btn-small btn-primary font-bold shadow-md">確認送出預定</button></div>
             </div>
         </div>
     </div>
@@ -169,7 +171,6 @@
 
         let menuData = [], cart = [], guest = {}, tempItem = null, sels = { flavors: {}, groups: {} };
 
-        // 自動辨識背景
         function setKV() {
             const isMobile = window.innerWidth <= 768;
             const baseUrl = "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_";
@@ -186,12 +187,13 @@
             }
         })();
 
-        // 開始點餐
         async function startOrder() {
             guest = { name: document.getElementById('custName').value, phone: document.getElementById('custPhone').value };
             if(!guest.name || !guest.phone) return alert("請填寫姓名與電話");
             
             document.getElementById('kv-area').classList.add('kv-hidden');
+            // 修正進入點餐後的排版位移
+            document.getElementById('main-content').style.marginTop = "0px";
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.remove('hidden');
             document.getElementById('cart-bar').classList.remove('hidden');
@@ -205,7 +207,7 @@
             const { data: items } = await _s.from('menu_items').select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))').eq('is_hidden', false);
             menuData = items;
             const nav = document.getElementById('cat-nav');
-            nav.innerHTML = cats.map(c => `<button class="cat-btn px-6 py-1.5 rounded-full font-bold shadow-sm whitespace-nowrap" onclick="renderItems('${c.id}', this)">${c.name}</button>`).join('');
+            nav.innerHTML = cats.map(c => `<button class="cat-btn font-bold shadow-sm whitespace-nowrap" onclick="renderItems('${c.id}', this)">${c.name}</button>`).join('');
             if(cats.length) renderItems(cats[0].id, nav.firstChild);
         }
 
@@ -229,12 +231,12 @@
             sels = { flavors: {}, groups: {} };
             document.getElementById('detail-img').src = tempItem.image_url || '';
             document.getElementById('detail-title').innerText = tempItem.name;
-            document.getElementById('detail-desc').innerText = tempItem.description || "傳承心意，誠摯款待。";
+            document.getElementById('detail-desc').innerText = tempItem.description || "真切滋味，誠摯款待。";
             renderFlavorList(tempItem.item_flavor_relation, 'flavor-container', 'main');
             const setArea = document.getElementById('set-group-container');
             setArea.innerHTML = tempItem.is_set_menu ? tempItem.set_menu_groups.map(g => {
                 sels.groups[g.id] = []; 
-                return `<div><div class="flex justify-between items-center mb-3"><p class="font-bold text-p-green border-l-3 border-p-gold pl-2 text-base font-serif">${g.group_name}</p><span class="text-[9px] bg-stone-100 px-2 py-0.5 rounded text-stone-400">必選 ${g.selection_limit}</span></div>
+                return `<div><div class="flex justify-between items-center mb-3 text-sm font-serif"><p class="font-bold text-p-green border-l-3 border-p-gold pl-2">${g.group_name}</p><span class="text-[9px] bg-stone-100 px-2 py-0.5 rounded text-stone-400">必選 ${g.selection_limit}</span></div>
                         <div class="grid grid-cols-2 gap-2">${g.set_menu_contents.map(c => renderSetOptionUI(c.menu_items, g.id, g.selection_limit)).join('')}</div></div>`;
             }).join('') : "";
             document.getElementById('detail-modal').classList.remove('hidden');
