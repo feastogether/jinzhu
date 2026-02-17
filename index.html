@@ -104,17 +104,21 @@
         </section>
 
         <section id="step-3" class="hidden py-10 text-center px-4 mt-10">
-            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border-t-8 border-p-green text-center animate__animated animate__fadeInUp">
-                <div class="w-24 h-24 bg-emerald-50 text-p-green rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-inner">🥢</div>
-                <h2 class="text-2xl font-black text-p-green mb-3 font-serif">訂單預定成功</h2>
-                <div class="w-12 h-1 bg-p-gold mx-auto mb-6 rounded-full"></div>
-                <p class="text-stone-500 text-base mb-10 leading-relaxed font-medium">
+            <div class="bg-white p-10 rounded-[3rem] shadow-2xl border-t-8 border-[#004d40] text-center animate__animated animate__fadeInUp">
+                <div class="w-24 h-24 bg-emerald-50 text-[#004d40] rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-inner">🥢</div>
+                <h2 class="text-2xl font-black text-[#004d40] mb-3 font-serif">訂單預定成功</h2>
+                <div class="w-12 h-1 bg-[#b89150] mx-auto mb-6 rounded-full"></div>
+                <p class="text-stone-600 text-base mb-10 leading-relaxed font-medium">
                     真切滋味，正在為您準備中。<br>
                     若需調整或取消，請致電專櫃：<br>
-                    <a href="tel:0437027538" class="text-p-gold text-2xl font-bold mt-2 block underline underline-offset-4">04-3702-7538</a>
+                    <a href="tel:0437027538" class="text-[#b89150] text-2xl font-bold mt-2 block underline underline-offset-4">04-3702-7538</a>
                 </p>
-                <button onclick="location.reload()" class="w-full max-w-xs mx-auto bg-p-green text-white py-4 rounded-full font-bold text-lg shadow-lg active:scale-95 transition">返回首頁</button>
-                <p class="text-[10px] text-stone-300 mt-6 tracking-widest uppercase">Jin Zhu 文心秀泰店 誠摯款待</p>
+                <button onclick="location.reload()" 
+                        style="color: #004d40 !important; border: 2px solid #004d40 !important;"
+                        class="w-full max-w-xs mx-auto bg-transparent py-4 rounded-full font-bold text-lg active:scale-95 transition">
+                    返回首頁重新預訂
+                </button>
+                <p class="text-[10px] text-stone-300 mt-8 tracking-widest uppercase font-bold">Jin Zhu 文心秀泰店 誠摯款待</p>
             </div>
         </section>
     </main>
@@ -156,7 +160,6 @@
                 <div class="mt-6 border-t pt-4">
                     <label class="block text-xs font-bold text-p-green mb-2 tracking-widest">訂單備註 (特殊需求請註明)</label>
                     <textarea id="order-note" class="w-full border rounded-xl p-3 bg-stone-50 text-sm outline-none focus:border-p-gold h-20 resize-none transition" placeholder="例如：去蔥、慶生、不需要餐具等..."></textarea>
-                    <p class="text-[9px] text-stone-400 mt-2">※ 特殊需求須依現場人員確認為主。</p>
                 </div>
             </div>
             <div class="p-4 bg-white border-t">
@@ -350,7 +353,9 @@
         function openPreview() {
             if(!cart.length) return;
             const list = document.getElementById('preview-list');
-            list.innerHTML = cart.map((item, idx) => `<div class="flex justify-between items-start bg-stone-50 p-3 rounded-xl border"><div class="flex-1 text-left"><p class="font-bold text-p-green text-xs">${item.name}</p><p class="text-p-gold font-serif text-xs mt-1">$${item.price}</p></div><button onclick="removeItem(${idx})" class="text-red-300 p-2 text-xl">✕</button></div>`).join('');
+            list.innerHTML = cart.map((item, idx) => `<div class="flex justify-between items-start bg-stone-50 p-3 rounded-xl border">
+                <div class="flex-1 text-left"><p class="font-bold text-p-green text-xs">${item.name}</p><p class="text-p-gold font-serif text-xs mt-1">$${item.price}</p></div>
+                <button onclick="removeItem(${idx})" class="text-red-300 p-2 text-xl">✕</button></div>`).join('');
             document.getElementById('preview-total').innerText = `$${cart.reduce((s, i) => s + i.price, 0)}`;
             document.getElementById('preview-modal').classList.remove('hidden');
         }
@@ -362,7 +367,13 @@
             const note = document.getElementById('order-note').value;
             const total = cart.reduce((s,i) => s + i.price, 0);
             const { error } = await _s.from('orders').insert([{ customer_name: guest.name, phone: guest.phone, order_content: cart, total_price: total, note: note }]);
-            if(!error) { document.getElementById('preview-modal').classList.add('hidden'); document.getElementById('step-2').classList.add('hidden'); document.getElementById('cart-bar').classList.add('hidden'); document.getElementById('step-3').classList.remove('hidden'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+            if(!error) { 
+                document.getElementById('preview-modal').classList.add('hidden'); 
+                document.getElementById('step-2').classList.add('hidden'); 
+                document.getElementById('cart-bar').classList.add('hidden'); 
+                document.getElementById('step-3').classList.remove('hidden'); 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            }
         }
     </script>
 </body>
