@@ -9,9 +9,9 @@
     <style>
         body { background-color: #00251a; color: #e0e0e0; font-family: 'Noto Sans TC', sans-serif; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
-        .new-order-anim { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 
-            0% { box-shadow: 0 0 0 0 rgba(184, 145, 80, 0.4); }
+        .new-order-anim { animation: pulse-gold 2s infinite; }
+        @keyframes pulse-gold { 
+            0% { box-shadow: 0 0 0 0 rgba(184, 145, 80, 0.7); }
             70% { box-shadow: 0 0 0 20px rgba(184, 145, 80, 0); }
             100% { box-shadow: 0 0 0 0 rgba(184, 145, 80, 0); }
         }
@@ -22,16 +22,17 @@
         <div class="flex justify-between items-center mb-8 border-b border-emerald-900 pb-6">
             <div>
                 <h1 class="text-3xl font-bold text-[#b89150] font-serif">真珠文心店 | 現場訂單監控</h1>
-                <p id="conn-status" class="text-emerald-500 text-sm mt-2">● 系統連線監控中</p>
+                <p id="conn-status" class="text-amber-500 text-sm mt-2">● 正在連線至伺服器...</p>
             </div>
             <div id="clock" class="text-2xl font-mono text-white">00:00:00</div>
         </div>
 
-        <div id="notice-overlay" onclick="enableAudio()" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center cursor-pointer">
-            <div class="text-center bg-white text-black p-10 rounded-[3rem]">
-                <div class="text-6xl mb-4">🔔</div>
-                <h2 class="text-2xl font-bold mb-2">點擊畫面開啟音效通知</h2>
-                <p class="text-gray-500">開啟後，新訂單進來將會自動響鈴</p>
+        <div id="notice-overlay" onclick="enableAudio()" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center cursor-pointer">
+            <div class="text-center bg-white text-black p-10 rounded-[3rem] shadow-2xl">
+                <div class="text-7xl mb-4">🔔</div>
+                <h2 class="text-3xl font-bold mb-2 text-[#004d40]">開啟監控系統</h2>
+                <p class="text-gray-500 mb-6">點擊此處啟動即時訂單接收與音效</p>
+                <div class="animate-bounce bg-[#b89150] text-white py-3 px-8 rounded-full font-bold">START MONITORING</div>
             </div>
         </div>
 
@@ -39,54 +40,79 @@
             </div>
     </div>
 
-    <audio id="order-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+    <audio id="order-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script>
         const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v'; // 請確認此 Key 是否正確
         const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         function enableAudio() {
             document.getElementById('notice-overlay').classList.add('hidden');
             const sound = document.getElementById('order-sound');
-            sound.play().then(() => sound.pause()); // 預熱音效
+            // 瀏覽器解鎖音效
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+            }).catch(e => console.log("Audio unlock failed", e));
+            console.log("Realtime監控啟動...");
         }
 
         // 監聽新訂單
-        _s.channel('orders_channel')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+        const channel = _s.channel('db-changes')
+          .on('postgres_changes', { 
+              event: 'INSERT', 
+              schema: 'public', 
+              table: 'orders' 
+          }, payload => {
+              console.log('收到新訂單!', payload.new);
               playAlert();
               renderCard(payload.new);
           })
-          .subscribe();
+          .subscribe((status) => {
+              const statusEl = document.getElementById('conn-status');
+              if (status === 'SUBSCRIBED') {
+                  statusEl.innerText = "🟢 系統已同步，即時監控中";
+                  statusEl.className = "text-emerald-500 text-sm mt-2 font-bold";
+              } else {
+                  statusEl.innerText = "🔴 連線異常: " + status;
+                  statusEl.className = "text-red-500 text-sm mt-2";
+              }
+          });
 
         function playAlert() {
             const sound = document.getElementById('order-sound');
             sound.currentTime = 0;
-            sound.play();
+            sound.play().catch(e => console.log("播放失敗，請確認是否點擊頁面解鎖", e));
         }
 
         function renderCard(order) {
             const grid = document.getElementById('order-grid');
             const card = document.createElement('div');
-            card.className = "bg-white text-slate-800 p-6 rounded-[2rem] shadow-2xl border-t-8 border-[#b89150] new-order-anim transition-all";
+            card.className = "bg-white text-slate-800 p-6 rounded-[2rem] shadow-2xl border-t-8 border-[#b89150] new-order-anim transition-all duration-500";
             
-            const time = new Date(order.created_at).toLocaleTimeString();
-            const items = order.order_content.map(i => `<div class="py-1 border-b border-gray-100 last:border-0">• ${i.name}</div>`).join('');
+            const time = new Date(order.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            // 處理訂單內容，如果 order_content 是字串則 parse，如果是陣列直接用
+            const itemsArray = typeof order.order_content === 'string' ? JSON.parse(order.order_content) : order.order_content;
+            const items = itemsArray.map(i => `<div class="py-2 border-b border-gray-100 last:border-0 text-sm font-medium">• ${i.name}</div>`).join('');
 
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-4">
                     <b class="text-2xl font-serif text-[#004d40]">${order.customer_name}</b>
-                    <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">$${order.total_price}</span>
+                    <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold shadow-sm">$${order.total_price}</span>
                 </div>
-                <div class="text-xs text-gray-400 mb-4">${time} | ${order.phone}</div>
-                <div class="bg-gray-50 p-4 rounded-2xl text-sm mb-4">${items}</div>
-                ${order.note ? `<div class="bg-emerald-50 text-emerald-800 p-3 rounded-xl text-xs"><b>備註：</b>${order.note}</div>` : ''}
+                <div class="text-xs text-stone-400 mb-4 font-bold">${time} | ${order.phone}</div>
+                <div class="bg-gray-50 p-4 rounded-2xl mb-4 shadow-inner">${items}</div>
+                ${order.note ? `<div class="bg-amber-50 text-amber-800 p-3 rounded-xl text-xs border border-amber-100"><b>顧客備註：</b>${order.note}</div>` : ''}
+                <div class="mt-4 text-right text-[10px] text-gray-300 italic">Order ID: ${order.id.substring(0,8)}</div>
             `;
             grid.prepend(card);
         }
 
-        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+        // 時鐘功能
+        setInterval(() => { 
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString(); 
+        }, 1000);
     </script>
 </body>
 </html>
