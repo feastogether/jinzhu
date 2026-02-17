@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>真珠 | 現場訂單監控</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #00251a; color: #e0e0e0; font-family: 'Noto Sans TC', sans-serif; }
+        .font-serif { font-family: 'Noto Serif TC', serif; }
+        .new-order-anim { animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 
+            0% { box-shadow: 0 0 0 0 rgba(184, 145, 80, 0.4); }
+            70% { box-shadow: 0 0 0 20px rgba(184, 145, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(184, 145, 80, 0); }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-emerald-900 pb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-[#b89150] font-serif">真珠文心店 | 現場訂單監控</h1>
+                <p id="conn-status" class="text-emerald-500 text-sm mt-2">● 系統連線監控中</p>
+            </div>
+            <div id="clock" class="text-2xl font-mono text-white">00:00:00</div>
+        </div>
+
+        <div id="notice-overlay" onclick="enableAudio()" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center cursor-pointer">
+            <div class="text-center bg-white text-black p-10 rounded-[3rem]">
+                <div class="text-6xl mb-4">🔔</div>
+                <h2 class="text-2xl font-bold mb-2">點擊畫面開啟音效通知</h2>
+                <p class="text-gray-500">開啟後，新訂單進來將會自動響鈴</p>
+            </div>
+        </div>
+
+        <div id="order-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+    </div>
+
+    <audio id="order-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+    <script>
+        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+        const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function enableAudio() {
+            document.getElementById('notice-overlay').classList.add('hidden');
+            const sound = document.getElementById('order-sound');
+            sound.play().then(() => sound.pause()); // 預熱音效
+        }
+
+        // 監聽新訂單
+        _s.channel('orders_channel')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, payload => {
+              playAlert();
+              renderCard(payload.new);
+          })
+          .subscribe();
+
+        function playAlert() {
+            const sound = document.getElementById('order-sound');
+            sound.currentTime = 0;
+            sound.play();
+        }
+
+        function renderCard(order) {
+            const grid = document.getElementById('order-grid');
+            const card = document.createElement('div');
+            card.className = "bg-white text-slate-800 p-6 rounded-[2rem] shadow-2xl border-t-8 border-[#b89150] new-order-anim transition-all";
+            
+            const time = new Date(order.created_at).toLocaleTimeString();
+            const items = order.order_content.map(i => `<div class="py-1 border-b border-gray-100 last:border-0">• ${i.name}</div>`).join('');
+
+            card.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <b class="text-2xl font-serif text-[#004d40]">${order.customer_name}</b>
+                    <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">$${order.total_price}</span>
+                </div>
+                <div class="text-xs text-gray-400 mb-4">${time} | ${order.phone}</div>
+                <div class="bg-gray-50 p-4 rounded-2xl text-sm mb-4">${items}</div>
+                ${order.note ? `<div class="bg-emerald-50 text-emerald-800 p-3 rounded-xl text-xs"><b>備註：</b>${order.note}</div>` : ''}
+            `;
+            grid.prepend(card);
+        }
+
+        setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
+    </script>
+</body>
+</html>
