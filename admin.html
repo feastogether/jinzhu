@@ -15,21 +15,13 @@
         .text-p-green { color: var(--p-green); }
         .sidebar-btn-active { background-color: var(--p-green); color: white !important; border-left: 4px solid var(--p-gold); }
         .img-contain, #admin-logo-img { object-fit: contain; background: white; image-rendering: -webkit-optimize-contrast; }
-        
-        /* 訂單完成後的反白樣式 */
         .order-card-completed { opacity: 0.5; filter: grayscale(0.8); background-color: #f1f5f9 !important; border-color: #cbd5e1 !important; }
-        
         #edit-cat-nav { display: flex; overflow-x: auto; white-space: nowrap; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--p-gold) #f1f1f1; }
         #edit-cat-nav::-webkit-scrollbar { height: 8px; }
         #edit-cat-nav::-webkit-scrollbar-thumb { background: var(--p-gold); border-radius: 10px; }
-
         .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; }
         .opt-selected { border: 2.5px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
-        .picker-item.active { border-color: var(--p-gold); background-color: #fffbeb; }
-        .picker-item.active .check-mark { display: block; }
         .input-mini { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; outline: none; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
 </head>
 <body class="min-h-screen flex text-slate-700">
@@ -49,11 +41,9 @@
     <main class="flex-1 p-8 overflow-y-auto">
         <section id="sec-orders" class="space-y-6">
             <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">訂單監控</h2><button onclick="exportXls()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">📊 導出 Excel</button></div>
-            
             <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div>
-                        <label class="block text-xs font-bold text-stone-400 mb-1">快速日期</label>
+                    <div><label class="block text-xs font-bold text-stone-400 mb-1">快速日期</label>
                         <select id="filter-date-preset" onchange="setQuickDate(this.value)" class="w-full border p-2 rounded-lg text-sm">
                             <option value="all">不限日期</option><option value="today">今日訂單</option><option value="week">本週訂單</option><option value="custom">自選日期</option>
                         </select>
@@ -65,7 +55,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div class="md:col-span-3"><input type="text" id="filter-search" class="w-full border p-2 rounded-lg text-sm" placeholder="搜尋姓名或電話..."></div>
                     <div class="flex gap-2">
-                        <button onclick="loadOrders()" class="flex-1 bg-p-green text-white py-2 rounded-lg font-bold shadow-md active:scale-95 transition">執行篩選</button>
+                        <button onclick="loadOrders()" class="flex-1 bg-p-green text-white py-2 rounded-lg font-bold shadow-md">執行篩選</button>
                         <button onclick="resetFilters()" class="px-4 border py-2 rounded-lg text-stone-400 text-xs">重置</button>
                     </div>
                 </div>
@@ -76,7 +66,7 @@
         <section id="sec-campaigns" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-p-green font-serif">活動代號管理</h2>
             <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-md">
-                <div class="flex gap-2 mb-6"><input id="new-campaign" class="border flex-1 p-3 rounded-xl" placeholder="例如：母親節、週年慶"><button onclick="addCampaign()" class="bg-p-green text-white px-6 rounded-xl font-bold shadow-md">新增</button></div>
+                <div class="flex gap-2 mb-6"><input id="new-campaign" class="border flex-1 p-3 rounded-xl" placeholder="例如：母親節"><button onclick="addCampaign()" class="bg-p-green text-white px-6 rounded-xl font-bold">新增</button></div>
                 <div id="campaign-list" class="space-y-2"></div>
             </div>
         </section>
@@ -84,7 +74,7 @@
         <section id="sec-categories" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-p-green font-serif">分類管理</h2>
             <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-2xl">
-                <div class="flex gap-2 mb-6"><input id="new-cat" class="border flex-1 p-3 rounded-xl bg-stone-50" placeholder="新分類名稱"><button onclick="addCat()" class="bg-p-green text-white px-6 rounded-xl font-bold">新增</button></div>
+                <div class="flex gap-2 mb-6"><input id="new-cat" class="border flex-1 p-3 rounded-xl" placeholder="新分類名稱"><button onclick="addCat()" class="bg-p-green text-white px-6 rounded-xl font-bold">新增</button></div>
                 <table class="w-full text-left text-sm border-collapse">
                     <thead class="bg-stone-50 text-stone-400 uppercase text-xs"><tr><th class="p-4">排序</th><th class="p-4">名稱</th><th class="p-4">狀態</th><th class="p-4">操作</th></tr></thead>
                     <tbody id="cat-list-table"></tbody>
@@ -94,26 +84,11 @@
 
         <section id="sec-menu" class="hidden space-y-6">
             <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">菜單編輯</h2><button onclick="openMenuModal(false)" class="bg-p-green text-white px-6 py-2 rounded-lg shadow-lg font-bold">+ 新增餐點</button></div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border flex flex-wrap gap-4 items-end">
-                <div class="w-full md:w-64"><label class="block text-xs font-bold text-stone-400 mb-1">搜尋菜名</label><input type="text" id="menu-search" oninput="loadMenu()" class="w-full border p-2 rounded-lg"></div>
-                <div class="w-full md:w-48"><label class="block text-xs font-bold text-stone-400 mb-1">分類篩選</label><select id="menu-cat-filter" onchange="loadMenu()" class="w-full border p-2 rounded-lg"><option value="all">所有分類</option></select></div>
-            </div>
             <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
         </section>
-
-        <section id="sec-flavors" class="hidden space-y-6">
-            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-p-green font-serif">口味定義</h2><button onclick="addFlvGroup()" class="bg-amber-600 text-white px-6 py-2 rounded-xl font-bold">+ 新增選項組</button></div>
-            <div id="flv-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </section>
-
-        <section id="sec-settings" class="hidden space-y-6">
-            <h2 class="text-2xl font-bold text-p-green font-serif">系統與 Logo 設定</h2>
-            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm max-w-xl">
-                <input type="file" id="logo-file" class="w-full border-2 border-dashed p-6 rounded-2xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
-                <div id="current-logo-preview" class="hidden mb-4 text-center"><img id="admin-logo-img" src="" class="max-h-20 mx-auto"></div>
-                <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg transition">確認更新 Logo</button>
-            </div>
-        </section>
+        
+        <section id="sec-flavors" class="hidden space-y-6"><div id="flv-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></section>
+        <section id="sec-settings" class="hidden space-y-6"><div class="bg-white p-8 rounded-[2.5rem] border shadow-sm max-w-xl"><input type="file" id="logo-file" class="w-full mb-4"><button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold">更新 Logo</button></div></section>
     </main>
 
     <div id="order-edit-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[300] backdrop-blur-sm">
@@ -125,67 +100,27 @@
                     <div id="edit-menu-grid" class="grid grid-cols-3 gap-3 overflow-y-auto pt-2 no-scrollbar"></div>
                 </div>
                 <div class="w-1/3 p-4 flex flex-col bg-white">
-                    <h4 class="font-bold mb-4 border-b pb-2 text-stone-400 text-xs tracking-widest uppercase">已點餐點 (點擊修改細項)</h4>
+                    <h4 class="font-bold mb-4 border-b pb-2 text-stone-400 text-xs tracking-widest uppercase">已點清單</h4>
                     <div id="edit-cart-list" class="flex-1 space-y-2 overflow-y-auto text-sm no-scrollbar"></div>
                     <div class="border-t pt-4 mt-4">
                         <div class="flex justify-between text-xl font-bold text-p-green mb-4"><span>總計</span><span id="edit-total-price">$0</span></div>
-                        <button onclick="saveOrderChange()" class="w-full bg-[#b89150] text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition">確認更新訂單</button>
+                        <button onclick="saveOrderChange()" class="w-full bg-[#b89150] text-white py-4 rounded-xl font-bold shadow-lg">確認更新訂單</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="set-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[200]">
-        <div class="bg-white w-full max-w-2xl rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
-            <h3 class="font-bold text-xl mb-4 text-p-green border-b pb-2 font-serif text-center" id="set-modal-title">套餐分組設定</h3>
-            <input type="hidden" id="edit-group-id">
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">分組名稱</label><input id="g-name" placeholder="輸入組名..." class="w-full border p-3 rounded-xl bg-stone-50"></div>
-                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">必選數量</label><input id="g-limit" type="number" value="1" class="w-full border p-3 rounded-xl bg-stone-50 text-center"></div>
-            </div>
-            <div class="bg-stone-50 p-4 rounded-2xl border flex-1 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center mb-3">
-                    <p class="text-xs font-bold text-stone-500 uppercase tracking-widest">快速選取內容</p>
-                    <div class="relative w-1/2"><input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="搜尋菜名..." class="w-full pl-8 pr-4 py-1.5 border rounded-full text-xs focus:ring-1 focus:ring-p-gold outline-none"></div>
-                </div>
-                <div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pr-2 custom-scrollbar"></div>
-                <div class="mt-4 pt-3 border-t flex justify-between items-center"><span id="picker-count" class="text-xs text-stone-400 font-bold">已勾選 0 項</span><button onclick="addSelectedToPicks()" class="bg-emerald-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-md">+ 加入暫存區</button></div>
-            </div>
-            <div class="mt-4">
-                <p class="text-[10px] font-bold text-stone-400 mb-2 uppercase">已選暫存：</p>
-                <div id="temp-pick-display" class="flex flex-wrap gap-2 mb-4 max-h-20 overflow-y-auto custom-scrollbar"></div>
-                <button onclick="saveFullSet()" id="btn-save-group" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold text-lg shadow-lg">確認儲存並更新分組</button>
-                <button onclick="resetSetForm()" id="btn-cancel-edit" class="hidden w-full mt-2 text-stone-400 text-xs font-bold">取消編輯模式</button>
-            </div>
-            <div class="border-t pt-4 mt-4 overflow-y-auto max-h-40 custom-scrollbar"><div id="saved-groups-view" class="space-y-2"></div></div>
-            <button onclick="closeSetModal()" class="mt-6 text-stone-400 w-full underline text-center font-bold text-sm">完成並關閉</button>
-        </div>
-    </div>
-
-    <div id="menu-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[100]">
-        <div class="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl overflow-y-auto max-h-[85vh]">
-            <h3 class="font-bold text-xl mb-6 text-p-green border-l-4 border-p-gold pl-3 font-serif">餐點基本資料</h3>
-            <input type="hidden" id="m-id">
-            <div class="space-y-4">
-                <input id="m-name" placeholder="名稱" class="w-full border p-3 rounded-xl bg-stone-50 font-bold text-lg">
-                <textarea id="m-desc" placeholder="餐點描述" class="w-full border p-3 rounded-xl bg-stone-50 h-20"></textarea>
-                <div class="grid grid-cols-2 gap-4"><input id="m-price" type="number" placeholder="價格" class="border p-3 rounded-xl bg-stone-50"><select id="m-cat" class="border p-3 rounded-xl bg-stone-50"></select></div>
-                <div class="bg-stone-100 p-4 rounded-2xl"><p class="text-[10px] font-bold text-stone-500 mb-2 uppercase">口味標籤勾選</p><div id="flv-checks" class="grid grid-cols-2 gap-2"></div></div>
-                <div class="p-2 border-2 border-dashed rounded-xl border-stone-200"><label class="block text-xs font-bold text-gray-400">相片</label><input type="file" id="m-img" class="w-full text-xs"></div>
-                <label class="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl cursor-pointer font-bold"><input type="checkbox" id="m-is-set" class="accent-p-green"> 這是「套餐組合」模式</label>
-            </div>
-            <div class="flex gap-3 mt-8"><button onclick="closeMenuModal()" class="flex-1 bg-gray-100 py-3 rounded-2xl font-bold text-stone-400">取消</button><button onclick="saveItem()" class="flex-1 bg-p-green text-white py-3 rounded-2xl font-bold shadow-md">儲存</button></div>
-        </div>
-    </div>
-
     <div id="edit-flavor-popup" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl flex flex-col max-h-[85vh]">
-            <h4 class="font-bold text-lg mb-4 text-p-green font-serif" id="edit-pop-title">口味選擇</h4>
+            <h4 class="font-bold text-lg mb-4 text-p-green font-serif" id="edit-pop-title">選配內容</h4>
             <div id="edit-pop-content" class="space-y-6 overflow-y-auto flex-1 pr-2 no-scrollbar"></div>
-            <div class="flex gap-3 mt-6"><button onclick="closeEditPop()" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-stone-400">取消</button><button onclick="confirmEditPop()" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold shadow-lg">確認更新</button></div>
+            <div class="flex gap-3 mt-6"><button onclick="closeEditPop()" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold">取消</button><button onclick="confirmEditPop()" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold shadow-lg">確認更新</button></div>
         </div>
     </div>
+
+    <div id="set-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[200]">...</div>
+    <div id="menu-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[100]">...</div>
 
     <script>
         const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
@@ -200,7 +135,6 @@
             document.querySelectorAll('nav button').forEach(b => b.classList.remove('sidebar-btn-active'));
             document.getElementById(`sec-${t}`).classList.remove('hidden');
             document.getElementById(`btn-${t}`).classList.add('sidebar-btn-active');
-            
             if(t==='orders') { await loadCampaignOptions(); loadOrders(); }
             if(t==='campaigns') loadCampaigns();
             if(t==='categories') loadCats();
@@ -209,7 +143,7 @@
             if(t==='settings') loadSettings();
         }
 
-        // --- 1. 訂單監控核心 ---
+        // --- 1. 訂單監控與擴充欄位 ---
         function setQuickDate(val) { document.getElementById('custom-date-box').classList.toggle('hidden', val !== 'custom'); }
         async function loadCampaignOptions() {
             const { data } = await _s.from('campaign_settings').select('*');
@@ -235,35 +169,28 @@
                 let bTime = o.booking_date ? new Date(o.booking_date).toLocaleString('sv').slice(0, 16).replace(' ', 'T') : "";
                 return `
                 <div class="bg-white p-6 rounded-3xl shadow-sm border transition ${o.status==='synced'?'order-card-completed':'border-emerald-200'}">
-                    <div class="flex justify-between font-bold text-xl mb-2"><span>${o.customer_name}</span><span class="text-p-gold font-serif">$${o.total_price}</span></div>
+                    <div class="flex justify-between font-bold text-xl mb-2"><span>${o.customer_name}</span><span class="text-p-gold">$${o.total_price}</span></div>
                     <div class="text-[10px] text-stone-400 mb-4 tracking-tighter">下單時間: ${new Date(o.created_at).toLocaleString()} | ${o.phone}</div>
                     
                     <div class="grid grid-cols-2 gap-2 mb-4 bg-stone-50 p-3 rounded-xl text-left">
-                        <div class="col-span-2"><label class="text-[9px] font-bold text-stone-400 uppercase">訂位時間與日期</label>
-                             <input type="datetime-local" value="${bTime}" onchange="updateOrderData('${o.id}', 'booking_date', this.value)" class="input-mini"></div>
-                        <div><label class="text-[9px] font-bold text-stone-400 uppercase">桌號</label><input type="text" value="${o.table_no || ''}" onchange="updateOrderData('${o.id}', 'table_no', this.value)" class="input-mini" placeholder="無"></div>
-                        <div><label class="text-[9px] font-bold text-stone-400 uppercase">活動標籤</label>
-                             <select onchange="updateOrderData('${o.id}', 'campaign_code', this.value)" class="input-mini">
-                                <option value="">無</option>${allCampaigns.map(c => `<option value="${c.code_name}" ${o.campaign_code===c.code_name?'selected':''}>${c.code_name}</option>`).join('')}
-                             </select>
-                        </div>
-                        <div class="col-span-2 flex gap-1 mt-1 text-center font-bold text-stone-300 uppercase" style="font-size:8px"><span>大人</span><span>小孩</span><span>幼兒</span></div>
+                        <div class="col-span-2"><label class="text-[9px] font-bold text-stone-400">訂位日期與時間</label><input type="datetime-local" value="${bTime}" onchange="updateOrderData('${o.id}', 'booking_date', this.value)" class="input-mini"></div>
+                        <div><label class="text-[9px] font-bold text-stone-400">桌號</label><input type="text" value="${o.table_no || ''}" onchange="updateOrderData('${o.id}', 'table_no', this.value)" class="input-mini"></div>
+                        <div><label class="text-[9px] font-bold text-stone-400">活動</label><select onchange="updateOrderData('${o.id}', 'campaign_code', this.value)" class="input-mini"><option value="">無</option>${allCampaigns.map(c => `<option value="${c.code_name}" ${o.campaign_code===c.code_name?'selected':''}>${c.code_name}</option>`).join('')}</select></div>
+                        <div class="col-span-2 flex gap-1 mt-1 text-center font-bold text-stone-300" style="font-size:8px"><span>大人</span><span>小孩</span><span>幼兒</span></div>
                         <div class="col-span-2 flex gap-1">
                             <input type="number" value="${o.adult_count || 0}" onchange="updateOrderData('${o.id}', 'adult_count', this.value)" class="input-mini text-center">
                             <input type="number" value="${o.kid_count || 0}" onchange="updateOrderData('${o.id}', 'kid_count', this.value)" class="input-mini text-center">
                             <input type="number" value="${o.toddler_count || 0}" onchange="updateOrderData('${o.id}', 'toddler_count', this.value)" class="input-mini text-center">
                         </div>
                     </div>
-
                     <div class="space-y-1 mb-6 text-sm text-stone-500 border-l-2 border-stone-200 pl-4 text-left">${o.order_content.map(i => `• ${i.name}`).join('<br>')}</div>
-                    
                     <div class="flex gap-2">
-                        <button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-xs hover:bg-stone-200 transition shadow-sm">修改細項</button>
-                        <button onclick="toggleSync('${o.id}', '${o.status}')" class="flex-[1.5] ${o.status==='synced'?'bg-slate-400':'bg-emerald-600'} text-white py-3 rounded-xl text-xs font-bold shadow-md transition">
+                        <button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-xs hover:bg-stone-200 transition">修改細項</button>
+                        <button onclick="toggleSync('${o.id}', '${o.status}')" class="flex-[1.5] ${o.status==='synced'?'bg-slate-400':'bg-emerald-600'} text-white py-3 rounded-xl text-xs font-bold shadow-md">
                             ${o.status==='synced'?'✓ 已完成':'未完成 (點選完成)'}
                         </button>
                     </div>
-                    <button onclick="delOrder('${o.id}')" class="w-full mt-3 py-2 text-red-300 text-[10px] font-bold border border-red-50 rounded-lg hover:bg-red-50 transition">永久刪除此訂單</button>
+                    <button onclick="delOrder('${o.id}')" class="w-full mt-3 py-2 text-red-300 text-[10px] font-bold border border-red-50 rounded-lg">永久刪除</button>
                 </div>`;
             }).join('');
         }
@@ -272,54 +199,83 @@
         async function toggleSync(id, cur) { await _s.from('orders').update({ status: cur==='synced'?'pending':'synced' }).eq('id', id); loadOrders(); }
         async function delOrder(id) { if(confirm('⚠️ 刪除後無法復原，確定刪除？')) { await _s.from('orders').delete().eq('id', id); loadOrders(); } }
 
-        // --- 2. 修改細項核心 (深度修復：確保載入原本餐點) ---
+        // --- 2. 修改細項核心 (深度修復：解析原本點餐內容並自動勾選) ---
         async function openEditOrder(id) {
             curEditOrder = window.ordersRef.find(o => o.id === id);
-            // 關鍵修復點：這行確保一打開視窗，原本點過的餐點就被填入右側
             editCart = JSON.parse(JSON.stringify(curEditOrder.order_content)); 
-            
             document.getElementById('order-edit-modal').classList.remove('hidden');
-            
-            // 確保有完整的菜單資料供比對
-            const { data: items } = await _s.from('menu_items').select('*, categories(name), item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))').eq('is_hidden', false);
+            const { data: items } = await _s.from('menu_items').select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))').eq('is_hidden', false);
             allMenuItems = items || [];
             const { data: cats } = await _s.from('categories').select('*').order('sort_order');
             allCategories = cats || [];
-            
-            document.getElementById('edit-cat-nav').innerHTML = (cats||[]).map(c => `<button onclick="renderEditMenu('${c.id}')" class="px-5 py-2 bg-white border border-stone-200 rounded-full text-xs font-bold hover:border-p-green transition mr-2">${c.name}</button>`).join('');
+            document.getElementById('edit-cat-nav').innerHTML = (cats||[]).map(c => `<button onclick="renderEditMenu('${c.id}')" class="px-5 py-2 bg-white border border-stone-200 rounded-full text-xs font-bold mr-2">${c.name}</button>`).join('');
             if(cats.length) renderEditMenu(cats[0].id); 
-            
-            // 強制渲染一次右側清單
             refreshEditCart();
         }
 
-        function renderEditMenu(cid) {
-            document.getElementById('edit-menu-grid').innerHTML = allMenuItems.filter(i => i.category_id === cid).map(i => `<div onclick="openEditPop('${i.id}')" class="bg-white p-3 rounded-xl border border-stone-100 cursor-pointer hover:border-p-gold shadow-sm flex flex-col justify-between text-left"><div class="font-bold text-xs line-clamp-2">${i.name}</div><div class="text-p-gold font-bold text-xs mt-2">$${i.price}</div></div>`).join('');
+        function refreshEditCart() {
+            document.getElementById('edit-cart-list').innerHTML = editCart.map((i, idx) => `
+                <div class="flex flex-col bg-stone-50 p-3 rounded-xl border border-stone-100 mb-2 relative text-left">
+                    <div onclick="openEditPop(null, ${idx})" class="cursor-pointer pr-8"><span class="font-bold text-xs text-p-green underline decoration-dotted decoration-p-gold">${i.name}</span><div class="text-[9px] text-stone-400 mt-1">$${i.price} (點選進行修改)</div></div>
+                    <button onclick="editCart.splice(${idx},1);refreshEditCart();" class="absolute top-2 right-2 text-red-300 px-2 font-bold text-lg">✕</button>
+                </div>`).join('');
+            document.getElementById('edit-total-price').innerText = `$${editCart.reduce((sum, item) => sum + Number(item.price), 0)}`;
         }
 
         function openEditPop(itemId, index = -1) {
             reEditIndex = index;
+            let prevSelectedNames = []; // 儲存原本選過的菜名
+            let prevSelectedFlvs = [];  // 儲存原本選過的口味
+
             if (index > -1) {
-                const baseName = editCart[index].name.split(" [")[0].split(" (")[0];
+                // 修改模式：解析字串 "套餐名 [口味] (菜名1、菜名2)"
+                const rawName = editCart[index].name;
+                const baseName = rawName.split(" [")[0].split(" (")[0];
                 curEditItem = allMenuItems.find(i => i.name === baseName);
-            } else { curEditItem = allMenuItems.find(i => i.id === itemId); }
+
+                // 解析括號內的菜名
+                const groupMatch = rawName.match(/\((.*?)\)/);
+                if (groupMatch) prevSelectedNames = groupMatch[1].split("、").map(n => n.split(" [")[0]); // 過濾子項的口味字串
+                
+                // 解析中括號內的口味
+                const flavorMatch = rawName.match(/\[(.*?)\]/);
+                if (flavorMatch) prevSelectedFlvs = flavorMatch[1].split("/");
+            } else { 
+                curEditItem = allMenuItems.find(i => i.id === itemId); 
+            }
+            
             if (!curEditItem) return;
             curEditPopSels = { flavors: {}, groups: {} };
             const container = document.getElementById('edit-pop-content'); container.innerHTML = "";
+
+            // 1. 渲染口味區 (自動勾選)
             if (curEditItem.item_flavor_relation?.length > 0) {
-                container.innerHTML += curEditItem.item_flavor_relation.map(r => `<div><p class="text-[10px] text-stone-400 mb-2 uppercase font-bold">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o => `<div onclick="setEditPopFlv(this, '${r.flavor_groups.id}', '${o.option_name}')" class="px-4 py-1.5 border border-stone-200 rounded-full text-xs cursor-pointer bg-stone-50 transition">${o.option_name}</div>`).join('')}</div></div>`).join('');
+                container.innerHTML += curEditItem.item_flavor_relation.map(r => `<div><p class="text-[10px] text-stone-400 mb-2 uppercase font-bold">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o => {
+                    const isMatched = prevSelectedFlvs.includes(o.option_name);
+                    if(isMatched) curEditPopSels.flavors[r.flavor_groups.id] = o.option_name;
+                    return `<div onclick="setEditPopFlv(this, '${r.flavor_groups.id}', '${o.option_name}')" class="px-4 py-1.5 border border-stone-200 rounded-full text-xs cursor-pointer transition ${isMatched?'flavor-selected':'bg-stone-50'}">${o.option_name}</div>`
+                }).join('')}</div></div>`).join('');
             }
+            // 2. 渲染套餐分組 (自動勾選原本選擇)
             if (curEditItem.is_set_menu && curEditItem.set_menu_groups) {
                 container.innerHTML += curEditItem.set_menu_groups.map(g => {
                     curEditPopSels.groups[g.id] = [];
-                    return `<div><p class="text-[10px] text-p-green font-bold mb-2 uppercase">${g.group_name} (必選 ${g.selection_limit})</p><div class="grid grid-cols-2 gap-2 text-left">${g.set_menu_contents.map(c => `<div onclick="setEditPopGroup(this, '${g.id}', '${c.menu_items.name}', ${g.selection_limit})" class="p-3 bg-stone-50 border rounded-xl text-[11px] cursor-pointer text-center font-bold">${c.menu_items.name}</div>`).join('')}</div></div>`;
+                    return `<div><p class="text-[10px] text-p-green font-bold mb-2 uppercase">${g.group_name} (必選 ${g.selection_limit})</p><div class="grid grid-cols-2 gap-2 text-left">${g.set_menu_contents.map(c => {
+                        const isMatched = prevSelectedNames.includes(c.menu_items.name);
+                        if(isMatched) curEditPopSels.groups[g.id].push({ name: c.menu_items.name });
+                        return `<div onclick="setEditPopGroup(this, '${g.id}', '${c.menu_items.name}', ${g.selection_limit})" class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold ${isMatched?'opt-selected':'bg-stone-50'}">${c.menu_items.name}</div>`
+                    }).join('')}</div></div>`;
                 }).join('');
             }
             document.getElementById('edit-pop-title').innerText = curEditItem.name;
             document.getElementById('edit-flavor-popup').classList.remove('hidden');
         }
 
-        function setEditPopFlv(el, gid, name) { Array.from(el.parentElement.children).forEach(c => c.classList.remove('flavor-selected')); el.classList.add('flavor-selected'); curEditPopSels.flavors[gid] = name; }
+        function renderEditMenu(cid) {
+            document.getElementById('edit-menu-grid').innerHTML = allMenuItems.filter(i => i.category_id === cid).map(i => `<div onclick="openEditPop('${i.id}')" class="bg-white p-3 rounded-xl border border-stone-100 cursor-pointer hover:border-p-gold shadow-sm flex flex-col justify-between text-left"><div class="font-bold text-xs line-clamp-2">${i.name}</div><div class="text-p-gold font-bold text-xs mt-2">$${i.price}</div></div>`).join('');
+        }
+
+        function setEditPopFlv(el, gid, name) { Array.from(el.parentElement.children).forEach(c => { c.classList.remove('flavor-selected'); c.classList.add('bg-stone-50'); }); el.classList.add('flavor-selected'); el.classList.remove('bg-stone-50'); curEditPopSels.flavors[gid] = name; }
         function setEditPopGroup(el, gid, name, limit) {
             const sibs = Array.from(el.parentElement.children);
             if(limit === 1) { sibs.forEach(s => s.classList.remove('opt-selected')); el.classList.add('opt-selected'); curEditPopSels.groups[gid] = [{ name }]; }
@@ -330,7 +286,6 @@
                 curEditPopSels.groups[gid] = s;
             }
         }
-
         function confirmEditPop() {
             const fn = Object.values(curEditPopSels.flavors).join('/');
             const gn = Object.values(curEditPopSels.groups).flat().map(x => x.name).join('、');
@@ -339,27 +294,18 @@
             else { editCart.push({ name: finalName, price: Number(curEditItem.price) }); }
             closeEditPop(); refreshEditCart();
         }
-
-        function refreshEditCart() {
-            const container = document.getElementById('edit-cart-list');
-            container.innerHTML = editCart.map((i, idx) => `
-                <div class="flex flex-col bg-stone-50 p-3 rounded-xl border border-stone-100 mb-2 relative text-left">
-                    <div onclick="openEditPop(null, ${idx})" class="cursor-pointer pr-8"><span class="font-bold text-xs text-p-green underline decoration-dotted decoration-p-gold">${i.name}</span><div class="text-[9px] text-stone-400 mt-1 font-serif tracking-tighter">$${i.price} (點選修改口味)</div></div>
-                    <button onclick="editCart.splice(${idx},1);refreshEditCart();" class="absolute top-2 right-2 text-red-300 text-lg px-2 font-bold">✕</button>
-                </div>`).join('');
-            document.getElementById('edit-total-price').innerText = `$${editCart.reduce((sum, item) => sum + Number(item.price), 0)}`;
-        }
-
+        function closeEditPop() { document.getElementById('edit-flavor-popup').classList.add('hidden'); }
+        function closeEditModal() { document.getElementById('order-edit-modal').classList.add('hidden'); }
         async function saveOrderChange() {
             const total = editCart.reduce((sum, item) => sum + Number(item.price), 0);
-            const { error } = await _s.from('orders').update({ order_content: editCart, total_price: total }).eq('id', curEditOrder.id);
-            if(!error) { alert("訂單內容已更新完成"); closeEditModal(); loadOrders(); }
+            await _s.from('orders').update({ order_content: editCart, total_price: total }).eq('id', curEditOrder.id);
+            alert("更新成功"); closeEditModal(); loadOrders();
         }
 
         // --- 3. 活動代號與分類管理 ---
         async function loadCampaigns() {
             const { data } = await _s.from('campaign_settings').select('*').order('created_at', {ascending: false});
-            document.getElementById('campaign-list').innerHTML = (data || []).map(c => `<div class="flex justify-between items-center p-3 bg-stone-50 rounded-xl border font-bold text-sm shadow-sm"><span class="text-p-green">${c.code_name}</span><button onclick="delCampaign(${c.id})" class="text-red-400 px-2">✕</button></div>`).join('');
+            document.getElementById('campaign-list').innerHTML = (data || []).map(c => `<div class="flex justify-between items-center p-3 bg-stone-50 rounded-xl border font-bold text-sm shadow-sm"><span class="text-p-green">${c.code_name}</span><button onclick="delCampaign(${c.id})" class="text-red-400 font-bold px-2">✕</button></div>`).join('');
         }
         async function addCampaign() { const n = document.getElementById('new-campaign').value.trim(); if(n) await _s.from('campaign_settings').insert([{ code_name: n }]); document.getElementById('new-campaign').value=""; loadCampaigns(); }
         async function delCampaign(id) { if(confirm('確定刪除活動代號？')) { await _s.from('campaign_settings').delete().eq('id', id); loadCampaigns(); } }
@@ -368,10 +314,11 @@
             const { data } = await _s.from('categories').select('*').order('sort_order');
             allCategories = data || [];
             document.getElementById('cat-list-table').innerHTML = data.map(c => `
-                <tr class="border-b hover:bg-stone-50 transition"><td class="p-4 text-center"><input type="number" value="${c.sort_order || 0}" onchange="updateCatSort('${c.id}', this.value)" class="w-12 border rounded text-xs p-1"></td>
+                <tr class="border-b hover:bg-stone-50 transition text-sm">
+                <td class="p-4 text-center"><input type="number" value="${c.sort_order || 0}" onchange="updateCatSort('${c.id}', this.value)" class="w-12 border rounded text-xs p-1"></td>
                 <td class="p-4 font-bold text-p-green">${c.name}</td>
                 <td class="p-4"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" ${c.is_visible?'checked':''} onchange="updateCatVis('${c.id}', this.checked)"><div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-p-green after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
-                <td class="p-4"><button onclick="delCat('${c.id}')" class="text-red-400 text-xs font-bold">刪除</button></td></tr>`).join('');
+                <td class="p-4"><button onclick="delCat('${c.id}')" class="text-red-400 font-bold">刪除</button></td></tr>`).join('');
             document.getElementById('m-cat').innerHTML = (data||[]).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             document.getElementById('menu-cat-filter').innerHTML = '<option value="all">所有分類</option>' + (data||[]).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
@@ -379,15 +326,15 @@
         async function updateCatSort(id, v) { await _s.from('categories').update({ sort_order: parseInt(v) }).eq('id', id); loadCats(); }
         async function addCat() { const n = document.getElementById('new-cat').value.trim(); if(n) await _s.from('categories').insert([{ name: n, sort_order: 99, is_visible: true }]); document.getElementById('new-cat').value=""; loadCats(); }
 
-        // --- 4. 菜單管理 ---
         async function loadMenu() {
             const search = document.getElementById('menu-search').value.toLowerCase();
             const catF = document.getElementById('menu-cat-filter').value;
             const { data } = await _s.from('menu_items').select('*, categories(name)').order('created_at', {ascending:false});
             const filtered = (data || []).filter(i => i.name.toLowerCase().includes(search) && (catF === 'all' || i.category_id === catF));
             document.getElementById('menu-grid').innerHTML = filtered.map(i => `
-                <div class="bg-white rounded-3xl border p-4 shadow-sm flex flex-col h-full"><div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden"><img src="${i.image_url || ''}" class="img-contain max-h-full"></div><div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="flex gap-2 mt-auto pt-4"><button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-xs font-bold hover:bg-stone-200">編輯</button>${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold">⚙️ 套餐</button>`:''}<button onclick="delItem('${i.id}')" class="px-2 text-red-200 font-bold">✕</button></div></div>`).join('');
+                <div class="bg-white rounded-3xl border p-4 shadow-sm flex flex-col h-full"><div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden"><img src="${i.image_url || ''}" class="img-contain max-h-full"></div><div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="flex gap-2 mt-auto pt-4"><button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-xs font-bold hover:bg-stone-200">編輯</button>${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold">⚙️ 套餐</button>`:''}<button onclick="delItem('${i.id}')" class="px-2 text-red-200 font-bold text-lg">✕</button></div></div>`).join('');
         }
+        
         async function openMenuModal(isEdit) { 
             document.getElementById('menu-modal').classList.remove('hidden');
             if(!isEdit) { document.getElementById('m-id').value = ""; document.getElementById('m-name').value = ""; document.getElementById('m-price').value = ""; document.getElementById('m-desc').value = ""; document.getElementById('m-is-set').checked = false; }
@@ -415,12 +362,12 @@
         }
         async function delItem(id) { if(confirm('確定刪除餐點？')) { await _s.from('menu_items').delete().eq('id', id); loadMenu(); } }
 
-        // --- 5. 套餐與分組編輯管理 ---
+        // --- 5. 套餐管理 (保留更新功能) ---
         async function openSetModal(id) { curItem = id; resetSetForm(); document.getElementById('set-modal').classList.remove('hidden'); const { data } = await _s.from('menu_items').select('*, categories(name)').eq('is_set_menu', false).order('name'); window.allPickerItems = data || []; renderPickerList(window.allPickerItems); loadSavedSets(); }
         function renderPickerList(items) {
             const container = document.getElementById('item-picker-list');
             const grouped = items.reduce((acc, i) => { const cat = i.categories?.name || '未分類'; if (!acc[cat]) acc[cat] = []; acc[cat].push(i); return acc; }, {});
-            container.innerHTML = Object.keys(grouped).map(cat => `<div class="col-span-2 mt-2 font-black text-[9px] text-stone-300 border-b uppercase tracking-widest">${cat}</div>` + grouped[cat].map(i => `<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}', '${i.name}')" class="picker-item flex justify-between p-3 border rounded-xl bg-white cursor-pointer hover:shadow-sm text-xs font-bold text-slate-600"><span>${i.name}</span><div class="check-mark hidden">✔</div></div>`).join('')).join('');
+            container.innerHTML = Object.keys(grouped).map(cat => `<div class="col-span-2 mt-2 font-black text-[9px] text-stone-300 border-b uppercase tracking-widest">${cat}</div>` + grouped[cat].map(i => `<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}', '${i.name}')" class="picker-item flex justify-between p-3 border rounded-xl bg-white cursor-pointer hover:shadow-sm text-xs font-bold"><span>${i.name}</span><div class="check-mark hidden">✔</div></div>`).join('')).join('');
         }
         function filterPickerItems() { const kw = document.getElementById('set-item-search').value.toLowerCase(); renderPickerList(window.allPickerItems.filter(i => i.name.toLowerCase().includes(kw))); pickerSelectedItems.forEach(s => { const el = document.getElementById(`picker-${s.id}`); if(el) el.classList.add('active'); }); }
         function togglePickerSelect(id, name) {
@@ -463,15 +410,11 @@
         }
         async function loadSavedSets() { 
             const { data } = await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('parent_set_id', curItem); 
-            document.getElementById('saved-groups-view').innerHTML = (data || []).map(g => `<div class="p-3 bg-stone-50 border rounded-xl flex justify-between items-center shadow-inner group"><div class="flex-1 text-left"><b class="text-xs text-p-green">${g.group_name} (限 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 line-clamp-1">${g.set_menu_contents.map(c => c.menu_items?.name).join('、')}</p></div><div class="flex gap-2"><button onclick="editSetGroup('${g.id}')" class="text-p-gold text-xs border rounded px-1 font-bold shadow-sm">編輯</button><button onclick="delSetGroup('${g.id}')" class="text-red-400 text-xs border rounded px-1 font-bold shadow-sm">刪除</button></div></div>`).join(''); 
+            document.getElementById('saved-groups-view').innerHTML = (data || []).map(g => `<div class="p-3 bg-stone-50 border rounded-xl flex justify-between items-center shadow-inner group"><div class="flex-1 text-left text-xs"><b class="text-p-green">${g.group_name} (限 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 line-clamp-1">${g.set_menu_contents.map(c => c.menu_items?.name).join('、')}</p></div><div class="flex gap-2"><button onclick="editSetGroup('${g.id}')" class="text-p-gold font-bold px-1">編輯</button><button onclick="delSetGroup('${g.id}')" class="text-red-400 font-bold px-1">刪除</button></div></div>`).join(''); 
         }
         async function delSetGroup(id) { if(confirm('確定刪除此分組？')) { await _s.from('set_menu_groups').delete().eq('id', id); loadSavedSets(); } }
 
-        // --- 6. 口味定義與系統設定 ---
-        async function loadFlvs() { const { data } = await _s.from('flavor_groups').select('*, flavor_options(*)'); document.getElementById('flv-grid').innerHTML = (data || []).map(g => `<div class="bg-white p-5 rounded-2xl border flex justify-between shadow-sm"><div><b>🌶️ ${g.name}</b><p class="text-xs text-stone-400">${g.flavor_options.map(o=>o.option_name).join(', ')}</p></div><button onclick="delFlv('${g.id}')" class="text-red-400 font-bold px-2 text-xl">✕</button></div>`).join(''); }
-        async function addFlvGroup() { const n = prompt("組名"); const o = prompt("選項(逗號隔開)"); if(n && o) { const { data: g } = await _s.from('flavor_groups').insert([{ name: n }]).select(); if(g) await _s.from('flavor_options').insert(o.split(',').map(nm => ({ group_id: g[0].id, option_name: nm.trim() }))); loadFlvs(); } }
-        async function delFlv(id) { if(confirm('確定刪除口味組？')) { await _s.from('flavor_groups').delete().eq('id', id); loadFlvs(); } }
-
+        // --- 6. 系統與輔助 ---
         async function loadSettings() { const { data } = await _s.from('store_settings').select('*').eq('id', 1).single(); if(data?.logo_url) { document.getElementById('current-logo-preview').classList.remove('hidden'); document.getElementById('admin-logo-img').src = `${data.logo_url}?t=${Date.now()}`; } }
         async function uploadLogo() {
             const f = document.getElementById('logo-file').files[0]; if(!f) return alert("請選檔案");
@@ -482,13 +425,14 @@
             await _s.from('store_settings').update({ logo_url: data.publicUrl }).eq('id', 1);
             alert("高清 Logo 更新成功！"); loadSettings();
         }
-
-        // --- 輔助 UI 函式 ---
         function closeMenuModal() { document.getElementById('menu-modal').classList.add('hidden'); }
         function closeSetModal() { document.getElementById('set-modal').classList.add('hidden'); }
         function closeEditModal() { document.getElementById('order-edit-modal').classList.add('hidden'); }
         function closeEditPop() { document.getElementById('edit-flavor-popup').classList.add('hidden'); }
         function resetFilters() { document.getElementById('filter-search').value=''; document.getElementById('filter-date-preset').value='all'; document.getElementById('filter-status').value='all'; document.getElementById('filter-campaign').value='all'; loadOrders(); }
+        async function loadFlvs() { const { data } = await _s.from('flavor_groups').select('*, flavor_options(*)'); document.getElementById('flv-grid').innerHTML = (data || []).map(g => `<div class="bg-white p-5 rounded-2xl border flex justify-between shadow-sm"><div><b>🌶️ ${g.name}</b><p class="text-xs text-stone-400">${g.flavor_options.map(o=>o.option_name).join(', ')}</p></div><button onclick="delFlv('${g.id}')" class="text-red-400 font-bold px-2 text-xl">✕</button></div>`).join(''); }
+        async function addFlvGroup() { const n = prompt("組名"); const o = prompt("選項(逗號隔開)"); if(n && o) { const { data: g } = await _s.from('flavor_groups').insert([{ name: n }]).select(); if(g) await _s.from('flavor_options').insert(o.split(',').map(nm => ({ group_id: g[0].id, option_name: nm.trim() }))); loadFlvs(); } }
+        async function delFlv(id) { if(confirm('刪除？')) { await _s.from('flavor_groups').delete().eq('id', id); loadFlvs(); } }
         function exportXls() { const exp = window.ordersRef.map(o => ({ '姓名': o.customer_name, '電話': o.phone, '總額': o.total_price, '桌號': o.table_no, '活動': o.campaign_code, '訂位時間': o.booking_date })); const ws = XLSX.utils.json_to_sheet(exp); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "報表"); XLSX.writeFile(wb, "真珠訂單報表.xlsx"); }
 
         // 初始化載入
