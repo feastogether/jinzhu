@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>真珠 | 活動網址配置系統</title>
+    <title>真珠 | 活動網址多選配置</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -10,35 +10,35 @@
         :root { --p-green: #004d40; --p-gold: #b89150; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; text-align: left; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
-        /* 確保按鈕文字清晰 */
         .btn-main { background-color: var(--p-green); color: #ffffff !important; }
-        .btn-main:hover { background-color: #003d33; }
+        .cat-checkbox:checked + label { border-color: var(--p-gold); background-color: #fffbeb; color: var(--p-green); }
     </style>
 </head>
 <body class="p-6 md:p-12">
     <div class="max-w-3xl mx-auto">
-        <h2 class="text-3xl font-bold text-p-green font-serif mb-8 border-b pb-4">活動專屬網址配置</h2>
+        <h2 class="text-3xl font-bold text-p-green font-serif mb-8 border-b pb-4">活動專屬網址配置 (支援多選分類)</h2>
         
-        <div class="bg-white p-8 rounded-[2rem] shadow-sm border space-y-6">
+        <div class="bg-white p-8 rounded-[2rem] shadow-sm border space-y-8">
             <div>
-                <label class="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">1. 選擇活動代號</label>
+                <label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">1. 選擇活動代號</label>
                 <select id="sel-campaign" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:ring-2 focus:ring-p-gold"></select>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">2. 綁定隱藏分類</label>
-                <select id="sel-category" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:ring-2 focus:ring-p-gold"></select>
-                <p class="text-[10px] text-stone-400 mt-2">* 請確認該分類在總後台已設為「隱藏」</p>
+                <label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">2. 勾選欲顯示的分類 (可多選)</label>
+                <div id="cat-checkbox-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    </div>
+                <p class="text-[10px] text-stone-400 mt-3">* 僅會列出原本後台設為「隱藏」的分類</p>
             </div>
 
             <button onclick="bindEvent()" class="w-full btn-main py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition text-lg">
-                確認綁定並產生連結
+                確認綁定並產生活動連結
             </button>
         </div>
 
         <div class="mt-12 text-left">
-            <h3 class="font-bold text-stone-400 text-sm mb-4 uppercase tracking-widest">目前已啟用的活動連結</h3>
-            <div id="active-list" class="space-y-3"></div>
+            <h3 class="font-bold text-stone-400 text-sm mb-4 uppercase tracking-widest">目前運作中的活動</h3>
+            <div id="active-list" class="space-y-4"></div>
         </div>
     </div>
 
@@ -48,27 +48,45 @@
         const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function init() {
+            // 載入活動代號
             const { data: camps } = await _s.from('campaign_settings').select('*');
             document.getElementById('sel-campaign').innerHTML = camps.map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join('');
 
+            // 載入隱藏分類
             const { data: cats } = await _s.from('categories').select('*').eq('is_visible', false);
-            document.getElementById('sel-category').innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            const catList = document.getElementById('cat-checkbox-list');
+            catList.innerHTML = (cats || []).map(c => `
+                <div class="relative">
+                    <input type="checkbox" id="cat-${c.id}" value="${c.id}" class="cat-checkbox hidden">
+                    <label for="cat-${c.id}" class="block border-2 p-3 rounded-xl cursor-pointer text-sm font-bold text-stone-500 transition hover:bg-stone-50">
+                        ${c.name}
+                    </label>
+                </div>
+            `).join('');
 
             loadActiveEvents();
         }
 
         async function loadActiveEvents() {
             const { data } = await _s.from('categories').select('*').not('campaign_code', 'is', null);
+            
+            // 將資料按活動代號分組
+            const groups = data.reduce((acc, cur) => {
+                if (!acc[cur.campaign_code]) acc[cur.campaign_code] = [];
+                acc[cur.campaign_code].push(cur.name);
+                return acc;
+            }, {});
+
             const list = document.getElementById('active-list');
-            list.innerHTML = (data || []).map(c => `
-                <div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm">
+            list.innerHTML = Object.keys(groups).map(code => `
+                <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm">
                     <div class="text-left">
-                        <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold mr-2 uppercase">${c.campaign_code}</span>
-                        <span class="font-bold text-p-green">${c.name}</span>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md font-bold mr-2 uppercase">${code}</span>
+                        <p class="text-xs text-stone-400 mt-2 font-medium">包含分類：${groups[code].join('、')}</p>
                     </div>
-                    <div class="flex gap-3">
-                        <button onclick="copyLink('${c.campaign_code}')" class="text-blue-600 text-sm font-bold underline">複製連結</button>
-                        <button onclick="unbind('${c.id}')" class="text-red-300 text-sm font-bold">解除</button>
+                    <div class="flex gap-4">
+                        <button onclick="copyLink('${code}')" class="text-blue-600 text-sm font-bold underline">複製連結</button>
+                        <button onclick="unbindCampaign('${code}')" class="text-red-300 text-sm font-bold">解除全部</button>
                     </div>
                 </div>
             `).join('');
@@ -76,30 +94,35 @@
 
         async function bindEvent() {
             const camp = document.getElementById('sel-campaign').value;
-            const catId = document.getElementById('sel-category').value;
-            if(!camp || !catId) return alert("請填寫完整資訊");
+            const checkedCats = Array.from(document.querySelectorAll('.cat-checkbox:checked')).map(el => el.value);
+            
+            if(!camp || checkedCats.length === 0) return alert("請選擇活動代號並至少勾選一個分類");
 
-            const { error } = await _s.from('categories').update({ campaign_code: camp }).eq('id', catId);
+            // 先清除該活動代號原本綁定的所有分類（避免重複或殘留）
+            await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', camp);
+
+            // 批量更新被勾選的分類
+            const { error } = await _s.from('categories').update({ campaign_code: camp }).in('id', checkedCats);
+            
             if(!error) {
-                loadActiveEvents();
                 alert("綁定成功！");
+                loadActiveEvents();
+                // 清除勾選狀態
+                document.querySelectorAll('.cat-checkbox').forEach(el => el.checked = false);
             }
         }
 
-        async function unbind(id) {
-            if(confirm('確定解除綁定？該網址將失效。')) {
-                await _s.from('categories').update({ campaign_code: null }).eq('id', id);
+        async function unbindCampaign(code) {
+            if(confirm(`確定解除 ${code} 的所有分類綁定嗎？`)) {
+                await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', code);
                 loadActiveEvents();
             }
         }
 
-        // 核心修正：精準處理 GitHub 子目錄網址拼接
         function copyLink(code) {
-            // 獲取目前完整網址，並切除最後的檔名部分
             const currentUrl = window.location.href;
             const lastSlashIndex = currentUrl.lastIndexOf('/');
-            const basePath = currentUrl.substring(0, lastSlashIndex + 1); // 確保保留最後一個斜線
-            
+            const basePath = currentUrl.substring(0, lastSlashIndex + 1);
             const finalUrl = `${basePath}event.html?code=${encodeURIComponent(code)}`;
             
             const tempInput = document.createElement("input");
@@ -108,7 +131,6 @@
             tempInput.select();
             document.execCommand("copy");
             document.body.removeChild(tempInput);
-            
             alert("網址已複製！\n" + finalUrl);
         }
 
