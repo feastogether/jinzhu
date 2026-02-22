@@ -2,29 +2,30 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>真珠 | 活動網址配置</title>
+    <title>真珠 | 活動網址配置系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --p-green: #004d40; --p-gold: #b89150; }
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; text-align: left; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
     </style>
 </head>
-<body class="p-6 md:p-12 text-slate-700">
+<body class="p-6 md:p-12">
     <div class="max-w-3xl mx-auto">
-        <h2 class="text-3xl font-bold text-p-green font-serif mb-8">活動專屬網址配置</h2>
+        <h2 class="text-3xl font-bold text-p-green font-serif mb-8 border-b pb-4">活動專屬網址配置</h2>
         
         <div class="bg-white p-8 rounded-[2rem] shadow-sm border space-y-6">
             <div>
-                <label class="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">1. 選擇活動代號 (從現有資料庫讀取)</label>
+                <label class="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">1. 選擇活動代號 (來自資料庫)</label>
                 <select id="sel-campaign" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:ring-2 focus:ring-p-gold"></select>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">2. 綁定隱藏分類 (點餐頁將只顯示此分類內容)</label>
+                <label class="block text-xs font-bold text-stone-400 mb-2 uppercase tracking-widest">2. 綁定隱藏分類 (點餐頁將只顯示此分類)</label>
                 <select id="sel-category" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:ring-2 focus:ring-p-gold"></select>
+                <p class="text-[10px] text-stone-400 mt-2">* 請先在總後台建立分類並設為「隱藏」</p>
             </div>
 
             <button onclick="bindEvent()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition">確認綁定並產生連結</button>
@@ -42,11 +43,9 @@
         const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         async function init() {
-            // 讀取活動代號
             const { data: camps } = await _s.from('campaign_settings').select('*');
             document.getElementById('sel-campaign').innerHTML = camps.map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join('');
 
-            // 讀取隱藏分類
             const { data: cats } = await _s.from('categories').select('*').eq('is_visible', false);
             document.getElementById('sel-category').innerHTML = cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
@@ -58,12 +57,12 @@
             const list = document.getElementById('active-list');
             list.innerHTML = data.map(c => `
                 <div class="bg-white p-4 rounded-2xl border flex justify-between items-center shadow-sm">
-                    <div>
+                    <div class="text-left">
                         <span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold mr-2 uppercase">${c.campaign_code}</span>
                         <span class="font-bold text-p-green">${c.name}</span>
                     </div>
                     <div class="flex gap-3">
-                        <button onclick="copyLink('${c.campaign_code}')" class="text-blue-600 text-sm font-bold underline">複製連結</button>
+                        <button onclick="copyLink('${c.campaign_code}')" class="text-blue-600 text-sm font-bold underline">複製網址</button>
                         <button onclick="unbind('${c.id}')" class="text-red-300 text-sm font-bold">解除</button>
                     </div>
                 </div>
@@ -73,7 +72,7 @@
         async function bindEvent() {
             const camp = document.getElementById('sel-campaign').value;
             const catId = document.getElementById('sel-category').value;
-            if(!camp || !catId) return alert("資料不足");
+            if(!camp || !catId) return alert("請選擇活動代號與分類");
 
             await _s.from('categories').update({ campaign_code: camp }).eq('id', catId);
             loadActiveEvents();
@@ -81,14 +80,25 @@
         }
 
         async function unbind(id) {
-            await _s.from('categories').update({ campaign_code: null }).eq('id', id);
-            loadActiveEvents();
+            if(confirm('確定解除綁定？該網址將失效。')) {
+                await _s.from('categories').update({ campaign_code: null }).eq('id', id);
+                loadActiveEvents();
+            }
         }
 
         function copyLink(code) {
-            const url = `${window.location.origin}/event.html?code=${encodeURIComponent(code)}`;
-            navigator.clipboard.writeText(url);
-            alert("網址已複製！");
+            // 自動偵測路徑，解決 GitHub Pages 子目錄問題
+            const baseUrl = window.location.href.split('event_admin.html')[0];
+            const url = `${baseUrl}event.html?code=${encodeURIComponent(code)}`;
+            
+            const tempInput = document.createElement("input");
+            tempInput.value = url;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempInput);
+            
+            alert("網址已複製！\n" + url);
         }
 
         init();
