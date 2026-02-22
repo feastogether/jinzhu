@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>真珠 | 營運報表與備料統計</title>
+    <title>真珠 | 旗艦級數據報表中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -11,75 +11,92 @@
         :root { --p-green: #004d40; --p-gold: #b89150; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
-        .print-only { display: none; }
+        
+        /* 捲軸美化 */
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
         @media print {
             .no-print { display: none !important; }
-            .print-only { display: block; }
             body { background: white; padding: 0; }
-            .print-card { border: 1px solid #eee; box-shadow: none !important; margin-bottom: 20px; page-break-inside: avoid; }
-            .page-break { page-break-before: always; }
+            .print-container { width: 100% !important; max-width: none !important; }
+            .print-card { border: 1px solid #ddd !important; box-shadow: none !important; break-inside: avoid; }
         }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-4 md:p-8 text-slate-700">
 
-    <div class="max-w-7xl mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-8 no-print gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-p-green font-serif">營運報表統計</h1>
-                <p class="text-stone-400 text-sm mt-1 uppercase tracking-widest">Operation Report & Analytics</p>
+    <div class="max-w-[1400px] mx-auto print-container">
+        <div class="flex justify-between items-end mb-8 border-b-2 border-p-green pb-4">
+            <div class="text-left">
+                <h1 class="text-4xl font-black text-p-green font-serif tracking-tighter">營運報表中心</h1>
+                <p id="report-period-display" class="text-stone-400 text-sm mt-1 font-bold">載入中...</p>
             </div>
-            <div class="flex gap-3">
-                <button onclick="window.print()" class="bg-white border-2 border-p-green text-p-green px-6 py-2 rounded-xl font-bold hover:bg-emerald-50 transition">🖨️ 列印 PDF</button>
-                <button onclick="exportComprehensiveExcel()" class="bg-p-green text-white px-6 py-2 rounded-xl font-bold shadow-lg hover:opacity-90 transition">📊 導出統整 Excel</button>
+            <div class="flex gap-3 no-print">
+                <button onclick="window.print()" class="bg-white border border-stone-200 px-5 py-2.5 rounded-xl font-bold hover:bg-stone-50 transition shadow-sm">🖨️ 列印報表</button>
+                <button onclick="exportFullData()" class="bg-p-green text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:opacity-90 transition">📊 匯出總統計 Excel</button>
             </div>
         </div>
 
-        <div class="bg-white p-6 rounded-[2rem] shadow-sm border mb-8 no-print text-left">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-2 uppercase">查詢日期</label>
-                    <input type="date" id="report-date" onchange="fetchData()" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:border-p-gold">
+        <div class="bg-white p-8 rounded-[2rem] shadow-xl border mb-8 no-print text-left">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="md:col-span-2 space-y-4">
+                    <label class="block text-xs font-black text-stone-400 uppercase tracking-widest">日期篩選維度 Date Range</label>
+                    <div class="flex gap-2">
+                        <button onclick="setDateRange('today')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-p-gold hover:text-white transition">今日</button>
+                        <button onclick="setDateRange('month')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-p-gold hover:text-white transition">當月</button>
+                        <button onclick="toggleRangeInput()" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200 transition">自訂區間</button>
+                    </div>
+                    <div id="range-inputs" class="flex items-center gap-2 mt-2">
+                        <input type="date" id="start-date" class="flex-1 border p-2.5 rounded-xl text-sm outline-none focus:border-p-gold">
+                        <span class="text-stone-300">~</span>
+                        <input type="date" id="end-date" class="flex-1 border p-2.5 rounded-xl text-sm outline-none focus:border-p-gold">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-stone-400 mb-2 uppercase">活動代號過濾</label>
-                    <select id="report-campaign" onchange="fetchData()" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:border-p-gold">
-                        <option value="all">所有來源 (含一般與活動)</option>
+
+                <div class="space-y-4">
+                    <label class="block text-xs font-black text-stone-400 uppercase tracking-widest">指定活動代號 Campaign</label>
+                    <select id="report-campaign" class="w-full border p-2.5 rounded-xl bg-stone-50 outline-none focus:border-p-gold text-sm font-bold">
+                        <option value="all">顯示全部 (含一般與所有活動)</option>
+                        <option value="none">僅限一般訂單 (無活動代號)</option>
                     </select>
                 </div>
+
                 <div class="flex items-end">
-                    <button onclick="fetchData()" class="w-full bg-stone-800 text-white py-3 rounded-xl font-bold hover:bg-black transition">刷新數據資料</button>
+                    <button onclick="fetchData()" class="w-full bg-stone-800 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-black transition active:scale-95">生成營運分析</button>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1 space-y-6">
-                <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden print-card">
-                    <div class="bg-stone-50 p-5 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-p-green font-serif italic">備料總計 (廚房用)</h3>
-                        <span id="total-items-count" class="bg-p-gold text-white text-[10px] px-2 py-1 rounded-md font-bold">0 品項</span>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border overflow-hidden print-card">
+                    <div class="bg-stone-800 p-6 flex justify-between items-center text-white">
+                        <h3 class="font-bold font-serif tracking-widest">餐點備料總量</h3>
+                        <div id="total-dishes" class="text-xs bg-p-gold px-3 py-1 rounded-full font-bold">0 品項</div>
                     </div>
-                    <div class="p-2 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div class="p-2 overflow-y-auto max-h-[80vh] custom-scrollbar">
                         <table class="w-full text-left">
-                            <tbody id="summary-body">
+                            <thead class="text-[10px] text-stone-400 uppercase border-b">
+                                <tr>
+                                    <th class="p-4">菜色名稱</th>
+                                    <th class="p-4 text-right">總數</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-body" class="divide-y">
                                 </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <div class="lg:col-span-2 space-y-6">
-                <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden print-card">
-                    <div class="bg-p-green p-5 border-b flex justify-between items-center">
-                        <h3 class="font-bold text-white font-serif italic">訂單明細 (核對用)</h3>
-                        <span id="order-count-tag" class="text-white/60 text-xs font-bold">共 0 筆訂單</span>
+            <div class="lg:col-span-8 space-y-6">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border overflow-hidden print-card">
+                    <div class="bg-p-green p-6 flex justify-between items-center text-white">
+                        <h3 class="font-bold font-serif tracking-widest">逐單明細流水帳</h3>
+                        <div id="total-orders" class="text-xs bg-emerald-900 px-3 py-1 rounded-full font-bold text-emerald-100">0 筆</div>
                     </div>
-                    <div id="detail-container" class="p-6 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                    <div id="detail-container" class="p-6 space-y-8 overflow-y-auto max-h-[80vh] custom-scrollbar">
                         </div>
                 </div>
             </div>
@@ -91,124 +108,165 @@
         const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
         const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // 初始化日期為今日
-        document.getElementById('report-date').valueAsDate = new Date();
-
+        // 頁面初始化
         async function init() {
+            setDateRange('today');
+            
             // 載入活動代號清單
             const { data } = await _s.from('campaign_settings').select('*');
             if(data) {
-                document.getElementById('report-campaign').innerHTML += data.map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join('');
+                const select = document.getElementById('report-campaign');
+                data.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.code_name;
+                    opt.innerText = c.code_name;
+                    select.appendChild(opt);
+                });
             }
             fetchData();
         }
 
+        // 日期切換邏輯
+        function setDateRange(type) {
+            const startInput = document.getElementById('start-date');
+            const endInput = document.getElementById('end-date');
+            const now = new Date();
+
+            if(type === 'today') {
+                const todayStr = now.toISOString().split('T')[0];
+                startInput.value = todayStr;
+                endInput.value = todayStr;
+            } else if(type === 'month') {
+                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+                startInput.value = firstDay;
+                endInput.value = lastDay;
+            }
+        }
+
+        // 抓取數據
         async function fetchData() {
-            const date = document.getElementById('report-date').value;
+            const start = document.getElementById('start-date').value;
+            const end = document.getElementById('end-date').value;
             const campaign = document.getElementById('report-campaign').value;
+
+            document.getElementById('report-period-display').innerText = `期間：${start} 至 ${end}`;
 
             let query = _s.from('orders').select('*').order('created_at', {ascending: true});
             
-            // 日期篩選
-            if(date) {
-                query = query.gte('created_at', `${date}T00:00:00Z`).lte('created_at', `${date}T23:59:59Z`);
+            // 時間區間過濾
+            if(start && end) {
+                query = query.gte('created_at', `${start}T00:00:00Z`).lte('created_at', `${end}T23:59:59Z`);
             }
 
-            // 活動篩選
-            if(campaign !== 'all') {
+            // 活動過濾
+            if(campaign === 'none') {
+                query = query.is('campaign_code', null);
+            } else if(campaign !== 'all') {
                 query = query.eq('campaign_code', campaign);
             }
 
             const { data: orders, error } = await query;
-            if(error) return alert("讀取失敗");
+            if(error) return alert("載入失敗: " + error.message);
 
-            processReports(orders || []);
+            renderReports(orders || []);
         }
 
-        function processReports(orders) {
-            const summary = {};
+        // 數據處理與渲染
+        function renderReports(orders) {
+            const dishSummary = {};
             let orderHtml = "";
 
-            orders.forEach((o, index) => {
-                // 1. 處理彙總邏輯
+            orders.forEach((o, idx) => {
+                // 1. 統計每道菜數量
                 o.order_content.forEach(item => {
-                    // 使用正則表達式去除數量 x2 等干擾，抓取純品名
-                    const cleanName = item.name.replace(/ x\d+/g, "");
+                    // 清理名稱：移除數量標籤如 " x2" 抓取真實品名
+                    const cleanName = item.name.replace(/ x\d+/g, "").trim();
                     const qtyMatch = item.name.match(/ x(\d+)/);
                     const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1;
 
-                    if (!summary[cleanName]) summary[cleanName] = 0;
-                    summary[cleanName] += qty;
+                    if(!dishSummary[cleanName]) dishSummary[cleanName] = 0;
+                    dishSummary[cleanName] += qty;
                 });
 
-                // 2. 處理明細 HTML
+                // 2. 生成訂單明細 HTML
                 orderHtml += `
-                    <div class="pb-6 border-b border-stone-100 last:border-0 text-left">
-                        <div class="flex justify-between items-start mb-2">
-                            <div>
-                                <span class="text-p-gold font-bold text-lg">#${index + 1} ${o.customer_name}</span>
-                                <span class="ml-3 text-xs text-stone-400">${o.phone}</span>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-[10px] bg-stone-100 px-2 py-1 rounded font-bold uppercase">${o.campaign_code || '一般預約'}</span>
-                            </div>
+                <div class="pb-8 border-b border-stone-100 last:border-0 text-left">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="text-2xl font-black text-p-green font-serif">#${idx + 1} ${o.customer_name}</span>
+                            <span class="ml-4 text-sm font-bold text-p-gold tracking-tighter">${o.phone}</span>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 text-xs text-stone-500 mb-2">
-                            <span>桌號: ${o.table_no || '未填'}</span>
-                            <span>大人: ${o.adult_count||0} / 小孩: ${o.kid_count||0}</span>
+                        <div class="text-right">
+                            <span class="text-[10px] bg-stone-800 text-white px-3 py-1 rounded-full font-bold uppercase tracking-widest">${o.campaign_code || '一般預定'}</span>
                         </div>
-                        <ul class="space-y-1">
-                            ${o.order_content.map(i => `<li class="text-sm font-medium text-p-green flex justify-between"><span>• ${i.name}</span> <span class="font-serif">$${i.price}</span></li>`).join('')}
-                        </ul>
-                        ${o.note ? `<p class="mt-3 text-[11px] bg-amber-50 p-2 rounded text-amber-700 italic">備註: ${o.note}</p>` : ''}
                     </div>
-                `;
+                    <div class="flex gap-6 text-xs font-bold text-stone-400 mb-4 bg-stone-50 p-3 rounded-2xl">
+                        <span>🪑 桌號：${o.table_no || '尚未安排'}</span>
+                        <span>👥 人數：${o.adult_count||0}大 / ${o.kid_count||0}小</span>
+                        <span>🕒 訂位：${o.booking_date ? new Date(o.booking_date).toLocaleString() : '未填'}</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        ${o.order_content.map(i => `
+                            <div class="flex justify-between text-sm py-1 border-b border-stone-50">
+                                <span class="text-slate-600 font-medium">• ${i.name}</span>
+                                <span class="font-serif font-bold text-p-green">$${i.price}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${o.note ? `<div class="mt-4 p-4 bg-amber-50 border-l-4 border-p-gold rounded-r-xl text-xs text-amber-800 leading-relaxed font-bold">備註：${o.note}</div>` : ''}
+                </div>`;
             });
 
-            // 渲染彙總表格
-            const sortedSummary = Object.entries(summary).sort((a,b) => b[1] - a[1]);
-            document.getElementById('summary-body').innerHTML = sortedSummary.map(([name, count]) => `
-                <tr class="border-b last:border-0 hover:bg-stone-50">
+            // 渲染左側彙總
+            const sortedDishes = Object.entries(dishSummary).sort((a,b) => b[1] - a[1]);
+            document.getElementById('summary-body').innerHTML = sortedDishes.map(([name, count]) => `
+                <tr class="hover:bg-stone-50 transition">
                     <td class="p-4 text-sm font-bold text-slate-700">${name}</td>
-                    <td class="p-4 text-right"><span class="text-lg font-black text-p-green font-serif">${count}</span> <span class="text-[10px] text-stone-400">份</span></td>
+                    <td class="p-4 text-right">
+                        <span class="text-xl font-black text-p-green font-serif">${count}</span>
+                        <span class="text-[10px] text-stone-300 font-bold ml-1">份</span>
+                    </td>
                 </tr>
             `).join('');
 
-            document.getElementById('detail-container').innerHTML = orders.length ? orderHtml : '<p class="text-center text-stone-300 py-10">此日期暫無訂單</p>';
-            document.getElementById('total-items-count').innerText = `${sortedSummary.length} 品項`;
-            document.getElementById('order-count-tag').innerText = `共 ${orders.length} 筆訂單`;
-            
-            window.currentReportData = { summary: sortedSummary, orders };
+            document.getElementById('detail-container').innerHTML = orders.length ? orderHtml : '<div class="py-20 text-center text-stone-300 font-bold">此區間目前無任何訂單數據</div>';
+            document.getElementById('total-dishes').innerText = `${sortedDishes.length} 品項`;
+            document.getElementById('total-orders').innerText = `${orders.length} 筆訂單`;
+
+            window.lastData = { dishSummary: sortedDishes, orders: orders };
         }
 
-        async function exportComprehensiveExcel() {
-            const data = window.currentReportData;
-            if(!data) return alert("請先查詢數據");
+        // 專業級統整 Excel 匯出
+        function exportFullData() {
+            if(!window.lastData) return alert("請先進行查詢");
+            const { dishSummary, orders } = window.lastData;
+            const start = document.getElementById('start-date').value;
+            const end = document.getElementById('end-date').value;
 
-            const dateStr = document.getElementById('report-date').value;
-
-            // 1. 彙總工作表
-            const ws_summary = XLSX.utils.json_to_sheet(data.summary.map(s => ({ "餐點名稱": s[0], "總數量": s[1] })));
-
-            // 2. 明細工作表
-            const ws_detail = XLSX.utils.json_to_sheet(data.orders.map(o => ({
-                "訂單時間": new Date(o.created_at).toLocaleString(),
+            // 分頁 1: 廚房備料清單
+            const ws1 = XLSX.utils.json_to_sheet(dishSummary.map(d => ({ "菜色名稱": d[0], "預計總份數": d[1] })));
+            
+            // 分頁 2: 客戶訂單大帳
+            const ws2 = XLSX.utils.json_to_sheet(orders.map(o => ({
+                "訂位日期/時間": o.booking_date ? new Date(o.booking_date).toLocaleString() : "未填",
                 "顧客姓名": o.customer_name,
                 "聯絡電話": o.phone,
-                "活動來源": o.campaign_code,
+                "活動代號": o.campaign_code || "一般",
                 "桌號": o.table_no,
                 "大人": o.adult_count,
                 "小孩": o.kid_count,
-                "內容": o.order_content.map(i => i.name).join(' | '),
-                "總額": o.total_price,
-                "備註": o.note
+                "點餐內容總覽": o.order_content.map(i => i.name).join(' / '),
+                "訂單總金額": o.total_price,
+                "特別備註": o.note,
+                "下單系統紀錄": new Date(o.created_at).toLocaleString()
             })));
 
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws_summary, "備料總計");
-            XLSX.utils.book_append_sheet(wb, ws_detail, "訂單明細");
-
-            XLSX.writeFile(wb, `真珠營運報表_${dateStr}.xlsx`);
+            XLSX.utils.book_append_sheet(wb, ws1, "廚房備料彙總");
+            XLSX.utils.book_append_sheet(wb, ws2, "逐單明細大帳");
+            
+            XLSX.writeFile(wb, `真珠營運分析報表_${start}_至_${end}.xlsx`);
         }
 
         init();
