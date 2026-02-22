@@ -40,17 +40,17 @@
         @media print { .no-print { display: none !important; } body { background: white; overflow: auto; } main { overflow: visible; } }
     </style>
 </head>
-<body class="h-screen flex text-slate-700">
+<body class="h-screen flex text-slate-700 text-left">
 
     <aside id="sidebar" class="bg-emerald-950 text-white sticky top-0 h-screen flex flex-col z-[500]">
         <div class="sidebar-header p-8 flex flex-col items-center border-b border-emerald-800/50 mb-4 transition-all">
-            <img id="side-logo-img" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" class="side-logo max-h-14 w-full filter brightness-200 drop-shadow-md">
+            <img id="side-logo-img" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" class="side-logo max-h-14 w-full filter brightness-200">
             <button onclick="toggleSidebar()" class="mt-4 bg-emerald-800/50 p-2 rounded-full hover:bg-p-gold transition no-print">
                 <span id="collapse-icon" class="text-xs">◀</span>
             </button>
         </div>
         
-        <nav class="space-y-1 flex-1 px-3 overflow-y-auto no-scrollbar">
+        <nav class="space-y-1 flex-1 px-3 overflow-y-auto custom-scrollbar">
             <button id="btn-orders" onclick="switchTab('orders')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
                 <span class="text-xl">📋</span> <span class="nav-text font-bold text-sm tracking-widest">訂單監控</span>
             </button>
@@ -89,95 +89,123 @@
     <main class="flex-1 p-8 overflow-y-auto custom-scrollbar">
         
         <section id="sec-orders" class="space-y-6">
-            <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">訂單即時監控</h2><button onclick="exportXls()" class="btn-green px-8 py-2.5 rounded-2xl font-bold shadow-lg">📊 導出 Excel</button></div>
+            <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">訂單監控</h2><button onclick="exportXls()" class="btn-green px-8 py-2.5 rounded-2xl font-bold shadow-lg">📊 導出 Excel</button></div>
             <div class="bg-white p-8 rounded-[2rem] shadow-sm border space-y-4 text-left no-print">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                    <div><label class="block text-xs font-bold text-stone-400 mb-1 uppercase tracking-widest">快速時間範圍</label><select id="filter-date-preset" onchange="setQuickDate(this.value)" class="w-full border-b p-2 bg-transparent outline-none focus:border-p-gold"><option value="all">不限日期</option><option value="today">今日訂單</option><option value="week">本週訂單</option><option value="custom">自定義日期</option></select></div>
+                    <div><label class="block text-xs font-bold text-stone-400 mb-1 uppercase tracking-widest">快速日期</label><select id="filter-date-preset" onchange="setQuickDate(this.value)" class="w-full border-b p-2 bg-transparent outline-none focus:border-p-gold"><option value="all">不限日期</option><option value="today">今日</option><option value="week">本週</option><option value="custom">自選日期</option></select></div>
                     <div id="custom-date-box" class="hidden"><label class="block text-xs font-bold text-stone-400 mb-1 uppercase tracking-widest">指定日期</label><input type="date" id="filter-date" class="w-full border-b p-2 outline-none focus:border-p-gold"></div>
-                    <div><label class="block text-xs font-bold text-stone-400 mb-1 uppercase tracking-widest">活動來源</label><select id="filter-campaign" class="w-full border-b p-2 bg-transparent outline-none focus:border-p-gold"><option value="all">全部活動</option></select></div>
-                    <div><label class="block text-xs font-bold text-stone-400 mb-1 uppercase tracking-widest">處理狀態</label><select id="filter-status" class="w-full border-b p-2 bg-transparent outline-none focus:border-p-gold"><option value="all">顯示全部</option><option value="pending">尚未完成</option><option value="synced">已完成</option></select></div>
+                    <div><label class="block text-xs font-bold text-stone-400 mb-1 uppercase tracking-widest">活動過濾</label><select id="filter-campaign" class="w-full border-b p-2 bg-transparent outline-none focus:border-p-gold"><option value="all">全部活動</option></select></div>
+                    <div><label class="block text-xs font-bold text-stone-400 mb-1 uppercase tracking-widest">處理狀態</label><select id="filter-status" class="w-full border-b p-2 bg-transparent outline-none focus:border-p-gold"><option value="all">全部</option><option value="pending">未完成</option><option value="synced">已完成</option></select></div>
                 </div>
-                <div class="flex gap-3"><input type="text" id="filter-search" class="flex-1 border p-3 rounded-xl text-sm" placeholder="搜尋姓名或電話..."><button onclick="loadOrders()" class="bg-stone-800 text-white px-10 py-3 rounded-xl font-bold shadow-md hover:bg-black transition">篩選</button><button onclick="resetFilters()" class="text-stone-300 text-xs font-bold underline">重置</button></div>
+                <div class="flex gap-3"><input type="text" id="filter-search" class="flex-1 border p-3 rounded-xl text-sm" placeholder="搜尋姓名或電話..."><button onclick="loadOrders()" class="bg-stone-800 text-white px-10 py-3 rounded-xl font-bold shadow-md">執行篩選</button><button onclick="resetFilters()" class="text-stone-300 text-xs font-bold underline">重置</button></div>
             </div>
             <div id="order-list" class="grid grid-cols-1 xl:grid-cols-2 gap-8"></div>
         </section>
 
-        <section id="sec-report" class="hidden space-y-6">
+        <section id="sec-report" class="hidden space-y-6 text-left">
             <div class="flex justify-between items-end border-b-2 border-p-green pb-4">
-                <div class="text-left text-p-green">
-                    <h2 class="text-3xl font-black font-serif">營運分析與備料統計</h2>
-                    <p id="report-period-display" class="text-p-gold font-bold text-xs mt-1 uppercase">Analysis Dashboard</p>
-                </div>
-                <div class="flex gap-3 no-print">
-                    <button onclick="window.print()" class="bg-white border-2 border-p-green text-p-green px-5 py-2.5 rounded-xl font-black text-xs hover:bg-emerald-50 transition">列印表單 PDF</button>
-                    <button onclick="exportFullReport()" class="btn-green px-5 py-2.5 rounded-xl font-black text-xs shadow-lg">匯出三方統整 Excel</button>
-                </div>
+                <div class="text-left"><h2 class="text-3xl font-black font-serif">營運分析與備料統計</h2><p id="report-period-display" class="text-p-gold font-bold text-xs mt-1 uppercase">Analysis Dashboard</p></div>
+                <div class="flex gap-3 no-print"><button onclick="window.print()" class="bg-white border-2 border-p-green text-p-green px-5 py-2.5 rounded-xl font-black text-xs hover:bg-emerald-50 transition">列印 PDF</button><button onclick="exportFullReport()" class="btn-green px-5 py-2.5 rounded-xl font-black text-xs shadow-lg">匯出統計 Excel</button></div>
             </div>
             <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border no-print text-left grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div class="md:col-span-2 space-y-3"><label class="text-[10px] font-black text-stone-400 uppercase tracking-widest">日期區間維度</label><div class="flex gap-2"><button onclick="setReportRange('today')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200">今日數據</button><button onclick="setReportRange('month')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200">本月數據</button></div><div class="flex items-center gap-2"><input type="date" id="r-start" class="flex-1 border-b p-2 font-bold"><span class="text-stone-300">~</span><input type="date" id="r-end" class="flex-1 border-b p-2 font-bold"></div></div>
-                <div class="space-y-3"><label class="text-[10px] font-black text-stone-400 uppercase tracking-widest">活動交叉篩選</label><select id="r-camp" class="w-full border-b p-2 font-black text-sm bg-transparent outline-none focus:border-p-gold"><option value="all">全部來源 (含一般及活動)</option><option value="none">僅限一般訂單</option></select></div>
-                <div class="flex items-end"><button onclick="fetchReportData()" class="w-full bg-stone-900 text-white py-4 rounded-2xl font-black shadow-xl hover:bg-black transition active:scale-95">生成全量數據分析</button></div>
+                <div class="md:col-span-2 space-y-3"><label class="text-[10px] font-black text-stone-400 uppercase tracking-widest">日期範圍</label><div class="flex gap-2"><button onclick="setReportRange('today')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold">今日數據</button><button onclick="setReportRange('month')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold">本月數據</button></div><div class="flex items-center gap-2"><input type="date" id="r-start" class="flex-1 border-b p-2 font-bold"><span class="text-stone-300">~</span><input type="date" id="r-end" class="flex-1 border-b p-2 font-bold"></div></div>
+                <div class="space-y-3"><label class="text-[10px] font-black text-stone-400 uppercase tracking-widest">活動篩選</label><select id="r-camp" class="w-full border-b p-2 font-black text-sm bg-transparent"><option value="all">全部來源</option><option value="none">僅限一般訂單</option></select></div>
+                <div class="flex items-end"><button onclick="fetchReportData()" class="w-full bg-stone-900 text-white py-4 rounded-2xl font-black shadow-xl">更新數據</button></div>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 <div class="lg:col-span-5 space-y-8">
-                    <div class="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm"><div class="bg-p-green p-5 text-white flex justify-between items-center"><b class="font-serif italic text-left">套餐類別組數統計</b><span id="r-set-total" class="bg-p-gold px-3 py-1 rounded-full text-xs font-black">0 組</span></div><div id="r-set-body" class="p-6 space-y-3 text-left"></div></div>
-                    <div class="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm"><div class="bg-stone-800 p-5 text-white flex justify-between items-center"><b class="font-serif italic text-left">全品項備料清單 (含飲料)</b><span id="r-dish-total" class="bg-stone-600 px-3 py-1 rounded-full text-xs font-black">0 項</span></div><div class="max-h-[60vh] overflow-y-auto custom-scrollbar"><table class="w-full text-left text-sm"><tbody id="r-dish-body" class="divide-y divide-stone-100"></tbody></table></div></div>
+                    <div class="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm text-left"><div class="bg-p-green p-5 text-white flex justify-between items-center"><b class="font-serif italic">套餐類別統計</b><span id="r-set-total" class="bg-p-gold px-3 py-1 rounded-full text-xs font-black">0 組</span></div><div id="r-set-body" class="p-6 space-y-3 text-left"></div></div>
+                    <div class="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm text-left"><div class="bg-stone-800 p-5 text-white flex justify-between items-center"><b class="font-serif italic">食材備料總清單</b><span id="r-dish-total" class="bg-stone-600 px-3 py-1 rounded-full text-xs font-black">0 項</span></div><div class="max-h-[60vh] overflow-y-auto custom-scrollbar"><table class="w-full text-left"><tbody id="r-dish-body" class="divide-y divide-stone-100"></tbody></table></div></div>
                 </div>
-                <div class="lg:col-span-7"><div class="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm h-full"><div class="bg-p-gold p-5 text-white font-bold text-left font-serif italic tracking-widest">詳細訂單對帳流水帳</div><div id="r-detail-body" class="p-8 space-y-10 max-h-[110vh] overflow-y-auto custom-scrollbar"></div></div></div>
+                <div class="lg:col-span-7"><div class="bg-white rounded-[2.5rem] border overflow-hidden shadow-sm h-full"><div class="bg-p-gold p-5 text-white font-bold text-left italic tracking-widest">對帳流水帳</div><div id="r-detail-body" class="p-8 space-y-10 max-h-[110vh] overflow-y-auto custom-scrollbar text-left"></div></div></div>
             </div>
         </section>
 
         <section id="sec-photos" class="hidden space-y-6 text-left">
-            <h2 class="text-3xl font-black text-p-green font-serif">顧客回憶相簿管理</h2>
+            <h2 class="text-3xl font-black text-p-green font-serif">照片管理</h2>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="bg-white p-10 rounded-[3rem] border shadow-sm space-y-6 h-fit">
-                    <div>
-                        <label class="block text-[10px] font-black text-stone-300 uppercase tracking-widest mb-2">1. 選擇照片檔案</label>
-                        <input type="file" id="photo-file" class="w-full border-2 border-dashed p-10 rounded-3xl text-xs bg-stone-50 text-stone-400">
-                    </div>
-                    <div class="space-y-4">
-                        <label class="block text-[10px] font-black text-stone-300 uppercase tracking-widest">2. 關聯客戶資訊 (擇一填寫)</label>
-                        <input type="text" id="photo-name" placeholder="顧客姓名 (例：王先生)" class="w-full border-b p-3 outline-none focus:border-p-gold text-sm font-bold">
-                        <input type="tel" id="photo-phone" placeholder="電話號碼 (例：0912...)" class="w-full border-b p-3 outline-none focus:border-p-gold text-sm font-bold">
-                        <input type="text" id="photo-order" placeholder="訂單單號 (例：JZ-123)" class="w-full border-b p-3 outline-none focus:border-p-gold text-sm font-bold">
-                    </div>
-                    <button onclick="uploadCustomerPhoto()" id="btn-upload-photo" class="w-full bg-p-green text-white py-5 rounded-3xl font-black shadow-2xl active:scale-95 transition">確認上傳美好回憶</button>
+                <div class="bg-white p-10 rounded-[3rem] border shadow-sm space-y-6 h-fit text-left">
+                    <div><label class="block text-[10px] font-black text-stone-300 uppercase tracking-widest mb-2">1. 選擇檔案</label><input type="file" id="photo-file" class="w-full border-2 border-dashed p-10 rounded-3xl text-xs bg-stone-50"></div>
+                    <div class="space-y-4"><label class="block text-[10px] font-black text-stone-300 uppercase tracking-widest">2. 客戶資訊 (擇一)</label><input type="text" id="photo-name" placeholder="姓名" class="w-full border-b p-3 outline-none text-sm font-bold"><input type="tel" id="photo-phone" placeholder="電話" class="w-full border-b p-3 outline-none text-sm font-bold"><input type="text" id="photo-order" placeholder="單號" class="w-full border-b p-3 outline-none text-sm font-bold"></div>
+                    <button onclick="uploadCustomerPhoto()" id="btn-upload-photo" class="w-full bg-p-green text-white py-5 rounded-3xl font-black shadow-2xl">上傳照片</button>
                 </div>
                 <div class="lg:col-span-2 bg-white p-10 rounded-[3rem] border shadow-sm">
-                    <h3 class="font-black text-stone-400 text-sm mb-6 uppercase tracking-widest italic border-b pb-4">已上傳珍藏紀錄</h3>
+                    <h3 class="font-black text-stone-400 text-sm mb-6 uppercase border-b pb-4">已上傳珍藏紀錄</h3>
                     <div id="admin-photo-list" class="grid grid-cols-2 md:grid-cols-3 gap-6 max-h-[70vh] overflow-y-auto custom-scrollbar p-2"></div>
                 </div>
             </div>
         </section>
 
-        <section id="sec-campaigns" class="hidden space-y-6 text-left"><h2 class="text-2xl font-bold text-p-green font-serif">活動代號管理</h2><div class="bg-white p-8 rounded-3xl border max-w-md"><div class="flex gap-3 mb-6"><input id="new-campaign" class="border flex-1 p-3 rounded-xl text-left" placeholder="新活動名稱"><button onclick="addCampaign()" class="bg-p-green text-white px-6 rounded-xl font-bold">新增</button></div><div id="campaign-list" class="space-y-2"></div></div></section>
-        <section id="sec-events" class="hidden space-y-6 text-left"><h2 class="text-3xl font-bold text-p-green font-serif">活動專屬網址配置</h2><div class="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start"><div class="bg-white p-10 rounded-[2.5rem] shadow-sm border space-y-8"><div><label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest text-left">1. 選擇活動代號</label><select id="sel-campaign" class="w-full border-b-2 p-3 bg-stone-50 outline-none"></select></div><div><label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest text-left">2. 勾選顯示分類 (可多選)</label><div id="event-cat-checkbox-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div></div><button onclick="bindEvent()" class="w-full bg-p-green text-white py-5 rounded-3xl font-black shadow-xl active:scale-95 transition">確認綁定並產生活動網址</button></div><div class="bg-white p-10 rounded-[2.5rem] shadow-sm border"><h3 class="font-bold text-stone-400 text-sm mb-6 uppercase tracking-widest text-left text-left">運作中的活動連結</h3><div id="active-event-list" class="space-y-4"></div></div></div></section>
-        <section id="sec-categories" class="hidden space-y-6 text-left"><h2 class="text-2xl font-bold text-p-green font-serif">分類管理中心</h2><div class="bg-white p-8 rounded-3xl border max-w-2xl text-left"><div class="flex gap-3 mb-6"><input id="new-cat" class="border flex-1 p-3 rounded-xl text-left" placeholder="分類名稱"><button onclick="addCat()" class="bg-p-green text-white px-8 rounded-xl font-bold shadow-md text-left">新增</button></div><table class="w-full text-sm text-left"><thead><tr class="text-stone-400 border-b"><th class="p-4 text-left">排序</th><th class="p-4 text-left">分類名稱</th><th class="p-4 text-left">顯示狀態</th><th class="p-4 text-left">操作</th></tr></thead><tbody id="cat-list-table" class="divide-y text-left"></tbody></table></div></section>
-        <section id="sec-menu" class="hidden space-y-6 text-left"><div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif text-left">菜單編輯</h2><button onclick="openMenuModal(false)" class="bg-p-green text-white px-8 py-3 rounded-2xl shadow-xl font-black">+ 新增餐點</button></div><div class="bg-white p-5 rounded-2xl border flex gap-4"><input type="text" id="menu-search" oninput="loadMenu()" class="flex-1 border p-3 rounded-xl" placeholder="搜尋菜名..."><select id="menu-cat-filter" onchange="loadMenu()" class="border p-3 rounded-xl"></select></div><div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div></section>
-        <section id="sec-flavors" class="hidden space-y-6 text-left"><div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-p-green font-serif text-left">口味標籤定義</h2><button onclick="addFlvGroup()" class="bg-amber-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg">+ 新增口味選項組</button></div><div id="flv-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div></section>
-        <section id="sec-settings" class="hidden space-y-6 text-left"><h2 class="text-2xl font-bold text-p-green font-serif text-left">系統與 Logo 設定</h2><div class="bg-white p-10 rounded-[3rem] border shadow-sm max-w-xl text-left"><p class="text-xs text-stone-400 mb-6 uppercase font-black tracking-widest text-left">Logo 上傳管理 (推薦使用 SVG)</p><input type="file" id="logo-file" class="w-full border-2 border-dashed p-10 rounded-3xl text-sm mb-6 bg-stone-50"><div id="current-logo-preview" class="hidden mb-8 p-6 bg-emerald-900 rounded-3xl text-center"><img id="admin-logo-img" src="" class="max-h-24 mx-auto brightness-200"></div><button onclick="uploadLogo()" class="w-full bg-p-green text-white py-5 rounded-3xl font-black shadow-2xl active:scale-95 transition">確認更新系統 Logo</button></div></section>
+        <section id="sec-campaigns" class="hidden space-y-6 text-left">
+            <h2 class="text-2xl font-bold text-p-green font-serif">活動代號管理</h2>
+            <div class="bg-white p-8 rounded-3xl border max-w-md">
+                <div class="flex gap-3 mb-6"><input id="new-campaign" class="border flex-1 p-3 rounded-xl" placeholder="新代號"><button onclick="addCampaign()" class="bg-p-green text-white px-6 rounded-xl font-bold">新增</button></div>
+                <div id="campaign-list" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <section id="sec-events" class="hidden space-y-6 text-left">
+            <h2 class="text-3xl font-bold text-p-green font-serif">活動網址配置</h2>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div class="bg-white p-10 rounded-[2.5rem] border space-y-8">
+                    <div><label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">1. 選擇活動</label><select id="sel-campaign" class="w-full border-b-2 p-3 bg-stone-50 outline-none"></select></div>
+                    <div><label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">2. 勾選分類 (隱藏分類優先)</label><div id="event-cat-checkbox-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar"></div></div>
+                    <button onclick="bindEvent()" class="w-full bg-p-green text-white py-5 rounded-3xl font-black shadow-xl">確認綁定</button>
+                </div>
+                <div class="bg-white p-10 rounded-[2.5rem] border"><h3 class="font-bold text-stone-400 text-sm mb-6 uppercase">運作中的連結</h3><div id="active-event-list" class="space-y-4"></div></div>
+            </div>
+        </section>
+
+        <section id="sec-categories" class="hidden space-y-6 text-left">
+            <h2 class="text-2xl font-bold text-p-green font-serif">分類管理中心</h2>
+            <div class="bg-white p-8 rounded-3xl border max-w-2xl">
+                <div class="flex gap-3 mb-6"><input id="new-cat" class="border flex-1 p-3 rounded-xl" placeholder="名稱"><button onclick="addCat()" class="bg-p-green text-white px-8 rounded-xl font-bold">新增</button></div>
+                <table class="w-full text-sm"><thead><tr class="text-stone-400 border-b"><th class="p-4 text-left">排序</th><th class="p-4 text-left">名稱</th><th class="p-4">顯示</th><th class="p-4">操作</th></tr></thead><tbody id="cat-list-table" class="divide-y"></tbody></table>
+            </div>
+        </section>
+
+        <section id="sec-menu" class="hidden space-y-6 text-left">
+            <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">菜單編輯</h2><button onclick="openMenuModal(false)" class="bg-p-green text-white px-8 py-3 rounded-2xl shadow-xl font-black">+ 新增餐點</button></div>
+            <div class="bg-white p-5 rounded-2xl border flex gap-4"><input type="text" id="menu-search" oninput="loadMenu()" class="flex-1 border p-3 rounded-xl" placeholder="搜尋菜名..."><select id="menu-cat-filter" onchange="loadMenu()" class="border p-3 rounded-xl"></select></div>
+            <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"></div>
+        </section>
+
+        <section id="sec-flavors" class="hidden space-y-6 text-left">
+            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-p-green font-serif">口味標籤定義</h2><button onclick="addFlvGroup()" class="bg-amber-600 text-white px-8 py-3 rounded-2xl font-bold">+ 新增選項組</button></div>
+            <div id="flv-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <section id="sec-settings" class="hidden space-y-6 text-left">
+            <h2 class="text-2xl font-bold text-p-green font-serif">系統與 Logo 設定</h2>
+            <div class="bg-white p-10 rounded-[3rem] border shadow-sm max-w-xl">
+                <p class="text-xs text-stone-400 mb-6 uppercase font-black tracking-widest">Logo 上傳 (推薦使用 SVG)</p>
+                <input type="file" id="logo-file" class="w-full border-2 border-dashed p-10 rounded-3xl text-sm mb-6 bg-stone-50">
+                <div id="current-logo-preview" class="hidden mb-8 p-6 bg-emerald-900 rounded-3xl text-center"><img id="admin-logo-img" src="" class="max-h-24 mx-auto brightness-200"></div>
+                <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-5 rounded-3xl font-black shadow-2xl">更新系統 Logo</button>
+            </div>
+        </section>
     </main>
 
     <div id="order-edit-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[600] backdrop-blur-sm text-left">
         <div class="bg-white w-full max-w-6xl rounded-[2.5rem] overflow-hidden flex flex-col max-h-[95vh] shadow-2xl border border-white/20">
-            <div class="p-8 bg-p-green text-white flex justify-between items-center"><h3 class="text-2xl font-black font-serif italic text-left">修改訂單內容修正</h3><button onclick="closeEditModal()" class="w-12 h-12 bg-white/10 rounded-full hover:bg-white/20 transition">✕</button></div>
+            <div class="p-8 bg-p-green text-white flex justify-between items-center"><h3 class="text-2xl font-black font-serif italic">修改訂單內容修正</h3><button onclick="closeEditModal()" class="text-2xl">✕</button></div>
             <div class="flex flex-1 overflow-hidden">
-                <div class="w-2/3 border-r p-6 bg-stone-50 flex flex-col overflow-hidden"><div id="edit-cat-nav" class="mb-4 border-b pb-2 custom-scrollbar text-left"></div><div id="edit-menu-grid" class="grid grid-cols-3 gap-4 overflow-y-auto pt-2 custom-scrollbar"></div></div>
-                <div class="w-1/3 p-8 flex flex-col bg-white text-left"><h4 class="font-black mb-6 border-b pb-4 text-stone-400 text-xs tracking-widest uppercase italic">目前選購清單</h4><div id="edit-cart-list" class="flex-1 space-y-4 overflow-y-auto text-sm custom-scrollbar text-left"></div><div class="border-t pt-8 mt-6 text-left"><div class="flex justify-between text-2xl font-black text-p-green mb-6 font-serif"><span>總計</span><span id="edit-total-price">$0</span></div><button onclick="saveOrderChange()" class="w-full bg-p-gold text-white py-5 rounded-3xl font-black shadow-2xl active:scale-95 transition">確認更新訂單資料</button></div></div>
+                <div class="w-2/3 border-r p-6 bg-stone-50 flex flex-col overflow-hidden"><div id="edit-cat-nav" class="mb-4 border-b pb-2 custom-scrollbar flex gap-2"></div><div id="edit-menu-grid" class="grid grid-cols-3 gap-4 overflow-y-auto pt-2 custom-scrollbar"></div></div>
+                <div class="w-1/3 p-8 flex flex-col bg-white"><h4 class="font-black mb-6 border-b pb-4 text-stone-400 text-xs tracking-widest uppercase italic">目前選購清單</h4><div id="edit-cart-list" class="flex-1 space-y-4 overflow-y-auto text-sm custom-scrollbar"></div><div class="border-t pt-8 mt-6 text-left"><div class="flex justify-between text-2xl font-black text-p-green mb-6 font-serif"><span>總計</span><span id="edit-total-price">$0</span></div><button onclick="saveOrderChange()" class="w-full bg-p-gold text-white py-5 rounded-3xl font-black shadow-2xl transition active:scale-95">確認更新訂單</button></div></div>
             </div>
         </div>
     </div>
 
     <div id="edit-flavor-popup" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[700] backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-[2rem] p-10 flex flex-col max-h-[85vh] shadow-2xl text-left"><h4 class="font-black text-xl mb-6 text-p-green font-serif italic text-left" id="edit-pop-title">口味選擇</h4><div id="edit-pop-content" class="space-y-8 overflow-y-auto flex-1 pr-2 no-scrollbar text-left"></div><div class="flex gap-4 mt-8"><button onclick="closeEditPop()" class="flex-1 bg-stone-100 py-4 rounded-2xl font-bold text-stone-400">取消</button><button onclick="confirmEditPop()" class="flex-[2] bg-p-green text-white py-4 rounded-2xl font-black shadow-lg">更新資料</button></div></div>
+        <div class="bg-white w-full max-w-md rounded-[2rem] p-10 flex flex-col max-h-[85vh] shadow-2xl text-left"><h4 class="font-black text-xl mb-6 text-p-green font-serif" id="edit-pop-title">口味選擇</h4><div id="edit-pop-content" class="space-y-8 overflow-y-auto flex-1 pr-2 no-scrollbar"></div><div class="flex gap-4 mt-8"><button onclick="closeEditPop()" class="flex-1 bg-stone-100 py-4 rounded-2xl font-bold text-stone-400">取消</button><button onclick="confirmEditPop()" class="flex-[2] btn-green py-4 rounded-2xl font-black shadow-lg">更新</button></div></div>
     </div>
 
     <div id="set-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[550] text-left">
-        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-10 flex flex-col max-h-[90vh] shadow-2xl text-left"><h3 class="font-black text-2xl mb-6 text-p-green border-b-4 border-p-gold/20 pb-4 font-serif text-center" id="set-modal-title">套餐分組內容設定</h3><div class="grid grid-cols-2 gap-6 mb-6"><div><label class="text-[10px] font-black text-stone-300 block mb-2 uppercase tracking-widest text-left">分組名稱</label><input id="g-name" class="w-full border-b p-3 bg-stone-50 outline-none text-left"></div><div><label class="text-[10px] font-black text-stone-300 block mb-2 uppercase tracking-widest text-left">必選數量</label><input id="g-limit" type="number" class="w-full border-b p-3 bg-stone-50 outline-none text-center font-bold"></div></div><div class="bg-stone-50 p-6 rounded-[2rem] border border-stone-200/50 flex-1 flex flex-col overflow-hidden text-left"><input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="快速搜尋單品項目..." class="w-full p-4 border rounded-2xl text-sm mb-4 outline-none focus:border-p-gold text-left"><div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-3 pr-2 custom-scrollbar text-left"></div><div class="mt-6 pt-4 border-t flex justify-between items-center"><span id="picker-count" class="text-xs text-stone-400 font-bold">已選 0 項</span><button onclick="addSelectedToPicks()" class="bg-emerald-600 text-white px-6 py-2 rounded-xl text-xs font-black">+ 加入暫存</button></div></div><div class="mt-6 text-left"><div id="temp-pick-display" class="flex flex-wrap gap-2 mb-6 text-left"></div><button onclick="saveFullSet()" id="btn-save-group" class="w-full bg-stone-800 text-white py-5 rounded-3xl font-black shadow-xl">確認儲存分組</button><button onclick="resetSetForm()" id="btn-cancel-edit" class="hidden w-full text-xs text-stone-400 mt-4 underline text-center">取消編輯</button></div><button onclick="closeSetModal()" class="mt-6 text-xs text-stone-300 w-full text-center">關閉</button></div>
+        <div class="bg-white w-full max-w-2xl rounded-[3rem] p-10 flex flex-col max-h-[90vh] shadow-2xl"><h3 class="font-black text-2xl mb-6 text-p-green border-b-4 border-p-gold/20 pb-4 font-serif text-center" id="set-modal-title">套餐分組設定</h3><div class="grid grid-cols-2 gap-6 mb-6"><div><label class="text-[10px] font-black text-stone-300 block mb-2 uppercase">分組名稱</label><input id="g-name" class="w-full border-b p-3 bg-stone-50 outline-none"></div><div><label class="text-[10px] font-black text-stone-300 block mb-2 uppercase">必選數量</label><input id="g-limit" type="number" class="w-full border-b p-3 bg-stone-50 text-center font-bold"></div></div><div class="bg-stone-50 p-6 rounded-[2rem] border flex-1 flex flex-col overflow-hidden"><input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="快速搜尋單品..." class="w-full p-4 border rounded-2xl text-sm mb-4"><div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-3 pr-2 custom-scrollbar"></div><div class="mt-6 pt-4 border-t flex justify-between items-center"><span id="picker-count" class="text-xs text-stone-400 font-bold">已選 0 項</span><button onclick="addSelectedToPicks()" class="btn-green px-6 py-2 rounded-xl text-xs font-black">+ 加入暫存</button></div></div><div class="mt-6 text-left"><div id="temp-pick-display" class="flex flex-wrap gap-2 mb-6"></div><button onclick="saveFullSet()" id="btn-save-group" class="w-full bg-stone-800 text-white py-5 rounded-3xl font-black shadow-xl">確認儲存</button><button onclick="resetSetForm()" id="btn-cancel-edit" class="hidden w-full text-xs text-stone-400 mt-4 underline text-center">取消編輯</button></div><button onclick="closeSetModal()" class="mt-6 text-xs text-stone-300 w-full text-center">關閉</button></div>
     </div>
 
     <div id="menu-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[500] text-left">
-        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 flex flex-col max-h-[90vh] shadow-2xl text-left"><h3 class="font-black text-2xl mb-8 text-p-green border-l-8 border-p-gold pl-4 font-serif text-left">餐點基本資料維護</h3><input type="hidden" id="m-id"><div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar text-left"><input id="m-name" placeholder="輸入餐點名稱" class="w-full border-b p-4 text-xl font-black text-p-green bg-stone-50 outline-none text-left"><textarea id="m-desc" placeholder="餐點描述..." class="w-full border p-4 rounded-2xl bg-stone-50 h-24 text-sm text-left"></textarea><div class="grid grid-cols-2 gap-6"><input id="m-price" type="number" placeholder="售價" class="border-b p-4 bg-stone-50 font-black text-left"><select id="m-cat" class="border-b p-4 bg-stone-50 font-bold text-left"></select></div><div class="bg-stone-100 p-6 rounded-3xl"><p class="text-[10px] font-black text-stone-400 mb-4 uppercase tracking-widest text-left">標籤與口味設定</p><div id="flv-checks" class="grid grid-cols-2 gap-3 text-left"></div></div><div class="p-4 border-2 border-dashed rounded-3xl bg-stone-50"><input type="file" id="m-img" class="w-full text-xs text-stone-400"></div><label class="flex items-center gap-4 p-5 bg-emerald-50 rounded-3xl font-black text-p-green cursor-pointer"><input type="checkbox" id="m-is-set" class="w-5 h-5 accent-p-green"> 啟用「套餐組合」模式</label></div><div class="flex gap-4 mt-10"><button onclick="closeMenuModal()" class="flex-1 bg-stone-100 py-4 rounded-2xl text-stone-400 font-bold">取消</button><button onclick="saveItem()" class="flex-[2] bg-p-green text-white py-4 rounded-2xl font-black shadow-lg">儲存變更</button></div></div>
+        <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-10 flex flex-col max-h-[90vh] shadow-2xl text-left"><h3 class="font-black text-2xl mb-8 text-p-green border-l-8 border-p-gold pl-4 font-serif">餐點資料維護</h3><input type="hidden" id="m-id"><div class="space-y-6 overflow-y-auto pr-2 custom-scrollbar text-left"><input id="m-name" placeholder="餐點名稱" class="w-full border-b p-4 text-xl font-black text-p-green bg-stone-50 outline-none"><textarea id="m-desc" placeholder="餐點描述..." class="w-full border p-4 rounded-2xl bg-stone-50 h-24 text-sm"></textarea><div class="grid grid-cols-2 gap-6"><input id="m-price" type="number" placeholder="售價" class="border-b p-4 bg-stone-50 font-black"><select id="m-cat" class="border-b p-4 bg-stone-50 font-bold"></select></div><div class="bg-stone-100 p-6 rounded-3xl"><p class="text-[10px] font-black text-stone-400 mb-4 uppercase text-left">標籤與口味</p><div id="flv-checks" class="grid grid-cols-2 gap-3 text-left"></div></div><div class="p-4 border-2 border-dashed rounded-3xl bg-stone-50"><input type="file" id="m-img" class="w-full text-xs text-stone-400"></div><label class="flex items-center gap-4 p-5 bg-emerald-50 rounded-3xl font-black text-p-green cursor-pointer"><input type="checkbox" id="m-is-set" class="w-5 h-5 accent-p-green"> 啟用「套餐組合」模式</label></div><div class="flex gap-4 mt-10"><button onclick="closeMenuModal()" class="flex-1 bg-stone-100 py-4 rounded-2xl text-stone-400 font-bold hover:bg-stone-200">取消</button><button onclick="saveItem()" class="flex-[2] btn-green py-4 rounded-2xl font-black shadow-lg">儲存變更</button></div></div>
     </div>
 
     <script>
@@ -188,7 +216,6 @@
         let allMenuItems = [], allCategories = [], curEditOrder = null, editCart = [], curEditItem = null, curEditPopSels = { flavors: {}, groups: {} };
         let reEditIndex = -1, curPicks = [], curItem = null, currentEditingGroupId = null, allCampaigns = [], pickerSelectedItems = [];
 
-        // [側邊欄切換]
         function toggleSidebar() {
             const side = document.getElementById('sidebar');
             const icon = document.getElementById('collapse-icon');
@@ -215,39 +242,33 @@
             if(t==='photos') loadAdminPhotos();
         }
 
-        // --- [照片管理邏輯] ---
+        // --- [📸 照片管理] ---
         async function uploadCustomerPhoto() {
             const file = document.getElementById('photo-file').files[0], name = document.getElementById('photo-name').value, phone = document.getElementById('photo-phone').value, order = document.getElementById('photo-order').value;
             const btn = document.getElementById('btn-upload-photo');
-            if(!file || (!name && !phone && !order)) return alert("請選照片並至少填寫一項客戶資訊");
-            btn.disabled = true; btn.innerText = "上傳並同步雲端中...";
+            if(!file || (!name && !phone && !order)) return alert("請填寫照片並至少一項客戶資訊");
+            btn.disabled = true; btn.innerText = "上傳中...";
             const path = `customer_photos/${Date.now()}_${file.name}`;
-            const { data: upData, error: upError } = await _s.storage.from('assets').upload(path, file);
+            const { error: upError } = await _s.storage.from('assets').upload(path, file);
             if(!upError) {
                 const url = _s.storage.from('assets').getPublicUrl(path).data.publicUrl;
                 await _s.from('customer_photos').insert([{ photo_url: url, customer_name: name, phone: phone, order_no: order }]);
-                alert("回憶相簿上傳成功！");
-                document.getElementById('photo-file').value = "";
-                document.getElementById('photo-name').value = document.getElementById('photo-phone').value = document.getElementById('photo-order').value = "";
-                loadAdminPhotos();
-            } else { alert("上傳失敗: " + upError.message); }
-            btn.disabled = false; btn.innerText = "確認上傳美好回憶";
+                alert("上傳成功"); document.getElementById('photo-file').value = ""; loadAdminPhotos();
+            }
+            btn.disabled = false; btn.innerText = "確認上傳照片";
         }
         async function loadAdminPhotos() {
             const { data } = await _s.from('customer_photos').select('*').order('created_at', {ascending: false});
             document.getElementById('admin-photo-list').innerHTML = (data || []).map(p => `
-                <div class="relative group border-2 border-stone-100 rounded-3xl overflow-hidden shadow-sm bg-white aspect-[4/3] flex flex-col">
+                <div class="relative group border border-stone-100 rounded-3xl overflow-hidden shadow-sm bg-white aspect-[4/3] flex flex-col">
                     <img src="${p.photo_url}" class="w-full flex-1 object-cover">
-                    <div class="p-3 bg-white border-t">
-                        <p class="text-[9px] font-black text-p-green truncate">${p.customer_name || '未填'} ${p.phone || ''}</p>
-                        <p class="text-[8px] text-stone-300 font-bold">${p.order_no || '無單號'}</p>
-                    </div>
-                    <button onclick="delPhoto('${p.id}')" class="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs">✕</button>
+                    <div class="p-3 bg-white text-left"><p class="text-[9px] font-black text-p-green truncate">${p.customer_name || '未填'} ${p.phone || ''}</p></div>
+                    <button onclick="delPhoto('${p.id}')" class="absolute top-2 right-2 bg-red-500 text-white w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs transition">✕</button>
                 </div>`).join('');
         }
-        async function delPhoto(id) { if(confirm('確定移除此回憶照片？')) { await _s.from('customer_photos').delete().eq('id', id); loadAdminPhotos(); } }
+        async function delPhoto(id) { if(confirm('確定刪除？')) { await _s.from('customer_photos').delete().eq('id', id); loadAdminPhotos(); } }
 
-        // --- [報表中心邏輯] ---
+        // --- [📊 報表中心] ---
         async function initReportTab() {
             setReportRange('today');
             const { data } = await _s.from('campaign_settings').select('*');
@@ -263,7 +284,7 @@
         }
         async function fetchReportData() {
             const start = document.getElementById('r-start').value, end = document.getElementById('r-end').value, camp = document.getElementById('r-camp').value;
-            document.getElementById('report-period-display').innerText = `期間：${start} ~ ${end}`;
+            document.getElementById('report-period-display').innerText = `數據區間：${start} ~ ${end}`;
             let query = _s.from('orders').select('*').order('created_at', {ascending: true});
             if(start && end) query = query.gte('created_at', `${start}T00:00:00`).lte('created_at', `${end}T23:59:59`);
             if(camp === 'none') query = query.is('campaign_code', null); else if(camp !== 'all') query = query.eq('campaign_code', camp);
@@ -280,19 +301,19 @@
                         coreName.match(/\((.*?)\)/)?.[1].split('、').forEach(sub => { const s = sub.trim(); if(s) dishCount[s] = (dishCount[s] || 0) + qty; });
                     } else dishCount[coreName] = (dishCount[coreName] || 0) + qty;
                 });
-                orderHtml += `<div class="pb-10 border-b border-stone-100 last:border-0 text-left"><div class="flex justify-between items-start mb-4"><span class="text-2xl font-black text-p-green font-serif italic text-left">#${idx+1} ${o.customer_name}</span><span class="text-[10px] bg-stone-100 text-stone-400 px-3 py-1 rounded-full font-black uppercase text-left">${o.campaign_code||'一般'}</span></div><div class="flex gap-4 text-xs font-bold text-p-gold mb-4 text-left">${o.phone} | 桌：${o.table_no||'--'} | ${o.adult_count}大${o.kid_count}小</div><div class="space-y-1 bg-stone-50/50 p-4 rounded-2xl text-left">${o.order_content.map(i => `<div class="text-[11px] text-stone-600">• ${i.name}</div>`).join('')}</div></div>`;
+                orderHtml += `<div class="pb-10 border-b border-stone-100 last:border-0 text-left"><div class="flex justify-between items-start mb-4"><span class="text-2xl font-black text-p-green font-serif">#${idx+1} ${o.customer_name}</span><span class="text-[10px] bg-stone-100 text-stone-400 px-3 py-1 rounded-full font-black uppercase text-left">${o.campaign_code||'一般'}</span></div><div class="flex gap-4 text-xs font-bold text-p-gold mb-4 text-left">${o.phone} | 桌：${o.table_no||'--'}</div><div class="space-y-1 bg-stone-50/50 p-4 rounded-2xl text-left">${o.order_content.map(i => `<div class="text-[11px] text-stone-600">• ${i.name}</div>`).join('')}</div></div>`;
             });
             document.getElementById('r-set-body').innerHTML = Object.entries(setMenuCount).map(([n, c]) => `<div class="flex justify-between p-3 bg-emerald-50 rounded-xl text-xs"><span class="font-bold text-p-green">${n}</span><span class="font-black text-p-gold">${c} 組</span></div>`).join('') || '<p class="text-xs text-center text-stone-300">無套餐</p>';
-            document.getElementById('r-dish-body').innerHTML = Object.entries(dishCount).sort((a,b)=>b[1]-a[1]).map(([n, c]) => `<tr class="hover:bg-stone-50"><td class="p-4 font-bold text-stone-600">${n}</td><td class="p-4 text-right font-black text-p-green text-lg">${c} <small class="text-[10px] text-stone-300">份</small></td></tr>`).join('');
+            document.getElementById('r-dish-body').innerHTML = Object.entries(dishCount).sort((a,b)=>b[1]-a[1]).map(([n, c]) => `<tr class="hover:bg-stone-50 text-left"><td class="p-4 font-bold text-stone-600 text-left">${n}</td><td class="p-4 text-right font-black text-p-green text-lg text-right">${c} <small class="text-[10px] text-stone-300">份</small></td></tr>`).join('');
             document.getElementById('r-detail-body').innerHTML = orderHtml || '<p class="py-20 text-center text-stone-300">無數據</p>';
-            document.getElementById('r-set-total').innerText = Object.values(setMenuCount).reduce((a,b)=>a+b,0) + " 組";
-            document.getElementById('r-dish-total').innerText = Object.keys(dishCount).length + " 項";
-            document.getElementById('r-order-total').innerText = orders.length + " 筆";
+            document.getElementById('r-set-total').innerText = Object.values(setMenuCount).reduce((a,b)=>a+b,0);
+            document.getElementById('r-dish-total').innerText = Object.keys(dishCount).length;
+            document.getElementById('r-order-total').innerText = orders.length;
             window.lastRpt = { dishCount, setMenuCount, orders };
         }
-        function exportFullReport() { if(!window.lastRpt) return alert("請生成報表"); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.entries(window.lastRpt.dishCount).map(e=>({"品名":e[0],"需求總數":e[1]}))), "食材備料"); XLSX.writeFile(wb, `真珠營運分析.xlsx`); }
+        function exportFullReport() { if(!window.lastRpt) return alert("請先生成"); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(Object.entries(window.lastRpt.dishCount).map(e=>({"品名":e[0],"總數":e[1]}))), "備料表"); XLSX.writeFile(wb, "報表.xlsx"); }
 
-        // --- [原本的核心功能] ---
+        // --- [原本的核心功能與修改細項] ---
         function setQuickDate(val) { document.getElementById('custom-date-box').classList.toggle('hidden', val !== 'custom'); }
         async function loadCampaignOptions() { const { data } = await _s.from('campaign_settings').select('*'); allCampaigns = data || []; document.getElementById('filter-campaign').innerHTML = '<option value="all">全部活動</option>' + allCampaigns.map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join(''); }
         async function loadOrders() {
@@ -307,25 +328,14 @@
             const { data } = await query; window.ordersRef = data || [];
             document.getElementById('order-list').innerHTML = (data || []).map(o => {
                 let bTime = ""; if(o.booking_date) { const d = new Date(o.booking_date); bTime = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().substring(0,16); }
-                return `<div class="bg-white p-8 rounded-[2rem] shadow-sm border transition ${o.status==='synced'?'order-card-completed':'border-emerald-200'} text-left text-left">
-                    <div class="flex justify-between font-black text-2xl mb-2 text-p-green"><span>${o.customer_name}</span><span class="text-p-gold">$${o.total_price}</span></div>
-                    <div class="text-[10px] text-stone-400 mb-6 font-bold tracking-widest uppercase">下單：${new Date(o.created_at).toLocaleString()} | ${o.phone}</div>
-                    <div class="grid grid-cols-2 gap-4 mb-6 bg-stone-50 p-4 rounded-3xl">
-                        <div class="col-span-2"><label class="text-[9px] font-black text-stone-400 uppercase">預約時間 Booking</label><input type="datetime-local" value="${bTime}" onchange="updateOrderData('${o.id}', 'booking_date', this.value)" class="input-mini text-left"></div>
-                        <div><label class="text-[9px] font-black text-stone-400 uppercase">桌號 Table</label><input type="text" value="${o.table_no||''}" onchange="updateOrderData('${o.id}', 'table_no', this.value)" class="input-mini text-left"></div>
-                        <div><label class="text-[9px] font-black text-stone-400 uppercase text-left">活動來源</label><select onchange="updateOrderData('${o.id}', 'campaign_code', this.value)" class="input-mini"><option value="">無</option>${allCampaigns.map(c => `<option value="${c.code_name}" ${o.campaign_code===c.code_name?'selected':''}>${c.code_name}</option>`).join('')}</select></div>
-                    </div>
-                    <div class="space-y-1 mb-8 text-sm text-stone-500 border-l-4 border-p-gold/20 pl-4 font-bold text-left">${o.order_content.map(i => `• ${i.name}`).join('<br>')}</div>
-                    <div class="flex gap-3"><button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 py-4 rounded-2xl font-black text-xs hover:bg-stone-200 transition">修改細項</button><button onclick="toggleSync('${o.id}', '${o.status}')" class="flex-[1.5] ${o.status==='synced'?'bg-slate-300':'bg-emerald-600'} text-white py-4 rounded-2xl text-xs font-black shadow-lg">${o.status==='synced'?'✓ 已完成':'點選核收'}</button></div>
-                    <button onclick="delOrder('${o.id}')" class="w-full mt-4 py-2 text-red-200 text-[10px] font-bold">永久刪除</button>
-                </div>`;
+                return `<div class="bg-white p-8 rounded-[2rem] shadow-sm border transition ${o.status==='synced'?'order-card-completed':'border-emerald-200'} text-left"><div class="flex justify-between font-black text-2xl mb-2 text-p-green"><span>${o.customer_name}</span><span class="text-p-gold">$${o.total_price}</span></div><div class="text-[10px] text-stone-400 mb-6 font-bold tracking-widest uppercase text-left">下單：${new Date(o.created_at).toLocaleString()} | ${o.phone}</div><div class="grid grid-cols-2 gap-4 mb-6 bg-stone-50 p-4 rounded-3xl"><div class="col-span-2"><label class="text-[9px] font-black text-stone-400 uppercase text-left">預約時間</label><input type="datetime-local" value="${bTime}" onchange="updateOrderData('${o.id}', 'booking_date', this.value)" class="input-mini"></div><div><label class="text-[9px] font-black text-stone-400 uppercase text-left">桌號</label><input type="text" value="${o.table_no||''}" onchange="updateOrderData('${o.id}', 'table_no', this.value)" class="input-mini"></div><div><label class="text-[9px] font-black text-stone-400 uppercase text-left">活動</label><select onchange="updateOrderData('${o.id}', 'campaign_code', this.value)" class="input-mini"><option value="">無</option>${allCampaigns.map(c => `<option value="${c.code_name}" ${o.campaign_code===c.code_name?'selected':''}>${c.code_name}</option>`).join('')}</select></div></div><div class="space-y-1 mb-8 text-sm text-stone-500 border-l-4 border-p-gold/20 pl-4 font-bold text-left">${o.order_content.map(i => `• ${i.name}`).join('<br>')}</div><div class="flex gap-3"><button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 py-4 rounded-2xl font-black text-xs">修改</button><button onclick="toggleSync('${o.id}', '${o.status}')" class="flex-[1.5] ${o.status==='synced'?'bg-slate-300':'bg-emerald-600'} text-white py-4 rounded-2xl text-xs font-black shadow-lg">${o.status==='synced'?'✓ 已完成':'點選核收'}</button></div><button onclick="delOrder('${o.id}')" class="w-full mt-4 py-2 text-red-200 text-[10px] font-bold text-left">永久刪除</button></div>`;
             }).join('');
         }
         async function updateOrderData(id, field, val) { const obj = {}; if(field==='booking_date'&&val) obj[field]=new Date(val).toISOString(); else obj[field]=val||null; await _s.from('orders').update(obj).eq('id', id); }
         async function toggleSync(id, cur) { await _s.from('orders').update({ status: cur==='synced'?'pending':'synced' }).eq('id', id); loadOrders(); }
         async function delOrder(id) { if(confirm('確定刪除？')) { await _s.from('orders').delete().eq('id', id); loadOrders(); } }
 
-        // [修改、分類、選單維護等原有 JS 均完整保留 ...]
+        // [修改訂單細項回填解析]
         async function openEditOrder(id) {
             curEditOrder = window.ordersRef.find(o => o.id === id); editCart = JSON.parse(JSON.stringify(curEditOrder.order_content)); 
             document.getElementById('order-edit-modal').classList.remove('hidden');
@@ -348,39 +358,64 @@
             if (!curEditItem) return; curEditPopSels = { flavors: {}, groups: {} };
             const container = document.getElementById('edit-pop-content'); container.innerHTML = "";
             if (curEditItem.item_flavor_relation?.length > 0) {
-                container.innerHTML += curEditItem.item_flavor_relation.map(r => `<div><p class="text-[10px] text-stone-400 mb-3 uppercase font-black tracking-widest text-left">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2 text-left">${r.flavor_groups.flavor_options.map(o => { const isM = prevFlvs.includes(o.option_name); if(isM) curEditPopSels.flavors[r.flavor_groups.id] = o.option_name; return `<div onclick="setEditPopFlv(this, '${r.flavor_groups.id}', '${o.option_name}')" class="px-5 py-2 border rounded-full text-xs font-bold cursor-pointer transition ${isM?'flavor-selected':'bg-stone-50'}">${o.option_name}</div>` }).join('')}</div></div>`).join('');
+                container.innerHTML += curEditItem.item_flavor_relation.map(r => `<div><p class="text-[10px] text-stone-400 mb-3 uppercase font-black text-left">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o => { const isM = prevFlvs.includes(o.option_name); if(isM) curEditPopSels.flavors[r.flavor_groups.id] = o.option_name; return `<div onclick="setEditPopFlv(this, '${r.flavor_groups.id}', '${o.option_name}')" class="px-5 py-2 border rounded-full text-xs font-bold cursor-pointer transition ${isM?'flavor-selected':'bg-stone-50'}">${o.option_name}</div>` }).join('')}</div></div>`).join('');
             }
             if (curEditItem.is_set_menu && curEditItem.set_menu_groups) {
-                container.innerHTML += curEditItem.set_menu_groups.map(g => { curEditPopSels.groups[g.id] = []; return `<div><p class="text-[10px] text-p-green font-black mb-3 uppercase tracking-widest italic text-left">${g.group_name}</p><div class="grid grid-cols-2 gap-3 text-left">${g.set_menu_contents.map(c => { const isM = prevNames.includes(c.menu_items.name); if(isM) curEditPopSels.groups[g.id].push({ name: c.menu_items.name }); return `<div onclick="setEditPopGroup(this, '${g.id}', '${c.menu_items.name}', ${g.selection_limit})" class="p-4 border rounded-2xl text-[11px] cursor-pointer text-center font-black transition ${isM?'opt-selected':'bg-stone-50'}">${c.menu_items.name}</div>` }).join('')}</div></div>`; }).join('');
+                container.innerHTML += curEditItem.set_menu_groups.map(g => { curEditPopSels.groups[g.id] = []; return `<div><p class="text-[10px] text-p-green font-black mb-3 uppercase text-left">${g.group_name}</p><div class="grid grid-cols-2 gap-3">${g.set_menu_contents.map(c => { const isM = prevNames.includes(c.menu_items.name); if(isM) curEditPopSels.groups[g.id].push({ name: c.menu_items.name }); return `<div onclick="setEditPopGroup(this, '${g.id}', '${c.menu_items.name}', ${g.selection_limit})" class="p-4 border rounded-2xl text-[11px] cursor-pointer text-center font-black transition ${isM?'opt-selected':'bg-stone-50'}">${c.menu_items.name}</div>` }).join('')}</div></div>`; }).join('');
             }
             document.getElementById('edit-pop-title').innerText = curEditItem.name; document.getElementById('edit-flavor-popup').classList.remove('hidden');
         }
         function setEditPopFlv(el, gid, name) { Array.from(el.parentElement.children).forEach(c => { c.classList.remove('flavor-selected'); c.classList.add('bg-stone-50'); }); el.classList.add('flavor-selected'); el.classList.remove('bg-stone-50'); curEditPopSels.flavors[gid] = name; }
         function setEditPopGroup(el, gid, name, limit) { if(limit === 1) { Array.from(el.parentElement.children).forEach(s => s.classList.remove('opt-selected')); el.classList.add('opt-selected'); curEditPopSels.groups[gid] = [{ name }]; } else { let s = curEditPopSels.groups[gid]; if(s.some(x => x.name === name)) { s = s.filter(x => x.name !== name); el.classList.remove('opt-selected'); } else if(s.length < limit) { s.push({ name }); el.classList.add('opt-selected'); } curEditPopSels.groups[gid] = s; } }
         function confirmEditPop() { const fn = Object.values(curEditPopSels.flavors).join('/'), gn = Object.values(curEditPopSels.groups).flat().map(x => x.name).join('、'); const finalName = `${curEditItem.name}${fn ? ` [${fn}]` : ""}${gn ? ` (${gn})` : ""}`; if (reEditIndex > -1) editCart[reEditIndex] = { name: finalName, price: Number(curEditItem.price) }; else editCart.push({ name: finalName, price: Number(curEditItem.price) }); closeEditPop(); refreshEditCart(); }
-        async function saveOrderChange() { const total = editCart.reduce((sum, item) => sum + Number(item.price), 0); await _s.from('orders').update({ order_content: editCart, total_price: total }).eq('id', curEditOrder.id); alert("訂單更新成功！"); closeEditModal(); loadOrders(); }
+        async function saveOrderChange() { const total = editCart.reduce((sum, item) => sum + Number(item.price), 0); await _s.from('orders').update({ order_content: editCart, total_price: total }).eq('id', curEditOrder.id); alert("更新成功"); closeEditModal(); loadOrders(); }
         function renderEditMenu(cid) { document.getElementById('edit-menu-grid').innerHTML = allMenuItems.filter(i => i.category_id === cid).map(i => `<div onclick="openEditPop('${i.id}')" class="bg-white p-4 rounded-2xl border border-stone-100 cursor-pointer shadow-sm text-left hover:border-p-gold transition text-left"><div class="font-black text-xs line-clamp-2">${i.name}</div><div class="text-p-gold font-black text-xs mt-3">$${i.price}</div></div>`).join(''); }
 
+        // [活動配置與網址]
+        async function loadEventConfigData() {
+            const { data: camps } = await _s.from('campaign_settings').select('*'); document.getElementById('sel-campaign').innerHTML = camps.map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join('');
+            const { data: cats } = await _s.from('categories').select('*').eq('is_visible', false);
+            document.getElementById('event-cat-checkbox-list').innerHTML = (cats || []).map(c => `<div class="relative text-left"><input type="checkbox" id="event-cat-${c.id}" value="${c.id}" class="event-cat-checkbox hidden"><label for="event-cat-${c.id}" class="block border-2 p-4 rounded-2xl cursor-pointer text-sm font-black text-stone-500 transition hover:bg-stone-50 text-left">${c.name}</label></div>`).join('');
+            loadActiveEvents();
+        }
+        async function loadActiveEvents() {
+            const { data } = await _s.from('categories').select('*').not('campaign_code', 'is', null);
+            const groups = data.reduce((acc, cur) => { if (!acc[cur.campaign_code]) acc[cur.campaign_code] = []; acc[cur.campaign_code].push(cur.name); return acc; }, {});
+            document.getElementById('active-event-list').innerHTML = Object.keys(groups).map(code => `<div class="bg-stone-50 p-6 rounded-[2rem] border flex justify-between items-center text-left shadow-sm"><div><span class="text-[10px] bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg font-black uppercase">${code}</span><p class="text-xs text-stone-400 mt-3 font-bold">包含分類：${groups[code].join('、')}</p></div><div class="flex gap-4"><button onclick="copyEventLink('${code}')" class="text-blue-600 text-sm font-black underline decoration-dotted">複製連結</button><button onclick="unbindCampaign('${code}')" class="text-red-300 text-sm font-black">解除</button></div></div>`).join('');
+        }
+        async function bindEvent() {
+            const camp = document.getElementById('sel-campaign').value, checkedCats = Array.from(document.querySelectorAll('.event-cat-checkbox:checked')).map(el => el.value);
+            if(!camp || !checkedCats.length) return alert("請勾選");
+            await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', camp);
+            await _s.from('categories').update({ campaign_code: camp }).in('id', checkedCats);
+            alert("成功"); loadActiveEvents();
+        }
+        async function unbindCampaign(code) { if(confirm(`解除 ${code}？`)) { await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', code); loadActiveEvents(); } }
+        function copyEventLink(code) {
+            const curUrl = window.location.href, basePath = curUrl.substring(0, curUrl.lastIndexOf('/') + 1); const finalUrl = `${basePath}event.html?code=${encodeURIComponent(code)}`;
+            const t = document.createElement("input"); t.value = finalUrl; document.body.appendChild(t); t.select(); document.execCommand("copy"); document.body.removeChild(t); alert("已複製");
+        }
+
         // [維護]
-        async function loadCampaigns() { const { data } = await _s.from('campaign_settings').select('*').order('created_at', {ascending: false}); document.getElementById('campaign-list').innerHTML = (data || []).map(c => `<div class="flex justify-between items-center p-4 bg-stone-50 rounded-2xl border font-black text-sm shadow-sm text-left"><span class="text-p-green">${c.code_name}</span><button onclick="delCampaign(${c.id})" class="text-red-400 font-bold px-2 text-lg font-serif">✕</button></div>`).join(''); }
+        async function loadCampaigns() { const { data } = await _s.from('campaign_settings').select('*').order('created_at', {ascending: false}); document.getElementById('campaign-list').innerHTML = (data || []).map(c => `<div class="flex justify-between items-center p-4 bg-stone-50 rounded-2xl border font-black text-sm shadow-sm text-left"><span class="text-p-green">${c.code_name}</span><button onclick="delCampaign(${c.id})" class="text-red-400 font-bold px-2">✕</button></div>`).join(''); }
         async function addCampaign() { const n = document.getElementById('new-campaign').value.trim(); if(n) await _s.from('campaign_settings').insert([{ code_name: n }]); document.getElementById('new-campaign').value=""; loadCampaigns(); }
-        async function delCampaign(id) { if(confirm('刪除活動？')) { await _s.from('campaign_settings').delete().eq('id', id); loadCampaigns(); } }
+        async function delCampaign(id) { await _s.from('campaign_settings').delete().eq('id', id); loadCampaigns(); }
         async function loadCats() {
             const { data } = await _s.from('categories').select('*').order('sort_order'); allCategories = data || [];
-            document.getElementById('cat-list-table').innerHTML = data.map(c => `<tr class="border-b hover:bg-stone-50 transition text-sm text-left"><td class="p-5 text-left"><input type="number" value="${c.sort_order||0}" onchange="updateCatSort('${c.id}',this.value)" class="w-12 border rounded-lg text-xs p-2 text-center font-bold"></td><td class="p-5 font-black text-p-green text-left">${c.name}</td><td class="p-5 text-center"><input type="checkbox" ${c.is_visible?'checked':''} onchange="updateCatVis('${c.id}',this.checked)" class="w-5 h-5 accent-p-green"></td><td class="p-5 text-center"><button onclick="delCat('${c.id}')" class="text-red-300 font-bold hover:text-red-500">刪除</button></td></tr>`).join('');
+            document.getElementById('cat-list-table').innerHTML = data.map(c => `<tr class="border-b hover:bg-stone-50 transition text-sm text-left"><td class="p-5 text-left text-left"><input type="number" value="${c.sort_order||0}" onchange="updateCatSort('${c.id}',this.value)" class="w-12 border rounded-lg text-xs p-2 text-center font-bold"></td><td class="p-5 font-black text-p-green text-left text-left">${c.name}</td><td class="p-5 text-center text-center text-center"><input type="checkbox" ${c.is_visible?'checked':''} onchange="updateCatVis('${c.id}',this.checked)" class="w-5 h-5 accent-p-green"></td><td class="p-5 text-center text-center text-center text-center text-center text-center"><button onclick="delCat('${c.id}')" class="text-red-300 font-bold">刪除</button></td></tr>`).join('');
             document.getElementById('m-cat').innerHTML = data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             document.getElementById('menu-cat-filter').innerHTML = '<option value="all">所有分類</option>' + data.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
         async function updateCatVis(id, b) { await _s.from('categories').update({ is_visible: b }).eq('id', id); loadCats(); }
         async function updateCatSort(id, v) { await _s.from('categories').update({ sort_order: parseInt(v) }).eq('id', id); loadCats(); }
         async function addCat() { const n = document.getElementById('new-cat').value.trim(); if(n) await _s.from('categories').insert([{ name: n, sort_order: 99, is_visible: true }]); loadCats(); }
-        async function delCat(id) { if(confirm('刪除分類？')) { await _s.from('categories').delete().eq('id', id); loadCats(); } }
+        async function delCat(id) { if(confirm('刪除？')) { await _s.from('categories').delete().eq('id', id); loadCats(); } }
         async function loadMenu() {
             const search = document.getElementById('menu-search').value.toLowerCase(), catF = document.getElementById('menu-cat-filter').value;
             const { data } = await _s.from('menu_items').select('*, categories(name)').order('created_at', {ascending:false});
-            document.getElementById('menu-grid').innerHTML = (data || []).filter(i => i.name.toLowerCase().includes(search) && (catF==='all'||i.category_id===catF)).map(i => `<div class="bg-white rounded-[2rem] border p-6 shadow-sm flex flex-col h-full text-left text-left"><div class="h-36 bg-stone-50 rounded-3xl mb-4 flex items-center justify-center overflow-hidden"><img src="${i.image_url||''}" class="max-h-full img-contain"></div><div class="flex justify-between font-black text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="flex gap-2 mt-auto pt-6"><button onclick="editItem('${i.id}')" class="flex-1 py-2 bg-stone-100 rounded-xl font-black text-[10px]">編輯資料</button>${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-2 bg-amber-500 text-white rounded-xl font-black text-[10px]">套餐設定</button>`:''}<button onclick="delItem('${i.id}')" class="px-3 text-red-200">✕</button></div></div>`).join('');
+            document.getElementById('menu-grid').innerHTML = (data || []).filter(i => i.name.toLowerCase().includes(search) && (catF==='all'||i.category_id===catF)).map(i => `<div class="bg-white rounded-[2rem] border p-6 shadow-sm flex flex-col h-full text-left text-left"><div class="h-36 bg-stone-50 rounded-3xl mb-4 flex items-center justify-center overflow-hidden"><img src="${i.image_url||''}" class="max-h-full img-contain"></div><div class="flex justify-between font-black text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="flex gap-2 mt-auto pt-6 text-left"><button onclick="editItem('${i.id}')" class="flex-1 py-2 bg-stone-100 rounded-xl font-black text-[10px]">編輯資料</button>${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-2 bg-amber-500 text-white rounded-xl font-black text-[10px]">套餐設定</button>`:''}<button onclick="delItem('${i.id}')" class="px-3 text-red-200 text-left">✕</button></div></div>`).join('');
         }
-        async function openMenuModal(isEdit) { document.getElementById('menu-modal').classList.remove('hidden'); if(!isEdit) { document.getElementById('m-id').value = ""; document.getElementById('m-name').value = ""; document.getElementById('m-price').value = ""; document.getElementById('m-desc').value = ""; document.getElementById('m-is-set').checked = false; } const { data: flvs } = await _s.from('flavor_groups').select('*'); document.getElementById('flv-checks').innerHTML = (flvs || []).map(f => `<label class="flex items-center gap-2 text-[11px] font-bold"><input type="checkbox" class="flv-chk w-4 h-4 accent-p-green" value="${f.id}"> ${f.name}</label>`).join(''); }
+        async function openMenuModal(isEdit) { document.getElementById('menu-modal').classList.remove('hidden'); if(!isEdit) { document.getElementById('m-id').value = ""; document.getElementById('m-name').value = ""; document.getElementById('m-price').value = ""; document.getElementById('m-desc').value = ""; document.getElementById('m-is-set').checked = false; } const { data: flvs } = await _s.from('flavor_groups').select('*'); document.getElementById('flv-checks').innerHTML = (flvs || []).map(f => `<label class="flex items-center gap-2 text-[11px] font-bold text-left"><input type="checkbox" class="flv-chk w-4 h-4 accent-p-green" value="${f.id}"> ${f.name}</label>`).join(''); }
         async function editItem(id) { const { data: i } = await _s.from('menu_items').select('*, item_flavor_relation(*)').eq('id', id).single(); document.getElementById('m-id').value = i.id; document.getElementById('m-name').value = i.name; document.getElementById('m-price').value = i.price; document.getElementById('m-desc').value = i.description || ''; document.getElementById('m-is-set').checked = i.is_set_menu; await openMenuModal(true); setTimeout(() => { i.item_flavor_relation.forEach(r => { const c = document.querySelector(`.flv-chk[value="${r.flavor_group_id}"]`); if(c) c.checked=true; }); }, 500); }
         async function saveItem() {
             const id = document.getElementById('m-id').value, file = document.getElementById('m-img').files[0]; let url = "";
@@ -393,24 +428,24 @@
         async function openSetModal(id) { curItem = id; resetSetForm(); document.getElementById('set-modal').classList.remove('hidden'); const { data } = await _s.from('menu_items').select('*, categories(name)').eq('is_set_menu', false).order('name'); window.allPickerItems = data || []; renderPickerList(data); loadSavedSets(); }
         function renderPickerList(items) {
             const container = document.getElementById('item-picker-list'), grouped = items.reduce((acc, i) => { const cat = i.categories?.name || '未分類'; if (!acc[cat]) acc[cat] = []; acc[cat].push(i); return acc; }, {});
-            container.innerHTML = Object.keys(grouped).map(cat => `<div class="col-span-2 mt-4 font-black text-[9px] text-stone-300 border-b uppercase italic tracking-widest text-left text-left">${cat}</div>` + grouped[cat].map(i => `<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}', '${i.name}')" class="picker-item flex justify-between p-4 border rounded-2xl bg-white cursor-pointer shadow-sm text-xs font-black text-left"><span>${i.name}</span><div class="check-mark hidden font-bold text-p-gold text-left">✔</div></div>`).join('')).join('');
+            container.innerHTML = Object.keys(grouped).map(cat => `<div class="col-span-2 mt-4 font-black text-[9px] text-stone-300 border-b uppercase italic text-left text-left text-left">${cat}</div>` + grouped[cat].map(i => `<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}', '${i.name}')" class="picker-item flex justify-between p-4 border rounded-2xl bg-white cursor-pointer shadow-sm text-xs font-black text-left text-left"><span>${i.name}</span><div class="check-mark hidden font-bold text-p-gold text-left text-left">✔</div></div>`).join('')).join('');
         }
         function togglePickerSelect(id, name) { const el = document.getElementById(`picker-${id}`), idx = pickerSelectedItems.findIndex(x => x.id === id); if(idx > -1) { pickerSelectedItems.splice(idx, 1); el?.classList.remove('active'); } else { pickerSelectedItems.push({ id, name }); el?.classList.add('active'); } updatePickerStats(); }
         function updatePickerStats() { document.getElementById('picker-count').innerText = `已選 ${pickerSelectedItems.length} 項`; }
         function addSelectedToPicks() { pickerSelectedItems.forEach(s => { if(!curPicks.some(p => p.id === s.id)) curPicks.push(s); }); pickerSelectedItems = []; renderTempPicks(); document.querySelectorAll('.picker-item').forEach(el => el.classList.remove('active')); updatePickerStats(); }
-        function renderTempPicks() { document.getElementById('temp-pick-display').innerHTML = curPicks.map((p, idx) => `<div class="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-3 border border-emerald-100 shadow-sm text-left">${p.name} <span onclick="curPicks.splice(${idx},1);renderTempPicks();" class="cursor-pointer opacity-30 hover:opacity-100 font-serif">✕</span></div>`).join(''); }
+        function renderTempPicks() { document.getElementById('temp-pick-display').innerHTML = curPicks.map((p, idx) => `<div class="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-3 border text-left text-left text-left">${p.name} <span onclick="curPicks.splice(${idx},1);renderTempPicks();" class="cursor-pointer font-serif text-left">✕</span></div>`).join(''); }
         async function saveFullSet() { 
-            const n = document.getElementById('g-name').value, l = document.getElementById('g-limit').value; if(!n || !curPicks.length) return alert("資訊不齊");
+            const n = document.getElementById('g-name').value, l = document.getElementById('g-limit').value; if(!n || !curPicks.length) return alert("不齊");
             let gid = currentEditingGroupId; if (gid) { await _s.from('set_menu_groups').update({ group_name: n, selection_limit: l }).eq('id', gid); await _s.from('set_menu_contents').delete().eq('group_id', gid); } 
             else { const { data: g } = await _s.from('set_menu_groups').insert([{ parent_set_id: curItem, group_name: n, selection_limit: l }]).select(); if(g) gid = g[0].id; }
             if(gid) { await _s.from('set_menu_contents').insert(curPicks.map(p => ({ group_id: gid, item_id: p.id }))); resetSetForm(); loadSavedSets(); } 
         }
-        async function loadSavedSets() { const { data } = await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('parent_set_id', curItem); document.getElementById('saved-groups-view').innerHTML = (data || []).map(g => `<div class="p-4 bg-stone-50 border rounded-3xl flex justify-between shadow-inner mb-2 text-left text-left"><div class="flex-1"><b class="text-p-green text-xs font-black italic underline decoration-p-gold">${g.group_name} (限選 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 mt-1">${g.set_menu_contents.map(c => c.menu_items?.name).join('、')}</p></div><div class="flex gap-2"><button onclick="editSetGroup('${g.id}')" class="text-p-gold font-black text-xs text-left">編輯</button><button onclick="delSetGroup('${g.id}')" class="text-red-400 font-black text-xs text-left">✕</button></div></div>`).join(''); }
+        async function loadSavedSets() { const { data } = await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('parent_set_id', curItem); document.getElementById('saved-groups-view').innerHTML = (data || []).map(g => `<div class="p-4 bg-stone-50 border rounded-3xl flex justify-between mb-2 text-left text-left text-left"><div class="flex-1"><b class="text-p-green text-xs font-black italic underline">${g.group_name} (限選 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 mt-1">${g.set_menu_contents.map(c => c.menu_items?.name).join('、')}</p></div><div class="flex gap-2 text-left"><button onclick="editSetGroup('${g.id}')" class="text-p-gold font-black text-xs text-left">編輯</button><button onclick="delSetGroup('${g.id}')" class="text-red-400 font-black text-xs text-left">✕</button></div></div>`).join(''); }
         async function delSetGroup(id) { if(confirm('刪除？')) { await _s.from('set_menu_groups').delete().eq('id', id); loadSavedSets(); } }
         function resetSetForm() { currentEditingGroupId = null; document.getElementById('g-name').value = ""; document.getElementById('g-limit').value = 1; document.getElementById('temp-pick-display').innerHTML = ""; curPicks = []; pickerSelectedItems = []; updatePickerStats(); }
 
-        // [口味、Logo]
-        async function loadFlvs() { const { data } = await _s.from('flavor_groups').select('*, flavor_options(*)'); document.getElementById('flv-grid').innerHTML = (data || []).map(g => `<div class="bg-white p-6 rounded-[2rem] border flex justify-between shadow-sm items-center text-left"><b class="text-p-green font-serif italic text-left">🌶️ ${g.name}</b><button onclick="delFlv('${g.id}')" class="w-10 h-10 rounded-full border text-red-400 font-serif text-xl hover:bg-red-50 text-left">✕</button></div>`).join(''); }
+        // [口味、Logo、切換]
+        async function loadFlvs() { const { data } = await _s.from('flavor_groups').select('*, flavor_options(*)'); document.getElementById('flv-grid').innerHTML = (data || []).map(g => `<div class="bg-white p-6 rounded-[2rem] border flex justify-between shadow-sm items-center text-left text-left"><b class="text-p-green font-serif italic text-left text-left">🌶️ ${g.name}</b><button onclick="delFlv('${g.id}')" class="w-10 h-10 rounded-full border text-red-400 font-serif text-xl text-left">✕</button></div>`).join(''); }
         async function addFlvGroup() { const n = prompt("組名"), o = prompt("選項(逗號隔開)"); if(n && o) { const { data: g } = await _s.from('flavor_groups').insert([{ name: n }]).select(); if(g) await _s.from('flavor_options').insert(o.split(',').map(nm => ({ group_id: g[0].id, option_name: nm.trim() }))); loadFlvs(); } }
         async function delFlv(id) { if(confirm('刪除？')) { await _s.from('flavor_groups').delete().eq('id', id); loadFlvs(); } }
         async function loadSettings() { const { data } = await _s.from('store_settings').select('*').eq('id', 1).single(); if(data?.logo_url) { document.getElementById('current-logo-preview').classList.remove('hidden'); document.getElementById('admin-logo-img').src = document.getElementById('side-logo-img').src = `${data.logo_url}?t=${Date.now()}`; } }
@@ -418,19 +453,16 @@
             const f = document.getElementById('logo-file').files[0]; if(!f) return;
             const ext = f.name.split('.').pop().toLowerCase(), path = `logo_${Date.now()}.${ext}`, type = ext === 'svg' ? 'image/svg+xml' : f.type;
             const { error } = await _s.storage.from('assets').upload(path, f, { contentType: type, upsert: true });
-            if(!error) { const { data } = _s.storage.from('assets').getPublicUrl(path); await _s.from('store_settings').update({ logo_url: data.publicUrl }).eq('id', 1); alert("成功"); loadSettings(); }
+            if(!error) { const { data } = _s.storage.from('assets').getPublicUrl(path); await _s.from('store_settings').update({ logo_url: data.publicUrl }).eq('id', 1); alert("Logo 更新成功"); loadSettings(); }
         }
 
-        // [輔助]
+        // [輔助 UI]
         function closeMenuModal() { document.getElementById('menu-modal').classList.add('hidden'); }
         function closeSetModal() { document.getElementById('set-modal').classList.add('hidden'); }
         function closeEditModal() { document.getElementById('order-edit-modal').classList.add('hidden'); }
         function closeEditPop() { document.getElementById('edit-flavor-popup').classList.add('hidden'); }
         function resetFilters() { document.getElementById('filter-search').value=''; document.getElementById('filter-date-preset').value='all'; document.getElementById('filter-status').value='all'; loadOrders(); }
-        function exportXls() { 
-            const exp = window.ordersRef.map(o => ({ '姓名': o.customer_name, '電話': o.phone, '總額': o.total_price, '桌號': o.table_no, '活動': o.campaign_code, '時間': o.booking_date })); 
-            XLSX.writeFile(XLSX.utils.book_new(), "真珠報表.xlsx"); 
-        }
+        function exportXls() { const exp = window.ordersRef.map(o => ({ '姓名': o.customer_name, '電話': o.phone, '總額': o.total_price, '桌號': o.table_no, '活動': o.campaign_code, '時間': o.booking_date })); XLSX.writeFile(XLSX.utils.book_new(), "真珠報表.xlsx"); }
 
         switchTab('orders');
         loadSettings();
