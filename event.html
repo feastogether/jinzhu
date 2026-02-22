@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>真珠 | 特殊活動預點</title>
+    <link rel="stylesheet" href="https://www.jinzhu.com.tw/bootstrap/css/bootstrap.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --p-green: #004d40; --p-gold: #b89150; --p-cream: #f9f5f0; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--p-cream); text-align: left; }
+        .font-serif { font-family: 'Noto Serif TC', serif; }
+        .navbar-custom { background: #fff; height: 60px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: fixed; top:0; width:100%; z-index:100; }
+        .order-card { margin-top: 80px; background: #fff; border-radius: 2rem; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .img-contain { width: 100%; height: 100%; object-fit: contain; }
+        .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; }
+        .opt-selected { border: 2.5px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
+        .btn-close-custom { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2200; border: none; }
+    </style>
+</head>
+<body class="pb-24">
+
+    <header class="navbar-custom"><img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" style="max-height:35px"></header>
+
+    <main class="max-w-xl mx-auto p-4">
+        <div class="text-center mt-20 mb-4">
+            <h2 id="event-title" class="text-2xl font-black text-p-green font-serif">專屬活動選單</h2>
+            <p id="event-code-display" class="text-p-gold font-bold tracking-widest text-sm uppercase"></p>
+        </div>
+
+        <section id="step-1">
+            <div class="order-card p-8 border border-white">
+                <div class="space-y-6">
+                    <div><label class="text-[10px] font-bold text-stone-400 block mb-1">姓名 Name</label><input type="text" id="custName" placeholder="請輸入姓名" class="w-full border-b py-2 outline-none focus:border-p-green"></div>
+                    <div><label class="text-[10px] font-bold text-stone-400 block mb-1">電話 Phone</label><input type="tel" id="custPhone" placeholder="請輸入電話" class="w-full border-b py-2 outline-none focus:border-p-green"></div>
+                    <button onclick="startOrder()" class="w-full bg-[#004d40] text-white py-4 rounded-full font-bold shadow-lg mt-4">進入點餐</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="step-2" class="hidden">
+            <div id="menu-grid" class="grid grid-cols-1 gap-4 mt-6"></div>
+        </section>
+
+        </main>
+
+    <div id="detail-modal" class="fixed inset-0 bg-black/80 z-[110] hidden flex items-end justify-center backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md overflow-hidden flex flex-col relative rounded-t-[2rem] max-h-[90vh]">
+            <button onclick="closeDetail()" class="btn-close-custom">✕</button>
+            <div class="overflow-y-auto flex-1 no-scrollbar">
+                <div class="h-48 bg-white flex items-center justify-center p-4"><img id="detail-img" src="" class="img-contain"></div>
+                <div class="p-6">
+                    <h3 id="detail-title" class="text-xl font-bold text-p-green font-serif"></h3>
+                    <div id="flavor-container" class="mt-4 space-y-4"></div>
+                    <div id="set-group-container" class="mt-6 space-y-6 border-t pt-6"></div>
+                </div>
+            </div>
+            <div class="p-4 bg-stone-50 border-t flex items-center gap-3">
+                <div class="flex items-center gap-3 bg-white border rounded-xl px-3 py-1">
+                    <button onclick="changeQty(-1)" class="text-p-green font-bold">－</button>
+                    <span id="item-qty" class="font-bold">1</span>
+                    <button onclick="changeQty(1)" class="text-p-green font-bold">＋</button>
+                </div>
+                <button onclick="closeDetail()" class="flex-1 py-3 border rounded-xl text-stone-400 font-bold text-xs bg-white">取消</button>
+                <button id="add-btn" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold text-xs">加入預點</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+        const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const campaignCode = urlParams.get('code');
+        let targetCategoryId = null;
+        let menuData = [], cart = [], guest = {}, tempItem = null, currentQty = 1;
+
+        async function init() {
+            if(!campaignCode) return alert("網址無活動代號");
+            document.getElementById('event-code-display').innerText = campaignCode;
+            
+            // 1. 取得活動對應的分類 ID
+            const { data: config } = await _s.from('event_configs').select('category_id').eq('campaign_code', campaignCode).single();
+            if(!config) return alert("找不到此活動配置");
+            targetCategoryId = config.category_id;
+        }
+        init();
+
+        async function startOrder() {
+            guest = { name: document.getElementById('custName').value, phone: document.getElementById('custPhone').value };
+            if(!guest.name || !guest.phone) return alert("請填寫資料");
+            document.getElementById('step-1').classList.add('hidden');
+            document.getElementById('step-2').classList.remove('hidden');
+            loadEventMenu();
+        }
+
+        async function loadEventMenu() {
+            // 2. 只抓取該活動分類下的菜單
+            const { data: items } = await _s.from('menu_items')
+                .select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))')
+                .eq('category_id', targetCategoryId)
+                .eq('is_hidden', false);
+
+            menuData = items;
+            document.getElementById('menu-grid').innerHTML = items.map(i => `
+                <div class="bg-white rounded-3xl p-4 shadow-sm flex h-32 gap-4 border" onclick="openDetail('${i.id}')">
+                    <div class="w-24 h-full flex-shrink-0"><img src="${i.image_url || ''}" class="img-contain"></div>
+                    <div class="flex-1 flex flex-col justify-between py-1 overflow-hidden">
+                        <h3 class="font-bold text-p-green text-base font-serif truncate">${i.name}</h3>
+                        <div class="flex justify-between items-end"><span class="text-p-gold font-bold">$${i.price}</span><span class="text-[9px] bg-stone-100 px-3 py-1.5 rounded-full font-bold text-stone-400">選擇</span></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function finalSubmit() {
+            const { error } = await _s.from('orders').insert([{
+                customer_name: guest.name,
+                phone: guest.phone,
+                order_content: cart,
+                total_price: cart.reduce((s,i)=>s+i.price,0),
+                campaign_code: campaignCode, // *** 重點：自動帶入代號 ***
+                status: 'pending'
+            }]);
+            if(!error) alert("預定成功！");
+        }
+
+        // ... (其餘與原本 index.html 的 openDetail, confirmAdd 邏輯一致)
+    </script>
+</body>
+</html>
