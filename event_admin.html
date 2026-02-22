@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>真珠 | 特殊活動菜單配置</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --p-green: #004d40; --p-gold: #b89150; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        .font-serif { font-family: 'Noto Serif TC', serif; }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+    <div class="max-w-4xl mx-auto">
+        <h2 class="text-3xl font-bold text-p-green font-serif mb-8 border-b pb-4">特殊活動菜單配置</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border">
+                <h3 class="text-lg font-bold mb-4 text-p-gold">建立新活動網址</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">1. 輸入活動代號</label>
+                        <input type="text" id="new-code" placeholder="例如：2026母親節" class="w-full border p-3 rounded-xl outline-none focus:border-p-green">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">2. 選擇對應的隱藏分類</label>
+                        <select id="select-cat" class="w-full border p-3 rounded-xl bg-stone-50 outline-none">
+                            <option value="">-- 載入分類中 --</option>
+                        </select>
+                        <p class="text-[10px] text-stone-400 mt-2">* 僅會列出原本後台中設定為「隱藏」的分類</p>
+                    </div>
+                    <button onclick="saveEventConfig()" class="w-full bg-p-green text-white py-3 rounded-xl font-bold shadow-lg active:scale-95 transition">建立活動連結</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-3xl shadow-sm border">
+                <h3 class="text-lg font-bold mb-4 text-stone-600">現有活動網址清單</h3>
+                <div id="event-list" class="space-y-3">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+        const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function init() {
+            // 1. 抓取隱藏分類 (is_visible = false)
+            const { data: cats } = await _s.from('categories').select('*').eq('is_visible', false);
+            const select = document.getElementById('select-cat');
+            select.innerHTML = '<option value="">請選擇隱藏分類</option>' + 
+                cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
+            loadEventConfigs();
+        }
+
+        async function loadEventConfigs() {
+            const { data } = await _s.from('event_configs').select('*, categories(name)');
+            const list = document.getElementById('event-list');
+            list.innerHTML = data.map(e => `
+                <div class="p-4 bg-stone-50 rounded-2xl border flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-p-green">${e.campaign_code}</p>
+                        <p class="text-[10px] text-stone-400">對應分類：${e.categories?.name}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="copyLink('${e.campaign_code}')" class="text-xs text-blue-600 font-bold">複製連結</button>
+                        <button onclick="delConfig('${e.id}')" class="text-xs text-red-400 font-bold">刪除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function saveEventConfig() {
+            const code = document.getElementById('new-code').value.trim();
+            const catId = document.getElementById('select-cat').value;
+            if(!code || !catId) return alert("請填寫完整");
+
+            const { error } = await _s.from('event_configs').insert([{ campaign_code: code, category_id: catId }]);
+            if(error) alert("代號可能重複了");
+            else { 
+                document.getElementById('new-code').value = "";
+                loadEventConfigs();
+            }
+        }
+
+        async function delConfig(id) {
+            if(confirm('確定刪除此活動配置？')) {
+                await _s.from('event_configs').delete().eq('id', id);
+                loadEventConfigs();
+            }
+        }
+
+        function copyLink(code) {
+            const link = `${window.location.origin}/event.html?code=${encodeURIComponent(code)}`;
+            navigator.clipboard.writeText(link);
+            alert("網址已複製到剪貼簿：\n" + link);
+        }
+
+        init();
+    </script>
+</body>
+</html>
