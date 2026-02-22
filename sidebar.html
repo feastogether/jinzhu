@@ -1,0 +1,35 @@
+<div class="sidebar-header p-8 flex flex-col items-center border-b border-emerald-800/50 mb-4">
+    <img id="side-logo-img" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" class="side-logo max-h-14 w-full filter brightness-200">
+    <button onclick="toggleSidebar()" class="mt-4 bg-emerald-800/50 p-2 rounded-full hover:bg-p-gold transition no-print">
+        <span id="collapse-icon">◀</span>
+    </button>
+</div>
+
+<nav class="space-y-1 flex-1 px-3 overflow-y-auto no-scrollbar">
+    <button id="btn-orders" onclick="switchTab('orders')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
+        <span class="text-xl">📋</span> <span class="nav-text font-bold text-sm tracking-widest">訂單監控</span>
+    </button>
+    <button id="btn-report" onclick="switchTab('report')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
+        <span class="text-xl">📊</span> <span class="nav-text font-bold text-sm tracking-widest">報表統計</span>
+    </button>
+    <button id="btn-campaigns" onclick="switchTab('campaigns')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
+        <span class="text-xl">🎗️</span> <span class="nav-text font-bold text-sm tracking-widest">活動代號</span>
+    </button>
+    <button id="btn-categories" onclick="switchTab('categories')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
+        <span class="text-xl">🗂️</span> <span class="nav-text font-bold text-sm tracking-widest">分類管理</span>
+    </button>
+    <button id="btn-menu" onclick="switchTab('menu')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
+        <span class="text-xl">🍱</span> <span class="nav-text font-bold text-sm tracking-widest">菜單編輯</span>
+    </button>
+    <button id="btn-flavors" onclick="switchTab('flavors')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
+        <span class="text-xl">🌶️</span> <span class="nav-text font-bold text-sm tracking-widest">口味定義</span>
+    </button>
+    <button id="btn-settings" onclick="switchTab('settings')" class="w-full text-left p-4 rounded-xl hover:bg-emerald-800 transition flex items-center gap-4">
+        <span class="text-xl">⚙️</span> <span class="nav-text font-bold text-sm tracking-widest">系統設定</span>
+    </button>
+    <div class="pt-4 mt-4 border-t border-emerald-800">
+        <a href="monitor.html" target="_blank" class="block w-full text-left p-4 rounded-xl hover:bg-emerald-900 transition flex items-center gap-4 text-emerald-300 no-underline shadow-inner">
+            <span class="text-xl">🖥️</span> <span class="nav-text font-bold text-sm italic">看板模式</span>
+        </a>
+    </div>
+</nav>
