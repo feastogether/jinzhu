@@ -316,7 +316,7 @@
             </div>
 
             <!-- KPI 總覽 -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
                 <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #004d40">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">訂單數</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-orders">—</div>
@@ -331,6 +331,11 @@
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">小孩</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-kid">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">位小孩</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #fb923c">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">兒童</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-child">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">位兒童</div>
                 </div>
                 <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #3b82f6">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">總人數</div>
@@ -1701,6 +1706,7 @@ function renderReports(orders) {
     document.getElementById('kpi-orders').innerText = orders.length;
     document.getElementById('kpi-adult').innerText  = totalAdult;
     document.getElementById('kpi-kid').innerText    = totalKid;
+    document.getElementById('kpi-child').innerText  = totalChild;
     document.getElementById('kpi-people').innerText = totalAdult + totalKid + totalChild;
     document.getElementById('kpi-sets').innerText   = totalSets;
     document.getElementById('kpi-items').innerText  = sorted.length;
