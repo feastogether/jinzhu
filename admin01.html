@@ -723,10 +723,30 @@ async function loadOrders() {
                 下單於: ${new Date(o.created_at).toLocaleString()} | ${o.phone}
             </div>
             <div class="grid grid-cols-2 gap-2 mb-4 bg-stone-50 p-3 rounded-xl">
-                <div class="col-span-2">
-                    <label class="text-[9px] font-bold text-stone-400">訂位日期與時間 Booking Time</label>
-                    <input type="datetime-local" value="${bTime}"
-                        onchange="updateOrderData('${o.id}', 'booking_date', this.value)" class="input-mini">
+                <!-- 訂位日期 -->
+                <div>
+                    <label class="text-[9px] font-bold text-stone-400">訂位日期 Date</label>
+                    <input type="date" id="bdate-${o.id}" value="${bTime.split('T')[0] || ''}"
+                        onchange="updateBookingDateTime('${o.id}')"
+                        class="input-mini">
+                </div>
+                <!-- 訂位時間（整點 / 15 / 30 / 45 分下拉） -->
+                <div>
+                    <label class="text-[9px] font-bold text-stone-400">訂位時間 Time</label>
+                    <select id="btime-${o.id}"
+                        onchange="updateBookingDateTime('${o.id}')"
+                        class="input-mini">
+                        <option value="">-- 選擇時間 --</option>
+                        ${Array.from({length:24}, (_,h) =>
+                            [0,15,30,45].map(m => {
+                                const hh = String(h).padStart(2,'0');
+                                const mm = String(m).padStart(2,'0');
+                                const val = `${hh}:${mm}`;
+                                const curTime = bTime ? bTime.split('T')[1]?.slice(0,5) : '';
+                                return `<option value="${val}" ${curTime === val ? 'selected' : ''}>${val}</option>`;
+                            }).join('')
+                        ).join('')}
+                    </select>
                 </div>
                 <div>
                     <label class="text-[9px] font-bold text-stone-400">桌號 Table</label>
@@ -740,13 +760,26 @@ async function loadOrders() {
                         ${allCampaigns.map(c => `<option value="${c.code_name}" ${o.campaign_code === c.code_name ? 'selected' : ''}>${c.code_name}</option>`).join('')}
                     </select>
                 </div>
-                <div class="col-span-2 flex gap-1 mt-1">
-                    <input type="number" value="${o.adult_count || 0}"
-                        onchange="updateOrderData('${o.id}','adult_count',this.value)" class="input-mini text-center" title="大人">
-                    <input type="number" value="${o.kid_count || 0}"
-                        onchange="updateOrderData('${o.id}','kid_count',this.value)" class="input-mini text-center" title="小孩">
-                    <input type="number" value="${o.toddler_count || 0}"
-                        onchange="updateOrderData('${o.id}','toddler_count',this.value)" class="input-mini text-center" title="幼兒">
+                <!-- 人數：大人 / 小孩 / 兒童 -->
+                <div class="col-span-2 grid grid-cols-3 gap-1 mt-1">
+                    <div>
+                        <label class="text-[9px] font-bold text-stone-400 block text-center mb-1">大人 Adult</label>
+                        <input type="number" min="0" value="${o.adult_count || 0}"
+                            onchange="updateOrderData('${o.id}','adult_count',this.value)"
+                            class="input-mini text-center w-full">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-stone-400 block text-center mb-1">小孩 Kid</label>
+                        <input type="number" min="0" value="${o.kid_count || 0}"
+                            onchange="updateOrderData('${o.id}','kid_count',this.value)"
+                            class="input-mini text-center w-full">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-stone-400 block text-center mb-1">兒童 Child</label>
+                        <input type="number" min="0" value="${o.child_count || 0}"
+                            onchange="updateOrderData('${o.id}','child_count',this.value)"
+                            class="input-mini text-center w-full">
+                    </div>
                 </div>
             </div>
             <div class="space-y-1 mb-6 text-sm text-stone-500 border-l-2 border-stone-200 pl-4">
@@ -776,6 +809,18 @@ async function updateOrderData(id, field, val) {
         obj[field] = val || null;
     }
     await _s.from('orders').update(obj).eq('id', id);
+}
+
+// 日期 + 時間下拉合併後更新 booking_date
+async function updateBookingDateTime(id) {
+    const dateEl = document.getElementById(`bdate-${id}`);
+    const timeEl = document.getElementById(`btime-${id}`);
+    if (!dateEl || !timeEl) return;
+    const date = dateEl.value;
+    const time = timeEl.value;
+    if (!date || !time) return;
+    const iso = new Date(`${date}T${time}:00`).toISOString();
+    await _s.from('orders').update({ booking_date: iso }).eq('id', id);
 }
 
 async function toggleSync(id, cur) {
@@ -1621,12 +1666,13 @@ async function fetchData() {
 function renderReports(orders) {
     const dishCount    = {};
     const setMenuCount = {};
-    let totalAdult = 0, totalKid = 0, totalRev = 0;
+    let totalAdult = 0, totalKid = 0, totalChild = 0, totalRev = 0;
 
     orders.forEach(o => {
-        totalAdult += (o.adult_count || 0);
-        totalKid   += (o.kid_count   || 0);
-        totalRev   += (o.total_price || 0);
+        totalAdult  += (o.adult_count  || 0);
+        totalKid    += (o.kid_count    || 0);
+        totalChild  += (o.child_count  || 0);
+        totalRev    += (o.total_price  || 0);
 
         (o.order_content || []).forEach(item => {
             const qtyM    = item.name.match(/ x(\d+)/);
@@ -1655,7 +1701,7 @@ function renderReports(orders) {
     document.getElementById('kpi-orders').innerText = orders.length;
     document.getElementById('kpi-adult').innerText  = totalAdult;
     document.getElementById('kpi-kid').innerText    = totalKid;
-    document.getElementById('kpi-people').innerText = totalAdult + totalKid;
+    document.getElementById('kpi-people').innerText = totalAdult + totalKid + totalChild;
     document.getElementById('kpi-sets').innerText   = totalSets;
     document.getElementById('kpi-items').innerText  = sorted.length;
     document.getElementById('kpi-rev').innerText    = '$' + totalRev.toLocaleString();
@@ -1720,6 +1766,7 @@ function renderReports(orders) {
                     ${o.table_no ? `<span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">桌號 <span class="text-p-green">${o.table_no}</span></span>` : ''}
                     <span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">大人 <span class="text-p-green">${o.adult_count || 0}</span> 位</span>
                     <span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">小孩 <span class="text-p-green">${o.kid_count || 0}</span> 位</span>
+                    <span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">兒童 <span class="text-p-green">${o.child_count || 0}</span> 位</span>
                     <span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">合計 <span class="text-amber-600">$${o.total_price || 0}</span></span>
                 </div>
                 <div class="px-4 py-2">
@@ -1732,7 +1779,7 @@ function renderReports(orders) {
                 ${o.note ? `<div class="mx-4 mb-3 px-3 py-2 text-xs font-bold text-p-green rounded-lg" style="background:#f0fdf4;border-left:3px solid #004d40">📝 ${o.note}</div>` : ''}
             </div>`).join('');
 
-    window.lastData = { dishCount, setMenuCount, sorted, orders, totalAdult, totalKid, totalRev, totalSets };
+    window.lastData = { dishCount, setMenuCount, sorted, orders, totalAdult, totalKid, totalChild, totalRev, totalSets };
 }
 
 function rptTab(name) {
@@ -1761,7 +1808,8 @@ function exportFullData() {
         { 項目:'訂單數',    數值:orders.length },
         { 項目:'大人人數',  數值:totalAdult },
         { 項目:'小孩人數',  數值:totalKid },
-        { 項目:'總人數',    數值:totalAdult + totalKid },
+        { 項目:'兒童人數',  數值:totalChild },
+        { 項目:'總人數',    數值:totalAdult + totalKid + totalChild },
         { 項目:'套餐組數',  數值:totalSets },
         { 項目:'備料品項數',數值:sorted.length },
         { 項目:'預估營收',  數值:totalRev },
@@ -1789,6 +1837,7 @@ function exportFullData() {
                 桌號:    li === 0 ? (o.table_no || '') : '',
                 大人:    li === 0 ? (o.adult_count || 0) : '',
                 小孩:    li === 0 ? (o.kid_count   || 0) : '',
+                兒童:    li === 0 ? (o.child_count  || 0) : '',
                 活動代號:li === 0 ? (o.campaign_code || '一般') : '',
                 品項名稱:item.name,
                 品項金額:item.price,
