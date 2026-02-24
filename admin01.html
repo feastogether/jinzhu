@@ -423,32 +423,80 @@
 
     <!-- ===== 彈窗：套餐分組 ===== -->
     <div id="set-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[200]">
-        <div class="bg-white w-full max-w-2xl rounded-3xl p-6 flex flex-col max-h-[90vh] shadow-2xl text-left">
-            <h3 class="font-bold text-xl mb-4 text-p-green border-b pb-2 font-serif text-center" id="set-modal-title">套餐分組內容設定</h3>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">分組名稱</label><input id="g-name" class="w-full border p-3 rounded-xl bg-stone-50"></div>
-                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">必選數量</label><input id="g-limit" type="number" class="w-full border p-3 rounded-xl bg-stone-50 text-center"></div>
+        <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl text-left flex flex-col overflow-hidden" style="max-height:90vh">
+
+            <!-- 標題列 -->
+            <div class="flex justify-between items-center px-8 py-5 border-b bg-stone-50 flex-shrink-0">
+                <h3 class="font-bold text-xl text-p-green font-serif" id="set-modal-title">套餐分組內容設定</h3>
+                <button onclick="closeSetModal()" class="text-stone-300 hover:text-stone-500 text-2xl transition">✕</button>
             </div>
-            <div class="bg-stone-50 p-4 rounded-2xl border flex-1 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center mb-3">
-                    <p class="text-xs font-bold text-stone-500 uppercase">快速選取單品</p>
-                    <input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="搜尋..." class="w-1/2 p-2 border rounded-full text-xs">
+
+            <!-- 主體：左右兩欄 -->
+            <div class="flex flex-1 overflow-hidden">
+
+                <!-- ── 左欄：新增/編輯分組 + 品項選取 ── -->
+                <div class="w-3/5 flex flex-col border-r overflow-hidden">
+
+                    <!-- 分組設定 -->
+                    <div class="px-6 py-5 border-b flex-shrink-0 bg-white">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">分組設定</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-stone-400 block mb-1">分組名稱</label>
+                                <input id="g-name" class="w-full border p-3 rounded-xl bg-stone-50 text-sm" placeholder="例：主食、飲料">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-stone-400 block mb-1">必選數量</label>
+                                <input id="g-limit" type="number" min="1" class="w-full border p-3 rounded-xl bg-stone-50 text-center text-sm font-bold">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 品項選取器 -->
+                    <div class="flex-1 flex flex-col overflow-hidden px-6 py-4">
+                        <div class="flex justify-between items-center mb-3 flex-shrink-0">
+                            <p class="text-xs font-bold text-stone-500 uppercase">快速選取品項</p>
+                            <input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="搜尋品項…"
+                                class="w-48 p-2 border rounded-full text-xs outline-none focus:border-amber-400">
+                        </div>
+                        <div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-3 gap-2 pr-1 custom-scrollbar"></div>
+                        <div class="mt-3 pt-3 border-t flex justify-between items-center flex-shrink-0">
+                            <span id="picker-count" class="text-xs text-stone-400 font-bold">已勾選 0 項</span>
+                            <button onclick="addSelectedToPicks()"
+                                class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-emerald-700 transition">
+                                ＋ 加入暫存清單
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pr-2 custom-scrollbar"></div>
-                <div class="mt-4 pt-3 border-t flex justify-between items-center">
-                    <span id="picker-count" class="text-xs text-stone-400">已勾選 0 項</span>
-                    <button onclick="addSelectedToPicks()" class="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold">+ 加入暫存</button>
+
+                <!-- ── 右欄：暫存清單 + 已儲存分組 ── -->
+                <div class="w-2/5 flex flex-col overflow-hidden bg-stone-50">
+
+                    <!-- 暫存清單 -->
+                    <div class="px-6 py-5 border-b flex-shrink-0">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">暫存清單</p>
+                        <div id="temp-pick-display" class="flex flex-wrap gap-2 min-h-[40px]"></div>
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="saveFullSet()" id="btn-save-group"
+                                class="flex-1 bg-p-green text-white py-3 rounded-xl font-bold shadow-md text-sm hover:opacity-90 transition">
+                                ✓ 確認儲存分組
+                            </button>
+                        </div>
+                        <button onclick="resetSetForm()" id="btn-cancel-edit"
+                            class="hidden w-full text-xs text-stone-400 mt-2 underline text-center">
+                            取消編輯模式
+                        </button>
+                    </div>
+
+                    <!-- 已儲存分組明細 -->
+                    <div class="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">已儲存的分組</p>
+                        <div id="saved-groups-view" class="space-y-3"></div>
+                    </div>
+
                 </div>
             </div>
-            <div class="mt-4">
-                <div id="temp-pick-display" class="flex flex-wrap gap-2 mb-4"></div>
-                <button onclick="saveFullSet()" id="btn-save-group" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg">確認儲存</button>
-                <button onclick="resetSetForm()" id="btn-cancel-edit" class="hidden w-full text-xs text-stone-400 mt-2 underline text-center">取消編輯模式</button>
-            </div>
-            <div class="border-t pt-4 mt-4 overflow-y-auto max-h-40 custom-scrollbar">
-                <div id="saved-groups-view" class="space-y-2"></div>
-            </div>
-            <button onclick="closeSetModal()" class="mt-4 text-xs text-stone-300 w-full text-center">關閉窗口</button>
         </div>
     </div>
 
