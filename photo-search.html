@@ -75,8 +75,11 @@
 
     <!-- Navbar -->
     <header class="navbar-custom px-4 justify-between">
-        <div class="w-10"></div>
-        <a class="navbar-brand" href="index.html">
+        <a href="https://feastogether.github.io/jinzhu//index01.html" class="flex items-center gap-1 text-p-green text-sm font-bold">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            返回
+        </a>
+        <a class="navbar-brand" href="https://feastogether.github.io/jinzhu//index01.html">
             <img id="main-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="logo">
         </a>
         <button onclick="toggleMenu()" class="text-p-green text-2xl px-2">☰</button>
@@ -87,7 +90,7 @@
     <!-- 右側選單 -->
     <nav id="side-menu" class="side-menu text-left">
         <button onclick="toggleMenu()" class="absolute top-4 right-4 text-white/50 hover:text-white text-2xl transition">✕</button>
-        <a href="index.html"        class="menu-link font-serif">首頁 Home</a>
+        <a href="https://feastogether.github.io/jinzhu//index01.html" class="menu-link font-serif">首頁 Home</a>
         <a href="query.html"        class="menu-link font-serif">訂單查詢 Tracking</a>
         <a href="photo-search.html" class="menu-link font-serif menu-link-active">紀念照下載 Photos</a>
         <div class="mt-auto px-6 pb-8 text-white/20 text-[10px] uppercase tracking-widest text-center border-t border-white/5 pt-6">
@@ -112,30 +115,12 @@
         <div class="main-card p-8 border border-white animate__animated animate__slideInUp">
 
             <h2 class="text-xl font-bold text-p-green text-center mb-2 font-serif tracking-widest uppercase">領取您的紀念照</h2>
-            <p class="text-[11px] text-stone-400 text-center mb-8 tracking-wide">輸入以下任一項正確資料即可搜尋</p>
+            <p class="text-[11px] text-stone-400 text-center mb-8 tracking-wide">輸入姓名、電話或訂單號碼擇一即可</p>
 
-            <!-- 姓名 -->
-            <div>
-                <label class="text-[10px] font-bold text-stone-300 uppercase tracking-widest block mb-1">姓名 Name</label>
-                <input id="input-name" type="text" class="field-input" placeholder="請輸入訂位姓名"
-                    onkeydown="if(event.key==='Enter') doSearch()">
-            </div>
-
-            <div class="or-divider">或</div>
-
-            <!-- 電話 -->
-            <div>
-                <label class="text-[10px] font-bold text-stone-300 uppercase tracking-widest block mb-1">電話 Phone</label>
-                <input id="input-phone" type="tel" class="field-input" placeholder="請輸入聯絡電話"
-                    onkeydown="if(event.key==='Enter') doSearch()">
-            </div>
-
-            <div class="or-divider">或</div>
-
-            <!-- 訂單號碼 -->
+            <!-- 單一輸入框 -->
             <div class="mb-6">
-                <label class="text-[10px] font-bold text-stone-300 uppercase tracking-widest block mb-1">訂單號碼 Order No.</label>
-                <input id="input-note" type="text" class="field-input" placeholder="請輸入訂單號碼"
+                <input id="input-keyword" type="text" class="field-input text-center text-base"
+                    placeholder="姓名 ／ 電話 ／ 訂單號碼"
                     onkeydown="if(event.key==='Enter') doSearch()">
             </div>
 
@@ -202,26 +187,19 @@
         }
 
         async function doSearch() {
-            const name  = document.getElementById('input-name').value.trim();
-            const phone = document.getElementById('input-phone').value.trim();
-            const note  = document.getElementById('input-note').value.trim();
+            const kw = document.getElementById('input-keyword').value.trim();
 
-            if (!name && !phone && !note) {
-                alert('請至少填寫一項資料（姓名、電話或訂單號碼）');
+            if (!kw) {
+                document.getElementById('input-keyword').focus();
                 return;
             }
 
             setStatus('searching');
 
-            const orParts = [];
-            if (name)  orParts.push(`customer_name.ilike.%${name}%`);
-            if (phone) orParts.push(`phone.ilike.%${phone}%`);
-            if (note)  orParts.push(`order_no.ilike.%${note}%`);
-
             const { data, error } = await _s
                 .from('customer_photos')
                 .select('*')
-                .or(orParts.join(','))
+                .or(`customer_name.ilike.%${kw}%,phone.ilike.%${kw}%,order_no.ilike.%${kw}%`)
                 .order('created_at', { ascending: false });
 
             if (error || !data || data.length === 0) {
