@@ -226,14 +226,19 @@
             <div class="kpi-sub">筆訂單</div>
         </div>
         <div class="kpi">
-            <div class="kpi-lbl">大人人數</div>
+            <div class="kpi-lbl">大人</div>
             <div class="kpi-val" id="kpi-adult">—</div>
             <div class="kpi-sub">位大人</div>
         </div>
         <div class="kpi">
-            <div class="kpi-lbl">小孩 / 兒童</div>
+            <div class="kpi-lbl">小孩</div>
             <div class="kpi-val" id="kpi-kid">—</div>
             <div class="kpi-sub">位小孩</div>
+        </div>
+        <div class="kpi" style="border-top-color:#fb923c!important">
+            <div class="kpi-lbl">兒童</div>
+            <div class="kpi-val" id="kpi-child">—</div>
+            <div class="kpi-sub">位兒童</div>
         </div>
         <div class="kpi b">
             <div class="kpi-lbl">總人數</div>
@@ -413,12 +418,13 @@ async function runReport() {
 function processAndRender(orders) {
     const dishCount    = {};
     const setMenuCount = {};
-    let totalAdult = 0, totalKid = 0, totalRev = 0;
+    let totalAdult = 0, totalKid = 0, totalChild = 0, totalRev = 0;
 
     orders.forEach(o => {
-        totalAdult += (o.adult_count  || 0);
-        totalKid   += (o.kid_count    || 0);
-        totalRev   += (o.total_price  || 0);
+        totalAdult  += (o.adult_count  || 0);
+        totalKid    += (o.kid_count    || 0);
+        totalChild  += (o.child_count  || 0);
+        totalRev    += (o.total_price  || 0);
 
         (o.order_content || []).forEach(item => {
             const qtyM    = item.name.match(/ x(\d+)/);
@@ -445,13 +451,14 @@ function processAndRender(orders) {
     const maxQty   = sorted[0]?.[1] || 1;
 
     // 快取供匯出使用
-    cache = { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalRev, totalSets };
+    cache = { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev, totalSets };
 
     // ── KPI ──
     document.getElementById('kpi-orders').innerText       = orders.length;
     document.getElementById('kpi-adult').innerText        = totalAdult;
     document.getElementById('kpi-kid').innerText          = totalKid;
-    document.getElementById('kpi-total-people').innerText = totalAdult + totalKid;
+    document.getElementById('kpi-child').innerText        = totalChild;
+    document.getElementById('kpi-total-people').innerText = totalAdult + totalKid + totalChild;
     document.getElementById('kpi-sets').innerText         = totalSets;
     document.getElementById('kpi-items').innerText        = sorted.length;
     document.getElementById('kpi-rev').innerText          = '$' + totalRev.toLocaleString();
@@ -520,6 +527,7 @@ function processAndRender(orders) {
                     ${o.table_no    ? `<div class="meta-pip">桌號 <span>${o.table_no}</span></div>` : ''}
                     <div class="meta-pip">大人 <span>${o.adult_count || 0}</span> 位</div>
                     <div class="meta-pip">小孩 <span>${o.kid_count || 0}</span> 位</div>
+                    <div class="meta-pip">兒童 <span>${o.child_count || 0}</span> 位</div>
                     <div class="meta-pip">合計 <span style="color:var(--gold);font-size:13px">$${o.total_price || 0}</span></div>
                 </div>
                 <div class="order-lines">
@@ -560,7 +568,7 @@ function doPrint() {
 // ── 匯出 Excel ──
 function exportExcel() {
     if (!cache) return alert('請先執行查詢');
-    const { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalRev } = cache;
+    const { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev } = cache;
     const wb = XLSX.utils.book_new();
 
     // 分頁 1：摘要
@@ -568,7 +576,8 @@ function exportExcel() {
         { 項目:'訂單數',    數值:orders.length },
         { 項目:'大人人數',  數值:totalAdult },
         { 項目:'小孩人數',  數值:totalKid },
-        { 項目:'總人數',    數值:totalAdult + totalKid },
+        { 項目:'兒童人數',  數值:totalChild },
+        { 項目:'總人數',    數值:totalAdult + totalKid + totalChild },
         { 項目:'套餐組數',  數值:Object.values(setMenuCount).reduce((a,b)=>a+b,0) },
         { 項目:'備料品項數',數值:sorted.length },
         { 項目:'預估營收',  數值:totalRev },
@@ -597,6 +606,7 @@ function exportExcel() {
                 桌號:      li === 0 ? (o.table_no || '') : '',
                 大人:      li === 0 ? (o.adult_count || 0) : '',
                 小孩:      li === 0 ? (o.kid_count || 0) : '',
+                兒童:      li === 0 ? (o.child_count || 0) : '',
                 活動代號:  li === 0 ? (o.campaign_code || '一般') : '',
                 品項名稱:  item.name,
                 品項金額:  item.price,
