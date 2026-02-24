@@ -40,6 +40,8 @@
             <button id="btn-menu"       onclick="switchTab('menu')"       class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🍱 菜單編輯</button>
             <button id="btn-flavors"    onclick="switchTab('flavors')"    class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🌶️ 口味定義</button>
             <button id="btn-settings"   onclick="switchTab('settings')"   class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">⚙️ 系統設定</button>
+            <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🔗 活動網址配置</button>
+            <button id="btn-report"     onclick="switchTab('report')"     class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">📊 備料統計報表</button>
             <a href="monitor.html" target="_blank" class="block w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2 text-white no-underline">🖥️ 看板模式</a>
         </nav>
     </aside>
@@ -143,6 +145,101 @@
                 <input type="file" id="logo-file" class="w-full border-2 border-dashed p-6 rounded-2xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
                 <div id="current-logo-preview" class="hidden mb-4 text-center"><img id="admin-logo-img" src="" class="max-h-20 mx-auto"></div>
                 <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg transition">確認更新 Logo</button>
+            </div>
+        </section>
+
+    </main>
+
+        <!-- 活動網址配置 -->
+        <section id="sec-eventurl" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-p-green font-serif">活動專屬網址配置 <span class="text-base font-normal text-stone-400">(支援多選分類)</span></h2>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border max-w-3xl space-y-8">
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">1. 選擇活動代號</label>
+                    <select id="sel-campaign" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:ring-2"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">2. 勾選欲顯示的分類 (可多選)</label>
+                    <div id="cat-checkbox-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    <p class="text-[10px] text-stone-400 mt-3">* 僅會列出原本後台設為「隱藏」的分類</p>
+                </div>
+                <button onclick="bindEvent()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition text-lg">確認綁定並產生活動連結</button>
+            </div>
+            <div class="max-w-3xl">
+                <h3 class="font-bold text-stone-400 text-sm mb-4 uppercase tracking-widest">目前運作中的活動</h3>
+                <div id="active-event-list" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- 備料統計報表 -->
+        <section id="sec-report" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row justify-between items-end border-b-2 border-p-green pb-6 gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-p-green font-serif">營運全量統計報表</h2>
+                    <p id="report-period-display" class="text-amber-600 font-bold text-sm mt-1 italic">真珠 台灣佳味</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.print()" class="px-5 py-2 border-2 border-p-green text-p-green rounded-xl font-bold hover:bg-stone-100 transition">列印 PDF</button>
+                    <button onclick="exportFullData()" class="px-5 py-2 bg-p-green text-white rounded-xl font-bold shadow-lg">匯出 Excel</button>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end text-left">
+                    <div class="md:col-span-2 space-y-2">
+                        <label class="block text-xs font-bold text-stone-400 uppercase tracking-widest">查詢日期區間</label>
+                        <div class="flex gap-2">
+                            <button onclick="setDateRange('today')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200">今日</button>
+                            <button onclick="setDateRange('month')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200">當月</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="date" id="start-date" class="flex-1 border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm">
+                            <span class="text-stone-300">~</span>
+                            <input type="date" id="end-date" class="flex-1 border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-stone-400 uppercase tracking-widest">活動代號篩選</label>
+                        <select id="report-campaign" class="w-full border-b-2 border-stone-200 p-2 bg-transparent font-bold outline-none">
+                            <option value="all">所有來源</option>
+                            <option value="none">一般訂單 (無代號)</option>
+                        </select>
+                    </div>
+                    <button onclick="fetchData()" class="w-full bg-amber-600 text-white py-3 rounded-xl font-bold shadow-lg uppercase tracking-widest">更新統計</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+                        <div class="bg-p-green p-4 text-white flex justify-between items-center">
+                            <h3 class="font-bold font-serif">🍱 套餐銷售總量</h3>
+                            <span id="set-menu-total" class="bg-amber-500 px-3 py-0.5 rounded-full text-xs font-bold">0 套</span>
+                        </div>
+                        <div id="set-menu-body" class="p-5 space-y-3"></div>
+                    </div>
+                    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden">
+                        <div class="bg-stone-800 p-4 text-white flex justify-between items-center">
+                            <h3 class="font-bold font-serif">🍳 全品項備料總量</h3>
+                            <span id="ingredient-total" class="bg-stone-600 px-3 py-0.5 rounded-full text-xs font-bold">0 項</span>
+                        </div>
+                        <div class="max-h-[50vh] overflow-y-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-stone-50 text-[10px] text-stone-400 font-bold uppercase">
+                                    <tr><th class="px-5 py-3">品名</th><th class="px-5 py-3 text-right">總數</th></tr>
+                                </thead>
+                                <tbody id="dish-summary-body" class="divide-y divide-stone-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-7">
+                    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden h-full">
+                        <div class="bg-amber-600 p-4 text-white flex justify-between items-center">
+                            <h3 class="font-bold font-serif">📋 訂單詳細流水帳</h3>
+                            <span id="order-count-tag" class="bg-white text-amber-600 px-3 py-0.5 rounded-full text-xs font-bold">0 筆</span>
+                        </div>
+                        <div id="order-detail-container" class="p-6 space-y-8 max-h-[80vh] overflow-y-auto text-left"></div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -277,6 +374,8 @@ async function switchTab(t) {
     if (t === 'menu')       { await loadCats(); loadMenu(); }
     if (t === 'flavors')    loadFlvs();
     if (t === 'settings')   loadSettings();
+    if (t === 'eventurl')   initEventUrl();
+    if (t === 'report')     initReport();
 }
 
 // ──────────────────────────────────────────────
@@ -1029,6 +1128,226 @@ async function delSetGroup(id) {
         await _s.from('set_menu_groups').delete().eq('id', id);
         loadSavedSets();
     }
+}
+
+// ============================================================
+//  活動網址配置 (event url)
+// ============================================================
+async function initEventUrl() {
+    // 載入活動代號
+    const { data: camps } = await _s.from('campaign_settings').select('*');
+    document.getElementById('sel-campaign').innerHTML =
+        (camps || []).map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join('');
+
+    // 載入隱藏分類
+    const { data: cats } = await _s.from('categories').select('*').eq('is_visible', false);
+    document.getElementById('cat-checkbox-list').innerHTML = (cats || []).map(c => `
+        <div class="relative">
+            <input type="checkbox" id="ecat-${c.id}" value="${c.id}" class="ecat-checkbox hidden">
+            <label for="ecat-${c.id}" class="block border-2 p-3 rounded-xl cursor-pointer text-sm font-bold text-stone-500 transition hover:bg-stone-50 checked-style">
+                ${c.name}
+            </label>
+        </div>`).join('');
+
+    // checkbox 點選樣式
+    document.querySelectorAll('.ecat-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const lbl = document.querySelector(`label[for="${this.id}"]`);
+            if (this.checked) { lbl.style.borderColor = '#b89150'; lbl.style.backgroundColor = '#fffbeb'; }
+            else { lbl.style.borderColor = ''; lbl.style.backgroundColor = ''; }
+        });
+    });
+
+    loadActiveEvents();
+}
+
+async function loadActiveEvents() {
+    const { data } = await _s.from('categories').select('*').not('campaign_code', 'is', null);
+    const groups = (data || []).reduce((acc, cur) => {
+        if (!acc[cur.campaign_code]) acc[cur.campaign_code] = [];
+        acc[cur.campaign_code].push(cur.name);
+        return acc;
+    }, {});
+
+    document.getElementById('active-event-list').innerHTML = Object.keys(groups).map(code => `
+        <div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm">
+            <div>
+                <span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase">${code}</span>
+                <p class="text-xs text-stone-400 mt-2 font-medium">包含分類：${groups[code].join('、')}</p>
+            </div>
+            <div class="flex gap-4">
+                <button onclick="copyEventLink('${code}')" class="text-blue-600 text-sm font-bold underline">複製連結</button>
+                <button onclick="unbindCampaign('${code}')" class="text-red-300 text-sm font-bold">解除全部</button>
+            </div>
+        </div>`).join('') || '<p class="text-stone-300 text-sm text-center py-6">目前無運作中的活動</p>';
+}
+
+async function bindEvent() {
+    const camp = document.getElementById('sel-campaign').value;
+    const checked = Array.from(document.querySelectorAll('.ecat-checkbox:checked')).map(el => el.value);
+    if (!camp || checked.length === 0) return alert('請選擇活動代號並至少勾選一個分類');
+
+    await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', camp);
+    const { error } = await _s.from('categories').update({ campaign_code: camp }).in('id', checked);
+    if (!error) {
+        alert('綁定成功！');
+        loadActiveEvents();
+        document.querySelectorAll('.ecat-checkbox').forEach(el => {
+            el.checked = false;
+            const lbl = document.querySelector(`label[for="${el.id}"]`);
+            if (lbl) { lbl.style.borderColor = ''; lbl.style.backgroundColor = ''; }
+        });
+    }
+}
+
+async function unbindCampaign(code) {
+    if (confirm(`確定解除 ${code} 的所有分類綁定嗎？`)) {
+        await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', code);
+        loadActiveEvents();
+    }
+}
+
+function copyEventLink(code) {
+    const base = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+    const url  = `${base}event.html?code=${encodeURIComponent(code)}`;
+    const tmp  = document.createElement('input');
+    tmp.value  = url;
+    document.body.appendChild(tmp);
+    tmp.select();
+    document.execCommand('copy');
+    document.body.removeChild(tmp);
+    alert('網址已複製！\n' + url);
+}
+
+// ============================================================
+//  備料統計報表 (report)
+// ============================================================
+async function initReport() {
+    setDateRange('today');
+    const { data } = await _s.from('campaign_settings').select('*');
+    const sel = document.getElementById('report-campaign');
+    // 清除舊的活動選項（保留前兩個預設）
+    while (sel.options.length > 2) sel.remove(2);
+    if (data) {
+        data.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = opt.innerText = c.code_name;
+            sel.appendChild(opt);
+        });
+    }
+    fetchData();
+}
+
+function setDateRange(type) {
+    const start = document.getElementById('start-date');
+    const end   = document.getElementById('end-date');
+    const now   = new Date();
+    if (type === 'today') {
+        start.value = end.value = now.toISOString().split('T')[0];
+    } else {
+        start.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        end.value   = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    }
+}
+
+async function fetchData() {
+    const start    = document.getElementById('start-date').value;
+    const end      = document.getElementById('end-date').value;
+    const campaign = document.getElementById('report-campaign').value;
+    document.getElementById('report-period-display').innerText = `數據區間：${start} ~ ${end}`;
+
+    let query = _s.from('orders').select('*').order('created_at', { ascending: true });
+    if (start && end) query = query.gte('created_at', `${start}T00:00:00`).lte('created_at', `${end}T23:59:59`);
+    if (campaign === 'none')       query = query.is('campaign_code', null);
+    else if (campaign !== 'all')   query = query.eq('campaign_code', campaign);
+
+    const { data: orders, error } = await query;
+    if (!error) renderReports(orders || []);
+}
+
+function renderReports(orders) {
+    const dishCount   = {};
+    const setMenuCount = {};
+    let orderHtml = '';
+
+    orders.forEach((o, idx) => {
+        o.order_content.forEach(item => {
+            const qtyMatch = item.name.match(/ x(\d+)/);
+            const qty      = qtyMatch ? parseInt(qtyMatch[1]) : 1;
+            let cleanName  = item.name.split(' [')[0].replace(/ x\d+/g, '').trim();
+            const isSet    = cleanName.includes('(') && (cleanName.includes('、') || cleanName.includes('套餐'));
+
+            if (isSet) {
+                const brand = cleanName.split(' (')[0].trim();
+                setMenuCount[brand] = (setMenuCount[brand] || 0) + qty;
+                const cm = cleanName.match(/\((.*?)\)/);
+                if (cm) cm[1].split('、').forEach(sub => {
+                    const s = sub.trim();
+                    if (s) dishCount[s] = (dishCount[s] || 0) + qty;
+                });
+            } else {
+                dishCount[cleanName] = (dishCount[cleanName] || 0) + qty;
+            }
+        });
+
+        orderHtml += `
+        <div class="pb-8 border-b border-stone-100 last:border-0 text-left">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <span class="text-2xl font-black text-p-green font-serif">#${idx+1} ${o.customer_name}</span>
+                    <span class="ml-3 text-sm font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg">${o.phone}</span>
+                </div>
+                <span class="text-[10px] border text-stone-400 px-2 py-0.5 rounded-full font-bold uppercase">${o.campaign_code || '一般來源'}</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="bg-stone-50 p-3 rounded-xl text-center"><p class="text-[10px] text-stone-400 font-bold">桌號</p><p class="font-black text-p-green">${o.table_no || '--'}</p></div>
+                <div class="bg-stone-50 p-3 rounded-xl text-center"><p class="text-[10px] text-stone-400 font-bold">人數</p><p class="font-black text-p-green">${o.adult_count}大 ${o.kid_count}小</p></div>
+                <div class="bg-stone-50 p-3 rounded-xl text-center"><p class="text-[10px] text-stone-400 font-bold">總額</p><p class="font-black text-amber-600">$${o.total_price}</p></div>
+            </div>
+            <div class="space-y-1 bg-white p-2 border rounded-xl">
+                ${o.order_content.map(i => `<div class="text-sm py-1 px-3 border-b border-stone-50 last:border-0 text-stone-600">• ${i.name}</div>`).join('')}
+            </div>
+            ${o.note ? `<div class="mt-3 p-3 bg-emerald-50 text-p-green text-xs font-bold rounded-xl border-l-4 border-p-green">備註：${o.note}</div>` : ''}
+        </div>`;
+    });
+
+    // 套餐統計
+    document.getElementById('set-menu-body').innerHTML = Object.entries(setMenuCount).map(([name, count]) => `
+        <div class="flex justify-between items-center p-4 bg-stone-50 border rounded-2xl">
+            <span class="font-bold text-p-green">${name}</span>
+            <span class="font-serif font-black text-amber-600 text-2xl">${count} <small class="text-xs">組</small></span>
+        </div>`).join('') || '<p class="text-stone-300 text-sm text-center py-4 font-bold">目前無套餐訂單</p>';
+
+    // 全品項統計
+    const sorted = Object.entries(dishCount).sort((a, b) => b[1] - a[1]);
+    document.getElementById('dish-summary-body').innerHTML = sorted.map(([name, count]) => `
+        <tr class="hover:bg-stone-50 transition">
+            <td class="px-5 py-3 text-sm font-bold text-stone-700">${name}</td>
+            <td class="px-5 py-3 text-right font-serif font-black text-p-green text-xl">${count} <span class="text-[10px] text-stone-300">份</span></td>
+        </tr>`).join('');
+
+    document.getElementById('order-detail-container').innerHTML = orderHtml || '<p class="py-16 text-center text-stone-300 font-bold">NO DATA FOUND</p>';
+    document.getElementById('set-menu-total').innerText    = `${Object.values(setMenuCount).reduce((a, b) => a + b, 0)} 套`;
+    document.getElementById('ingredient-total').innerText  = `${sorted.length} 品項`;
+    document.getElementById('order-count-tag').innerText   = `${orders.length} 筆訂單`;
+
+    window.lastData = { dishCount, setMenuCount, orders };
+}
+
+function exportFullData() {
+    if (!window.lastData) return alert('請先查詢數據');
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(Object.entries(window.lastData.setMenuCount).map(e => ({ '套餐類別': e[0], '銷售組數': e[1] })));
+    XLSX.utils.book_append_sheet(wb, ws1, '套餐總量統計');
+    const ws2 = XLSX.utils.json_to_sheet(Object.entries(window.lastData.dishCount).sort((a,b)=>b[1]-a[1]).map(e => ({ '品名/食材': e[0], '備料總數': e[1] })));
+    XLSX.utils.book_append_sheet(wb, ws2, '全品項備料表');
+    const ws3 = XLSX.utils.json_to_sheet(window.lastData.orders.map(o => ({
+        '客戶': o.customer_name, '電話': o.phone, '人數': `${o.adult_count}大${o.kid_count}小`,
+        '桌號': o.table_no, '點餐內容': o.order_content.map(i => i.name).join(' / '),
+        '金額': o.total_price, '備註': o.note
+    })));
+    XLSX.utils.book_append_sheet(wb, ws3, '詳細流水帳');
+    XLSX.writeFile(wb, `真珠營運分析_${new Date().toLocaleDateString()}.xlsx`);
 }
 
     </script>
