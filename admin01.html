@@ -1061,12 +1061,20 @@ async function loadMenu() {
 async function openMenuModal(isEdit) {
     document.getElementById('menu-modal').classList.remove('hidden');
     if (!isEdit) {
-        document.getElementById('m-id').value     = '';
-        document.getElementById('m-name').value   = '';
-        document.getElementById('m-price').value  = '';
-        document.getElementById('m-desc').value   = '';
+        document.getElementById('m-id').value       = '';
+        document.getElementById('m-name').value     = '';
+        document.getElementById('m-price').value    = '';
+        document.getElementById('m-desc').value     = '';
         document.getElementById('m-is-set').checked = false;
     }
+
+    // 確保分類選單有資料
+    if (!document.getElementById('m-cat').options.length) {
+        const { data: cats } = await _s.from('categories').select('*').order('sort_order');
+        document.getElementById('m-cat').innerHTML =
+            (cats || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+
     const { data: flvs } = await _s.from('flavor_groups').select('*');
     document.getElementById('flv-checks').innerHTML = (flvs || []).map(f =>
         `<label class="flex items-center gap-1 text-[11px]">
@@ -1088,8 +1096,12 @@ async function editItem(id) {
 
     await openMenuModal(true);
 
-    // 稍等 DOM 更新後回填口味勾選
+    // 回填分類（等 DOM 更新後設定）
     setTimeout(() => {
+        const catSel = document.getElementById('m-cat');
+        if (catSel && i.category_id) catSel.value = i.category_id;
+
+        // 回填口味勾選
         i.item_flavor_relation.forEach(r => {
             const c = document.querySelector(`.flv-chk[value="${r.flavor_group_id}"]`);
             if (c) c.checked = true;
