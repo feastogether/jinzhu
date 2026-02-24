@@ -40,6 +40,20 @@
         .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; transition: background 0.15s; color: white; }
         .nav-btn:hover { background-color: rgba(255,255,255,0.1); }
         .nav-emoji { font-size: 18px; flex-shrink: 0; }
+
+        /* ── Logo 圖片：強制去背、在深色底上顯示白色 ── */
+        #sidebar-logo {
+            max-height: 36px;
+            width: auto;
+            object-fit: contain;
+            /* 將彩色 logo 轉成白色：先轉黑再反白 */
+            filter: brightness(0) invert(1);
+            display: none;
+        }
+        /* 如果 logo 本身是白色/淺色設計就直接用，不套 filter */
+        #sidebar-logo.logo-white {
+            filter: none;
+        }
     </style>
 </head>
 <body class="min-h-screen flex text-slate-700">
@@ -48,22 +62,28 @@
     <aside id="sidebar" class="bg-emerald-950 text-white sticky top-0 h-screen shadow-2xl flex flex-col flex-shrink-0">
 
         <!-- Logo 區 -->
-        <div class="flex items-center justify-between px-4 py-5 border-b border-emerald-800">
-            <!-- 展開時顯示 Logo 圖片 -->
-            <div class="logo-full flex items-center gap-2 overflow-hidden">
-                <img id="sidebar-logo" src="" alt="真珠" class="h-10 object-contain"
-                    onerror="this.style.display='none'; document.getElementById('sidebar-logo-text').style.display='block'">
-                <span id="sidebar-logo-text" class="font-serif font-bold text-lg tracking-widest whitespace-nowrap" style="display:none">真珠 ADMIN</span>
+        <div class="flex items-center justify-between px-4 py-4 border-b border-white/10">
+            <!-- 展開時顯示 Logo -->
+            <div class="logo-full flex items-center gap-3 overflow-hidden min-w-0 flex-1">
+                <img id="sidebar-logo" src="" alt="真珠"
+                     onerror="this.style.display='none'; document.getElementById('sidebar-logo-fallback').style.display='flex'">
+                <div id="sidebar-logo-fallback" class="flex items-center gap-2">
+                    <span class="font-serif font-black text-xl text-amber-400 leading-none">珠</span>
+                    <div>
+                        <div class="font-serif font-bold text-sm tracking-[0.15em] text-white leading-tight">真珠</div>
+                        <div class="text-[9px] tracking-[0.3em] text-white/40 uppercase">Admin</div>
+                    </div>
+                </div>
             </div>
             <!-- 收合時顯示小圖示 -->
-            <div class="logo-icon items-center justify-center w-8 h-8">
-                <span class="font-serif font-black text-lg text-amber-400">珠</span>
+            <div class="logo-icon items-center justify-center w-full">
+                <span class="font-serif font-black text-xl text-amber-400">珠</span>
             </div>
             <!-- 摺疊按鈕 -->
             <button id="toggle-btn" onclick="toggleSidebar()"
-                class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-emerald-700 transition flex-shrink-0 ml-1"
+                class="flex items-center justify-center w-7 h-7 rounded-lg transition flex-shrink-0 text-white/30 hover:text-amber-400 hover:bg-white/5"
                 title="收合側欄">
-                <svg id="toggle-icon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <svg id="toggle-icon" class="w-4 h-4 transition-transform duration-250" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                 </svg>
             </button>
@@ -79,6 +99,7 @@
             <button id="btn-settings"   onclick="switchTab('settings')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">⚙️</span><span class="nav-label">系統設定</span></button>
             <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">🔗</span><span class="nav-label">活動網址配置</span></button>
             <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📊</span><span class="nav-label">備料統計報表</span></button>
+            <button id="btn-photos"     onclick="switchTab('photos')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📸</span><span class="nav-label">紀念照管理</span></button>
             <div class="border-t border-emerald-800 my-2"></div>
             <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
         </nav>
@@ -178,11 +199,23 @@
         <!-- 系統設定 -->
         <section id="sec-settings" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-p-green font-serif">系統與 Logo 設定</h2>
-            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm max-w-xl">
-                <p class="text-xs text-stone-400 mb-4 uppercase font-bold">Logo 上傳 (推薦使用 SVG)</p>
-                <input type="file" id="logo-file" class="w-full border-2 border-dashed p-6 rounded-2xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
-                <div id="current-logo-preview" class="hidden mb-4 text-center"><img id="admin-logo-img" src="" class="max-h-20 mx-auto"></div>
-                <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg transition">確認更新 Logo</button>
+            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm max-w-xl space-y-6">
+                <div>
+                    <p class="text-xs text-stone-400 mb-4 uppercase font-bold">Logo 上傳 (推薦使用 SVG 或去背 PNG)</p>
+                    <input type="file" id="logo-file" class="w-full border-2 border-dashed p-6 rounded-2xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
+                    <div id="current-logo-preview" class="hidden mb-4 text-center bg-stone-100 p-4 rounded-2xl">
+                        <img id="admin-logo-img" src="" class="max-h-20 mx-auto">
+                    </div>
+                    <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg transition">確認更新 Logo</button>
+                </div>
+                <div class="border-t pt-6">
+                    <p class="text-xs text-stone-400 mb-3 uppercase font-bold">側欄 Logo 顯示模式</p>
+                    <div class="flex gap-3">
+                        <button onclick="setSidebarLogoMode('white')" class="flex-1 py-2 bg-emerald-900 text-white text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">轉白色 (深色 Logo)</button>
+                        <button onclick="setSidebarLogoMode('original')" class="flex-1 py-2 bg-stone-100 text-stone-600 text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">原始顏色 (白/淺色 Logo)</button>
+                    </div>
+                    <p class="text-[10px] text-stone-300 mt-2">若你的 Logo 本身是白色或淺色，選「原始顏色」；若是彩色/深色，選「轉白色」</p>
+                </div>
             </div>
         </section>
 
@@ -279,7 +312,74 @@
             </div>
         </section>
 
+        <!-- ===== 紀念照管理 ===== -->
+        <section id="sec-photos" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">紀念照管理</h2>
+                <button onclick="openUploadModal()" class="bg-p-green text-white px-6 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2">
+                    📤 上傳新照片
+                </button>
+            </div>
+
+            <!-- 搜尋列 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border flex gap-3 items-center">
+                <input type="text" id="photo-admin-search" oninput="searchAdminPhotos()" placeholder="搜尋顧客姓名、電話、訂單備註…" class="flex-1 border p-2 rounded-lg text-sm outline-none">
+                <span id="photo-count-tag" class="text-xs text-stone-400 font-bold whitespace-nowrap">共 0 張</span>
+            </div>
+
+            <!-- 照片格狀列表 -->
+            <div id="photo-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+        </section>
+
     </main>
+
+    <!-- ===== 彈窗：上傳照片 ===== -->
+    <div id="upload-photo-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-5">
+            <h3 class="text-xl font-bold text-p-green font-serif border-b pb-3">上傳紀念照片</h3>
+
+            <!-- 拖曳/選擇區 -->
+            <div id="upload-drop-zone"
+                 class="border-2 border-dashed border-stone-200 rounded-2xl p-6 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition"
+                 onclick="document.getElementById('photo-file-input').click()"
+                 ondragover="event.preventDefault(); this.classList.add('border-amber-400','bg-amber-50')"
+                 ondragleave="this.classList.remove('border-amber-400','bg-amber-50')"
+                 ondrop="handlePhotoDrop(event)">
+                <div id="upload-preview" class="hidden mb-3">
+                    <img id="upload-preview-img" class="max-h-40 mx-auto rounded-xl shadow">
+                </div>
+                <div id="upload-placeholder">
+                    <p class="text-3xl mb-2">📷</p>
+                    <p class="text-sm font-bold text-stone-400">點擊或拖曳照片到此處</p>
+                    <p class="text-xs text-stone-300 mt-1">支援 JPG、PNG、WEBP</p>
+                </div>
+                <input type="file" id="photo-file-input" class="hidden" accept="image/*" onchange="previewUploadPhoto(this)">
+            </div>
+
+            <!-- 綁定資訊 -->
+            <div class="space-y-3">
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">顧客姓名</label>
+                    <input id="upload-name" type="text" placeholder="例：王小明" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">電話號碼</label>
+                    <input id="upload-phone" type="text" placeholder="例：0912345678" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">備註 / 訂單號</label>
+                    <input id="upload-note" type="text" placeholder="選填：活動名稱、桌號…" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300">
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeUploadModal()" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-stone-400">取消</button>
+                <button onclick="doUploadPhoto()" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold shadow-lg">
+                    <span id="upload-btn-text">確認上傳</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== 彈窗：修改訂單細項 ===== -->
     <div id="order-edit-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[300] backdrop-blur-sm text-left">
@@ -412,6 +512,7 @@ async function switchTab(t) {
     if (t === 'settings')   loadSettings();
     if (t === 'eventurl')   initEventUrl();
     if (t === 'report')     initReport();
+    if (t === 'photos')     loadPhotos();
 }
 
 // ──────────────────────────────────────────────
@@ -1403,20 +1504,217 @@ function exportFullData() {
             }
         }
 
+        function setSidebarLogoMode(mode) {
+            const img = document.getElementById('sidebar-logo');
+            if (mode === 'white') {
+                img.style.filter = 'brightness(0) invert(1)';
+                localStorage.setItem('logoMode', 'white');
+            } else {
+                img.style.filter = 'none';
+                localStorage.setItem('logoMode', 'original');
+            }
+        }
+
         // ── 載入 Sidebar Logo ──
         async function loadSidebarLogo() {
             const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
+            const img      = document.getElementById('sidebar-logo');
+            const fallback = document.getElementById('sidebar-logo-fallback');
             if (data?.logo_url) {
-                const img = document.getElementById('sidebar-logo');
                 img.src = `${data.logo_url}?t=${Date.now()}`;
                 img.style.display = 'block';
-                document.getElementById('sidebar-logo-text').style.display = 'none';
+                fallback.style.display = 'none';
+                const mode = localStorage.getItem('logoMode') || 'white';
+                img.style.filter = mode === 'white' ? 'brightness(0) invert(1)' : 'none';
             } else {
-                document.getElementById('sidebar-logo').style.display = 'none';
-                document.getElementById('sidebar-logo-text').style.display = 'block';
+                img.style.display = 'none';
+                fallback.style.display = 'flex';
             }
         }
         loadSidebarLogo();
+    </script>
+
+    <script>
+    // ============================================================
+    //  📸 紀念照管理
+    // ============================================================
+    let allPhotos = [];
+    let uploadFile = null;
+
+    // ── 載入所有照片 ──
+    async function loadPhotos() {
+        const { data, error } = await _s.from('customer_photos').select('*').order('created_at', { ascending: false });
+        allPhotos = data || [];
+        renderPhotoGrid(allPhotos);
+    }
+
+    // ── 搜尋過濾 ──
+    function searchAdminPhotos() {
+        const kw = document.getElementById('photo-admin-search').value.toLowerCase();
+        const filtered = allPhotos.filter(p =>
+            (p.customer_name || '').toLowerCase().includes(kw) ||
+            (p.phone || '').toLowerCase().includes(kw) ||
+            (p.note || '').toLowerCase().includes(kw)
+        );
+        renderPhotoGrid(filtered);
+    }
+
+    // ── 渲染格狀照片列表 ──
+    function renderPhotoGrid(photos) {
+        document.getElementById('photo-count-tag').innerText = `共 ${photos.length} 張`;
+        document.getElementById('photo-grid').innerHTML = photos.length === 0
+            ? `<div class="col-span-full py-20 text-center text-stone-300 font-bold">尚無照片資料</div>`
+            : photos.map(p => `
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden group">
+                <div class="aspect-square overflow-hidden bg-stone-100 relative">
+                    <img src="${p.photo_url}" alt="${p.customer_name || ''}"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                </div>
+                <div class="p-3">
+                    <p class="font-bold text-xs text-p-green truncate">${p.customer_name || '未命名'}</p>
+                    <p class="text-[10px] text-stone-400 truncate">${p.phone || '—'}</p>
+                    ${p.note ? `<p class="text-[10px] text-amber-600 truncate mt-0.5">${p.note}</p>` : ''}
+                    <p class="text-[9px] text-stone-300 mt-1">${new Date(p.created_at).toLocaleDateString()}</p>
+                </div>
+                <div class="flex border-t">
+                    <a href="${p.photo_url}" target="_blank"
+                       class="flex-1 text-center py-2 text-xs font-bold text-blue-500 hover:bg-blue-50 transition">預覽</a>
+                    <button onclick="deletePhoto('${p.id}', '${p.storage_path}')"
+                            class="flex-1 py-2 text-xs font-bold text-red-300 hover:bg-red-50 transition border-l">刪除</button>
+                </div>
+            </div>`).join('');
+    }
+
+    // ── 打開上傳 Modal ──
+    function openUploadModal() {
+        uploadFile = null;
+        document.getElementById('upload-preview').classList.add('hidden');
+        document.getElementById('upload-placeholder').classList.remove('hidden');
+        document.getElementById('upload-name').value  = '';
+        document.getElementById('upload-phone').value = '';
+        document.getElementById('upload-note').value  = '';
+        document.getElementById('upload-btn-text').innerText = '確認上傳';
+        document.getElementById('upload-photo-modal').classList.remove('hidden');
+    }
+
+    function closeUploadModal() {
+        document.getElementById('upload-photo-modal').classList.add('hidden');
+    }
+
+    // ── 預覽選取的照片 ──
+    function previewUploadPhoto(input) {
+        const file = input.files[0];
+        if (!file) return;
+        uploadFile = file;
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('upload-preview-img').src = e.target.result;
+            document.getElementById('upload-preview').classList.remove('hidden');
+            document.getElementById('upload-placeholder').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ── 拖曳上傳 ──
+    function handlePhotoDrop(event) {
+        event.preventDefault();
+        document.getElementById('upload-drop-zone').classList.remove('border-amber-400', 'bg-amber-50');
+        const file = event.dataTransfer.files[0];
+        if (!file || !file.type.startsWith('image/')) return alert('請拖入圖片檔案');
+        uploadFile = file;
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('upload-preview-img').src = e.target.result;
+            document.getElementById('upload-preview').classList.remove('hidden');
+            document.getElementById('upload-placeholder').classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // ── 執行上傳 ──
+    async function doUploadPhoto() {
+        if (!uploadFile) return alert('請先選擇照片');
+        const name  = document.getElementById('upload-name').value.trim();
+        const phone = document.getElementById('upload-phone').value.trim();
+        const note  = document.getElementById('upload-note').value.trim();
+
+        const btn = document.getElementById('upload-btn-text');
+        btn.innerText = '上傳中…';
+
+        // 上傳到 Supabase Storage
+        const ext  = uploadFile.name.split('.').pop().toLowerCase();
+        const path = `photos/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await _s.storage.from('assets').upload(path, uploadFile, {
+            contentType: uploadFile.type, cacheControl: '3600', upsert: false
+        });
+        if (upErr) { alert('上傳失敗：' + upErr.message); btn.innerText = '確認上傳'; return; }
+
+        // 取得公開 URL
+        const { data: urlData } = _s.storage.from('assets').getPublicUrl(path);
+
+        // 寫入資料庫
+        const { error: dbErr } = await _s.from('customer_photos').insert([{
+            customer_name: name || null,
+            phone:         phone || null,
+            note:          note  || null,
+            photo_url:     urlData.publicUrl,
+            storage_path:  path
+        }]);
+
+        if (dbErr) { alert('資料儲存失敗：' + dbErr.message); btn.innerText = '確認上傳'; return; }
+
+        btn.innerText = '✓ 完成！';
+        setTimeout(() => { closeUploadModal(); loadPhotos(); }, 800);
+    }
+
+    // ── 刪除照片 ──
+    async function deletePhoto(id, storagePath) {
+        if (!confirm('確定刪除這張照片？此操作無法復原')) return;
+        if (storagePath) await _s.storage.from('assets').remove([storagePath]);
+        await _s.from('customer_photos').delete().eq('id', id);
+        loadPhotos();
+    }
+
+    // ============================================================
+    //  📸 前台：顧客搜尋紀念照 (供前台頁面呼叫)
+    // ============================================================
+    async function searchPhoto() {
+        const keyword = (document.getElementById('search-photo-input')?.value || '').trim();
+        if (!keyword) return alert('請輸入姓名、電話或單號');
+
+        const btn = document.getElementById('btn-do-search');
+        if (btn) { btn.innerText = '搜尋中…'; btn.disabled = true; }
+
+        const { data, error } = await _s.from('customer_photos')
+            .select('*')
+            .or(`customer_name.ilike.%${keyword}%,phone.ilike.%${keyword}%,note.ilike.%${keyword}%`)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+        if (btn) { btn.innerText = '立即搜尋回憶'; btn.disabled = false; }
+
+        const resultArea = document.getElementById('photo-result-area');
+        if (!data || data.length === 0) {
+            resultArea?.classList.add('hidden');
+            alert('找不到相符的紀念照，請確認輸入的姓名或電話是否正確');
+            return;
+        }
+
+        const photo = data[0];
+        document.getElementById('found-photo').src  = photo.photo_url;
+        document.getElementById('download-link').href = photo.photo_url;
+        resultArea?.classList.remove('hidden');
+    }
+
+    function openPhotoModal() {
+        document.getElementById('photo-modal')?.classList.remove('hidden');
+        document.getElementById('search-photo-input').value = '';
+        document.getElementById('photo-result-area')?.classList.add('hidden');
+    }
+
+    function closePhotoModal() {
+        document.getElementById('photo-modal')?.classList.add('hidden');
+    }
     </script>
 </body>
 </html>
