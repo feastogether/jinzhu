@@ -134,8 +134,8 @@
 
             <!-- 訂單號碼 -->
             <div class="mb-6">
-                <label class="text-[10px] font-bold text-stone-300 uppercase tracking-widest block mb-1">訂單號碼 / 備註 Note</label>
-                <input id="input-note" type="text" class="field-input" placeholder="請輸入訂單備註或號碼"
+                <label class="text-[10px] font-bold text-stone-300 uppercase tracking-widest block mb-1">訂單號碼 Order No.</label>
+                <input id="input-note" type="text" class="field-input" placeholder="請輸入訂單號碼"
                     onkeydown="if(event.key==='Enter') doSearch()">
             </div>
 
@@ -216,7 +216,7 @@
             const orParts = [];
             if (name)  orParts.push(`customer_name.ilike.%${name}%`);
             if (phone) orParts.push(`phone.ilike.%${phone}%`);
-            if (note)  orParts.push(`note.ilike.%${note}%`);
+            if (note)  orParts.push(`order_no.ilike.%${note}%`);
 
             const { data, error } = await _s
                 .from('customer_photos')
