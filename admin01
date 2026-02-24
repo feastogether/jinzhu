@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>真珠 ADMIN - 旗艦管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --p-green: #004d40; --p-gold: #b89150; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        .font-serif { font-family: 'Noto Serif TC', serif; }
+        .bg-p-green { background-color: var(--p-green); }
+        .text-p-green { color: var(--p-green); }
+        .sidebar-btn-active { background-color: var(--p-green); color: white !important; border-left: 4px solid var(--p-gold); }
+        .img-contain, #admin-logo-img { object-fit: contain; background: white; image-rendering: -webkit-optimize-contrast; }
+        .order-card-completed { opacity: 0.5; filter: grayscale(0.8); background-color: #f1f5f9 !important; border-color: #cbd5e1 !important; }
+        #edit-cat-nav { display: flex; overflow-x: auto; white-space: nowrap; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--p-gold) #f1f1f1; }
+        #edit-cat-nav::-webkit-scrollbar { height: 8px; }
+        #edit-cat-nav::-webkit-scrollbar-thumb { background: var(--p-gold); border-radius: 10px; }
+        .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; }
+        .opt-selected { border: 2.5px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
+        .picker-item.active { border-color: var(--p-gold); background-color: #fffbeb; }
+        .picker-item.active .check-mark { display: block; }
+        .input-mini { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; outline: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen flex text-slate-700">
+
+    <!-- ===== 側欄導航 ===== -->
+    <aside class="w-64 bg-emerald-950 text-white p-6 sticky top-0 h-screen shadow-2xl flex flex-col">
+        <h2 class="text-2xl font-bold mb-10 border-b border-emerald-700 pb-4 text-center tracking-widest font-serif">真珠 ADMIN</h2>
+        <nav class="space-y-2 flex-1">
+            <button id="btn-orders"     onclick="switchTab('orders')"     class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">📋 訂單監控</button>
+            <button id="btn-campaigns"  onclick="switchTab('campaigns')"  class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🎗️ 活動代號</button>
+            <button id="btn-categories" onclick="switchTab('categories')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🗂️ 分類管理</button>
+            <button id="btn-menu"       onclick="switchTab('menu')"       class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🍱 菜單編輯</button>
+            <button id="btn-flavors"    onclick="switchTab('flavors')"    class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🌶️ 口味定義</button>
+            <button id="btn-settings"   onclick="switchTab('settings')"   class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">⚙️ 系統設定</button>
+            <a href="monitor.html" target="_blank" class="block w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2 text-white no-underline">🖥️ 看板模式</a>
+        </nav>
+    </aside>
+
+    <!-- ===== 主內容 ===== -->
+    <main class="flex-1 p-8 overflow-y-auto">
+
+        <!-- 訂單監控 -->
+        <section id="sec-orders" class="space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">訂單監控</h2>
+                <button onclick="exportXls()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">📊 導出 Excel</button>
+            </div>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4 text-left">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">快速日期</label>
+                        <select id="filter-date-preset" onchange="setQuickDate(this.value)" class="w-full border p-2 rounded-lg text-sm">
+                            <option value="all">不限日期</option><option value="today">今日</option>
+                            <option value="week">本週</option><option value="custom">自選日期</option>
+                        </select>
+                    </div>
+                    <div id="custom-date-box" class="hidden">
+                        <label class="block text-xs font-bold text-stone-400 mb-1">自選日期</label>
+                        <input type="date" id="filter-date" class="w-full border p-2 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">活動過濾</label>
+                        <select id="filter-campaign" class="w-full border p-2 rounded-lg text-sm"><option value="all">全部活動</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">處理狀態</label>
+                        <select id="filter-status" class="w-full border p-2 rounded-lg text-sm">
+                            <option value="all">全部</option><option value="pending">未完成</option><option value="synced">已完成</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="filter-search" class="flex-1 border p-2 rounded-lg text-sm" placeholder="搜尋顧客姓名或電話...">
+                    <button onclick="loadOrders()" class="bg-p-green text-white px-8 py-2 rounded-lg font-bold shadow-md">執行篩選</button>
+                    <button onclick="resetFilters()" class="text-stone-400 text-xs">重置</button>
+                </div>
+            </div>
+            <div id="order-list" class="grid grid-cols-1 xl:grid-cols-2 gap-6"></div>
+        </section>
+
+        <!-- 活動代號管理 -->
+        <section id="sec-campaigns" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-p-green font-serif">活動代號管理</h2>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-md">
+                <div class="flex gap-2 mb-6">
+                    <input id="new-campaign" class="border flex-1 p-3 rounded-xl" placeholder="新代號 (如：父親節)">
+                    <button onclick="addCampaign()" class="bg-p-green text-white px-6 rounded-xl font-bold shadow-md">新增</button>
+                </div>
+                <div id="campaign-list" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <!-- 分類管理 -->
+        <section id="sec-categories" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-p-green font-serif">分類管理</h2>
+            <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-2xl">
+                <div class="flex gap-2 mb-6">
+                    <input id="new-cat" class="border flex-1 p-3 rounded-xl" placeholder="新分類名稱">
+                    <button onclick="addCat()" class="bg-p-green text-white px-6 rounded-xl font-bold shadow-md">新增</button>
+                </div>
+                <table class="w-full text-sm text-left">
+                    <thead><tr class="text-stone-400 border-b"><th class="p-3">排序</th><th class="p-3">名稱</th><th class="p-3">狀態</th><th class="p-3">操作</th></tr></thead>
+                    <tbody id="cat-list-table"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 菜單編輯 -->
+        <section id="sec-menu" class="hidden space-y-6 text-left">
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">菜單編輯</h2>
+                <button onclick="openMenuModal(false)" class="bg-p-green text-white px-6 py-2 rounded-lg shadow-lg font-bold">+ 新增餐點</button>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border flex gap-4">
+                <input type="text" id="menu-search" oninput="loadMenu()" class="flex-1 border p-2 rounded-lg" placeholder="搜尋菜名...">
+                <select id="menu-cat-filter" onchange="loadMenu()" class="border p-2 rounded-lg"></select>
+            </div>
+            <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
+        </section>
+
+        <!-- 口味定義 -->
+        <section id="sec-flavors" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-p-green font-serif">口味定義</h2>
+                <button onclick="addFlvGroup()" class="bg-amber-600 text-white px-6 py-2 rounded-xl font-bold shadow-sm">+ 新增選項組</button>
+            </div>
+            <div id="flv-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- 系統設定 -->
+        <section id="sec-settings" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-p-green font-serif">系統與 Logo 設定</h2>
+            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm max-w-xl">
+                <p class="text-xs text-stone-400 mb-4 uppercase font-bold">Logo 上傳 (推薦使用 SVG)</p>
+                <input type="file" id="logo-file" class="w-full border-2 border-dashed p-6 rounded-2xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
+                <div id="current-logo-preview" class="hidden mb-4 text-center"><img id="admin-logo-img" src="" class="max-h-20 mx-auto"></div>
+                <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg transition">確認更新 Logo</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ===== 彈窗：修改訂單細項 ===== -->
+    <div id="order-edit-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[300] backdrop-blur-sm text-left">
+        <div class="bg-white w-full max-w-6xl rounded-3xl overflow-hidden flex flex-col max-h-[95vh] shadow-2xl">
+            <div class="p-6 bg-p-green text-white flex justify-between items-center">
+                <h3 class="text-xl font-bold font-serif">修改訂單內容</h3>
+                <button onclick="closeEditModal()" class="text-2xl">✕</button>
+            </div>
+            <div class="flex flex-1 overflow-hidden">
+                <div class="w-2/3 border-r p-4 bg-stone-50 flex flex-col overflow-hidden">
+                    <div id="edit-cat-nav" class="mb-2 border-b"></div>
+                    <div id="edit-menu-grid" class="grid grid-cols-3 gap-3 overflow-y-auto pt-2 no-scrollbar"></div>
+                </div>
+                <div class="w-1/3 p-4 flex flex-col bg-white">
+                    <h4 class="font-bold mb-4 border-b pb-2 text-stone-400 text-xs tracking-widest uppercase">已選餐點明細</h4>
+                    <div id="edit-cart-list" class="flex-1 space-y-2 overflow-y-auto text-sm no-scrollbar"></div>
+                    <div class="border-t pt-4 mt-4">
+                        <div class="flex justify-between text-xl font-bold text-p-green mb-4"><span>總計金額</span><span id="edit-total-price">$0</span></div>
+                        <button onclick="saveOrderChange()" class="w-full bg-[#b89150] text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition">確認更新訂單資料</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 彈窗：口味選擇 ===== -->
+    <div id="edit-flavor-popup" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm text-left">
+        <div class="bg-white w-full max-w-md rounded-3xl p-6 flex flex-col max-h-[85vh] shadow-2xl">
+            <h4 class="font-bold text-lg mb-4 text-p-green font-serif" id="edit-pop-title">口味與品項選擇</h4>
+            <div id="edit-pop-content" class="space-y-6 overflow-y-auto flex-1 pr-2 no-scrollbar"></div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeEditPop()" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-stone-400">取消</button>
+                <button onclick="confirmEditPop()" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold shadow-lg">確認更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 彈窗：套餐分組 ===== -->
+    <div id="set-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[200]">
+        <div class="bg-white w-full max-w-2xl rounded-3xl p-6 flex flex-col max-h-[90vh] shadow-2xl text-left">
+            <h3 class="font-bold text-xl mb-4 text-p-green border-b pb-2 font-serif text-center" id="set-modal-title">套餐分組內容設定</h3>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">分組名稱</label><input id="g-name" class="w-full border p-3 rounded-xl bg-stone-50"></div>
+                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">必選數量</label><input id="g-limit" type="number" class="w-full border p-3 rounded-xl bg-stone-50 text-center"></div>
+            </div>
+            <div class="bg-stone-50 p-4 rounded-2xl border flex-1 flex flex-col overflow-hidden">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-xs font-bold text-stone-500 uppercase">快速選取單品</p>
+                    <input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="搜尋..." class="w-1/2 p-2 border rounded-full text-xs">
+                </div>
+                <div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pr-2 custom-scrollbar"></div>
+                <div class="mt-4 pt-3 border-t flex justify-between items-center">
+                    <span id="picker-count" class="text-xs text-stone-400">已勾選 0 項</span>
+                    <button onclick="addSelectedToPicks()" class="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold">+ 加入暫存</button>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div id="temp-pick-display" class="flex flex-wrap gap-2 mb-4"></div>
+                <button onclick="saveFullSet()" id="btn-save-group" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg">確認儲存</button>
+                <button onclick="resetSetForm()" id="btn-cancel-edit" class="hidden w-full text-xs text-stone-400 mt-2 underline text-center">取消編輯模式</button>
+            </div>
+            <div class="border-t pt-4 mt-4 overflow-y-auto max-h-40 custom-scrollbar">
+                <div id="saved-groups-view" class="space-y-2"></div>
+            </div>
+            <button onclick="closeSetModal()" class="mt-4 text-xs text-stone-300 w-full text-center">關閉窗口</button>
+        </div>
+    </div>
+
+    <!-- ===== 彈窗：餐點基本資料 ===== -->
+    <div id="menu-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[100] text-left">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-8 flex flex-col max-h-[90vh] shadow-2xl">
+            <h3 class="font-bold text-xl mb-6 text-p-green border-l-4 border-p-gold pl-3">餐點基本資料</h3>
+            <input type="hidden" id="m-id">
+            <div class="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+                <input id="m-name" placeholder="餐點名稱" class="w-full border p-3 rounded-xl bg-stone-50 font-bold">
+                <textarea id="m-desc" placeholder="描述" class="w-full border p-3 rounded-xl bg-stone-50 h-20"></textarea>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="m-price" type="number" placeholder="價格" class="border p-3 rounded-xl bg-stone-50">
+                    <select id="m-cat" class="border p-3 rounded-xl bg-stone-50"></select>
+                </div>
+                <div class="bg-stone-100 p-4 rounded-2xl">
+                    <p class="text-[10px] font-bold text-stone-500 mb-2 uppercase">口味標籤設定</p>
+                    <div id="flv-checks" class="grid grid-cols-2 gap-2"></div>
+                </div>
+                <div class="p-2 border-2 border-dashed rounded-xl">
+                    <input type="file" id="m-img" class="w-full text-xs">
+                </div>
+                <label class="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl font-bold">
+                    <input type="checkbox" id="m-is-set" class="accent-p-green"> 這是「套餐組合」模式
+                </label>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="closeMenuModal()" class="flex-1 bg-gray-100 py-3 rounded-xl text-stone-400 font-bold">取消</button>
+                <button onclick="saveItem()" class="flex-1 bg-p-green text-white py-3 rounded-xl font-bold shadow-md">儲存餐點</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== JavaScript ===== -->
+    <script src="admin-main.js"></script>
+    <script src="admin-menu.js"></script>
+    <script>
+        switchTab('orders');
+    </script>
+</body>
+</html>
