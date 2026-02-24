@@ -1373,14 +1373,36 @@ async function loadActiveEvents() {
 }
 
 async function bindEvent() {
-    const camp = document.getElementById('sel-campaign').value;
+    const camp   = document.getElementById('sel-campaign').value;
     const checked = Array.from(document.querySelectorAll('.ecat-checkbox:checked')).map(el => el.value);
     if (!camp || checked.length === 0) return alert('請選擇活動代號並至少勾選一個分類');
 
-    await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', camp);
+    // 檢查此活動代號是否已有綁定的分類
+    const { data: existing } = await _s.from('categories').select('id, name').eq('campaign_code', camp);
+    const hasExisting = existing && existing.length > 0;
+
+    let mode = 'add'; // 預設：新增合併
+
+    if (hasExisting) {
+        const existNames = existing.map(c => c.name).join('、');
+        const choice = confirm(
+            `活動「${camp}」目前已綁定：${existNames}\n\n` +
+            `確定 → 在現有基礎上「新增」勾選的分類\n` +
+            `取消 → 「重新設定」（清除舊有，只保留本次勾選）`
+        );
+        mode = choice ? 'add' : 'replace';
+    }
+
+    if (mode === 'replace') {
+        // 清除舊有綁定
+        await _s.from('categories').update({ campaign_code: null }).eq('campaign_code', camp);
+    }
+
+    // 綁定勾選的分類（已有此活動代號的不會重複，因為欄位是同一個值）
     const { error } = await _s.from('categories').update({ campaign_code: camp }).in('id', checked);
+
     if (!error) {
-        alert('綁定成功！');
+        alert(mode === 'replace' ? '重新設定成功！' : '新增綁定成功！');
         loadActiveEvents();
         document.querySelectorAll('.ecat-checkbox').forEach(el => {
             el.checked = false;
