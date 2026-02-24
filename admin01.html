@@ -28,8 +28,11 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .rpt-tab { flex:1; padding:9px 6px; border-radius:9px; font-size:12px; font-weight:700; border:none; background:transparent; color:#94a3b8; cursor:pointer; transition:all .15s; white-space:nowrap; }
         .rpt-tab.on { background:white; color:#004d40; box-shadow:0 1px 6px rgba(0,0,0,.1); }
-        .rpt-preset-btn { padding:5px 12px; border-radius:999px; font-size:11px; font-weight:700; cursor:pointer; border:1px solid #e2e8f0; color:#94a3b8; background:white; transition:all .15s; white-space:nowrap; }
+        .rpt-preset-btn { padding:5px 12px; border-radius:999px; font-size:11px; font-weight:700; cursor:pointer; border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.55); background:transparent; transition:all .15s; white-space:nowrap; }
         .rpt-preset-btn:hover,.rpt-preset-btn.on { background:#b89150; border-color:#b89150; color:white; }
+        .rpt-f-input { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); color:white; border-radius:10px; padding:9px 12px; font-size:13px; font-weight:600; outline:none; transition:border .2s; font-family:'Noto Sans TC',sans-serif; }
+        .rpt-f-input:focus { border-color:#d4a85a; }
+        .rpt-f-input option { background:#1a2e2b; }
         .rpt-spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:rspin .6s linear infinite; vertical-align:middle; }
         @keyframes rspin { to { transform:rotate(360deg); } }
 
@@ -247,100 +250,104 @@
         </section>
 
         <!-- 備料統計報表 -->
-        <section id="sec-report" class="hidden space-y-5">
+        <section id="sec-report" class="hidden space-y-4">
 
-            <!-- 標題列 -->
-            <div class="flex flex-wrap justify-between items-center gap-3 border-b-2 border-p-green pb-4">
-                <div>
-                    <h2 class="text-2xl font-bold text-p-green font-serif">精確備料統計中心</h2>
-                    <p id="report-period-display" class="text-amber-600 font-bold text-xs mt-1 italic">尚未查詢</p>
+            <!-- 深綠篩選列 -->
+            <div class="rounded-2xl overflow-hidden shadow-lg" style="background:linear-gradient(135deg,#004d40,#00695c)">
+                <!-- 標題 + 匯出 -->
+                <div class="flex flex-wrap justify-between items-center gap-3 px-6 pt-5 pb-4 border-b border-white/10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1 h-6 rounded-full" style="background:#b89150"></div>
+                        <h2 class="text-lg font-black text-white font-serif tracking-widest">備料統計中心</h2>
+                        <span id="report-period-display" class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(184,145,80,.2);color:#d4a85a">尚未查詢</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="reportPrint()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition" style="background:#fee2e2;color:#dc2626">🖨 列印 PDF</button>
+                        <button onclick="exportFullData()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition" style="background:#dcfce7;color:#16a34a">📊 匯出 Excel</button>
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="reportPrint()" class="px-4 py-2 border-2 border-p-green text-p-green rounded-xl font-bold text-sm hover:bg-stone-50 transition">🖨 列印 PDF</button>
-                    <button onclick="exportFullData()" class="px-4 py-2 bg-p-green text-white rounded-xl font-bold text-sm shadow-lg">📊 匯出 Excel</button>
-                </div>
-            </div>
 
-            <!-- 篩選列 -->
-            <div class="bg-white p-5 rounded-2xl shadow-sm border space-y-4">
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
-                    <!-- 快速日期 -->
-                    <div class="sm:col-span-1">
-                        <label class="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">快速選擇</label>
-                        <div class="flex flex-wrap gap-1.5">
-                            <button class="rpt-preset-btn" onclick="rptPreset('today')">今日</button>
-                            <button class="rpt-preset-btn" onclick="rptPreset('yesterday')">昨日</button>
-                            <button class="rpt-preset-btn" onclick="rptPreset('week')">本週</button>
-                            <button class="rpt-preset-btn" onclick="rptPreset('month')">本月</button>
+                <!-- 篩選控件 -->
+                <div class="px-6 py-5">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+                        <!-- 快速預設 -->
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">快速選擇</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button class="rpt-preset-btn" onclick="rptPreset('today')">今日</button>
+                                <button class="rpt-preset-btn" onclick="rptPreset('yesterday')">昨日</button>
+                                <button class="rpt-preset-btn" onclick="rptPreset('week')">本週</button>
+                                <button class="rpt-preset-btn" onclick="rptPreset('month')">本月</button>
+                            </div>
+                        </div>
+                        <!-- 開始日 -->
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">開始日期</span>
+                            <input type="date" id="r-s-date" class="rpt-f-input w-full">
+                        </div>
+                        <!-- 結束日 -->
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">結束日期</span>
+                            <input type="date" id="r-e-date" class="rpt-f-input w-full">
+                        </div>
+                        <!-- 開始時間 -->
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">開始時間</span>
+                            <input type="time" id="r-s-time" value="00:00" class="rpt-f-input w-full">
+                        </div>
+                        <!-- 結束時間 -->
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">結束時間</span>
+                            <input type="time" id="r-e-time" value="23:59" class="rpt-f-input w-full">
+                        </div>
+                        <!-- 活動代號 -->
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">活動代號</span>
+                            <select id="report-campaign" class="rpt-f-input w-full">
+                                <option value="all">全部來源</option>
+                                <option value="none">一般訂單</option>
+                            </select>
                         </div>
                     </div>
-                    <!-- 開始日 -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">開始日期</label>
-                        <input type="date" id="r-s-date" class="w-full border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
-                    </div>
-                    <!-- 結束日 -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">結束日期</label>
-                        <input type="date" id="r-e-date" class="w-full border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
-                    </div>
-                    <!-- 開始時間 -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">開始時間</label>
-                        <input type="time" id="r-s-time" value="00:00" class="w-full border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
-                    </div>
-                    <!-- 結束時間 -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">結束時間</label>
-                        <input type="time" id="r-e-time" value="23:59" class="w-full border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
-                    </div>
-                    <!-- 活動代號 -->
-                    <div>
-                        <label class="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2">活動代號</label>
-                        <select id="report-campaign" class="w-full border-b-2 border-stone-200 p-2 bg-transparent font-bold text-sm outline-none focus:border-amber-400">
-                            <option value="all">全部來源</option>
-                            <option value="none">一般訂單</option>
-                        </select>
-                    </div>
+                    <button id="r-run-btn" onclick="fetchData()" class="mt-4 w-full py-3 rounded-xl font-bold text-sm tracking-widest shadow-lg transition" style="background:#b89150;color:white">
+                        <span id="r-run-lbl">▶ 執行查詢</span>
+                    </button>
                 </div>
-                <button id="r-run-btn" onclick="fetchData()" class="w-full bg-amber-600 text-white py-3 rounded-xl font-bold tracking-widest text-sm shadow-lg hover:bg-amber-700 transition">
-                    <span id="r-run-lbl">▶ 執行查詢</span>
-                </button>
             </div>
 
             <!-- KPI 總覽 -->
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                <div class="bg-white rounded-2xl p-4 border shadow-sm border-t-2 border-t-p-green">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #004d40">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">訂單數</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-orders">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">筆訂單</div>
                 </div>
-                <div class="bg-white rounded-2xl p-4 border shadow-sm border-t-2 border-t-amber-400">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #f59e0b">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">大人</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-adult">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">位大人</div>
                 </div>
-                <div class="bg-white rounded-2xl p-4 border shadow-sm border-t-2 border-t-amber-400">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #f59e0b">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">小孩</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-kid">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">位小孩</div>
                 </div>
-                <div class="bg-white rounded-2xl p-4 border shadow-sm border-t-2 border-t-blue-400">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #3b82f6">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">總人數</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-people">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">位用餐</div>
                 </div>
-                <div class="bg-white rounded-2xl p-4 border shadow-sm border-t-2 border-t-p-green">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #004d40">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">套餐組數</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-sets">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">組套餐</div>
                 </div>
-                <div class="bg-white rounded-2xl p-4 border shadow-sm border-t-2 border-t-stone-400">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #94a3b8">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">備料品項</div>
                     <div class="text-2xl font-black text-p-green font-serif" id="kpi-items">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">種品項</div>
                 </div>
-                <div class="bg-white rounded-2xl p-4 border shadow-sm border-t-2 border-t-rose-400">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #f43f5e">
                     <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">預估營收</div>
                     <div class="text-xl font-black text-p-green font-serif" id="kpi-rev">—</div>
                     <div class="text-[10px] text-stone-400 mt-0.5">元（未含服務費）</div>
