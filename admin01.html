@@ -1653,13 +1653,16 @@ function exportFullData() {
         const { data: urlData } = _s.storage.from('assets').getPublicUrl(path);
 
         // 寫入資料庫
-        const { error: dbErr } = await _s.from('customer_photos').insert([{
+        const insertData = {
             customer_name: name || null,
             phone:         phone || null,
-            note:          note  || null,
             photo_url:     urlData.publicUrl,
             storage_path:  path
-        }]);
+        };
+        // 若資料表有 note 欄位才加入（避免 schema 不存在時報錯）
+        if (note) insertData.note = note;
+
+        const { error: dbErr } = await _s.from('customer_photos').insert([insertData]);
 
         if (dbErr) { alert('資料儲存失敗：' + dbErr.message); btn.innerText = '確認上傳'; return; }
 
