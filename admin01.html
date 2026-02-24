@@ -367,8 +367,12 @@
                     <input id="upload-phone" type="text" placeholder="例：0912345678" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300">
                 </div>
                 <div>
-                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">備註 / 訂單號</label>
-                    <input id="upload-note" type="text" placeholder="選填：活動名稱、桌號…" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300">
+                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">訂單號碼</label>
+                    <input id="upload-orderno" type="text" placeholder="選填：桌號、訂單編號…" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">備註</label>
+                    <input id="upload-note" type="text" placeholder="選填：活動名稱、特別說明…" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300">
                 </div>
             </div>
 
@@ -1553,8 +1557,9 @@ function exportFullData() {
         const kw = document.getElementById('photo-admin-search').value.toLowerCase();
         const filtered = allPhotos.filter(p =>
             (p.customer_name || '').toLowerCase().includes(kw) ||
-            (p.phone || '').toLowerCase().includes(kw) ||
-            (p.note || '').toLowerCase().includes(kw)
+            (p.phone         || '').toLowerCase().includes(kw) ||
+            (p.order_no      || '').toLowerCase().includes(kw) ||
+            (p.note          || '').toLowerCase().includes(kw)
         );
         renderPhotoGrid(filtered);
     }
@@ -1573,6 +1578,7 @@ function exportFullData() {
                 <div class="p-3">
                     <p class="font-bold text-xs text-p-green truncate">${p.customer_name || '未命名'}</p>
                     <p class="text-[10px] text-stone-400 truncate">${p.phone || '—'}</p>
+                    ${p.order_no ? `<p class="text-[10px] text-blue-400 truncate mt-0.5">單號：${p.order_no}</p>` : ''}
                     ${p.note ? `<p class="text-[10px] text-amber-600 truncate mt-0.5">${p.note}</p>` : ''}
                     <p class="text-[9px] text-stone-300 mt-1">${new Date(p.created_at).toLocaleDateString()}</p>
                 </div>
@@ -1590,9 +1596,10 @@ function exportFullData() {
         uploadFile = null;
         document.getElementById('upload-preview').classList.add('hidden');
         document.getElementById('upload-placeholder').classList.remove('hidden');
-        document.getElementById('upload-name').value  = '';
-        document.getElementById('upload-phone').value = '';
-        document.getElementById('upload-note').value  = '';
+        document.getElementById('upload-name').value    = '';
+        document.getElementById('upload-phone').value   = '';
+        document.getElementById('upload-orderno').value = '';
+        document.getElementById('upload-note').value    = '';
         document.getElementById('upload-btn-text').innerText = '確認上傳';
         document.getElementById('upload-photo-modal').classList.remove('hidden');
     }
@@ -1653,16 +1660,13 @@ function exportFullData() {
         const { data: urlData } = _s.storage.from('assets').getPublicUrl(path);
 
         // 寫入資料庫
-        const insertData = {
-            customer_name: name || null,
+        const { error: dbErr } = await _s.from('customer_photos').insert([{
+            customer_name: name  || null,
             phone:         phone || null,
-            photo_url:     urlData.publicUrl,
-            storage_path:  path
-        };
-        // 若資料表有 note 欄位才加入（避免 schema 不存在時報錯）
-        if (note) insertData.note = note;
-
-        const { error: dbErr } = await _s.from('customer_photos').insert([insertData]);
+            note:          document.getElementById('upload-note').value.trim() || null,
+            order_no:      document.getElementById('upload-orderno').value.trim() || null,
+            photo_url:     urlData.publicUrl
+        }]);
 
         if (dbErr) { alert('資料儲存失敗：' + dbErr.message); btn.innerText = '確認上傳'; return; }
 
