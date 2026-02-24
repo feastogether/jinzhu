@@ -26,23 +26,61 @@
         .input-mini { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; outline: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        /* ── 側欄摺疊 ── */
+        #sidebar { width: 240px; transition: width 0.25s ease; overflow: hidden; }
+        #sidebar.collapsed { width: 64px; }
+        #sidebar.collapsed .nav-label { display: none; }
+        #sidebar.collapsed .logo-full { display: none; }
+        #sidebar.collapsed .logo-icon { display: flex !important; }
+        #sidebar.collapsed #toggle-btn { justify-content: center; }
+        #sidebar.collapsed .nav-btn { justify-content: center; padding-left: 0; padding-right: 0; }
+        #sidebar.collapsed .sidebar-btn-active { border-left: none; border-bottom: 3px solid var(--p-gold); }
+        .logo-icon { display: none; }
+        .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; transition: background 0.15s; color: white; }
+        .nav-btn:hover { background-color: rgba(255,255,255,0.1); }
+        .nav-emoji { font-size: 18px; flex-shrink: 0; }
     </style>
 </head>
 <body class="min-h-screen flex text-slate-700">
 
     <!-- ===== 側欄導航 ===== -->
-    <aside class="w-64 bg-emerald-950 text-white p-6 sticky top-0 h-screen shadow-2xl flex flex-col">
-        <h2 class="text-2xl font-bold mb-10 border-b border-emerald-700 pb-4 text-center tracking-widest font-serif">真珠 ADMIN</h2>
-        <nav class="space-y-2 flex-1">
-            <button id="btn-orders"     onclick="switchTab('orders')"     class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">📋 訂單監控</button>
-            <button id="btn-campaigns"  onclick="switchTab('campaigns')"  class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🎗️ 活動代號</button>
-            <button id="btn-categories" onclick="switchTab('categories')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🗂️ 分類管理</button>
-            <button id="btn-menu"       onclick="switchTab('menu')"       class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🍱 菜單編輯</button>
-            <button id="btn-flavors"    onclick="switchTab('flavors')"    class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🌶️ 口味定義</button>
-            <button id="btn-settings"   onclick="switchTab('settings')"   class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">⚙️ 系統設定</button>
-            <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🔗 活動網址配置</button>
-            <button id="btn-report"     onclick="switchTab('report')"     class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">📊 備料統計報表</button>
-            <a href="monitor.html" target="_blank" class="block w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2 text-white no-underline">🖥️ 看板模式</a>
+    <aside id="sidebar" class="bg-emerald-950 text-white sticky top-0 h-screen shadow-2xl flex flex-col flex-shrink-0">
+
+        <!-- Logo 區 -->
+        <div class="flex items-center justify-between px-4 py-5 border-b border-emerald-800">
+            <!-- 展開時顯示 Logo 圖片 -->
+            <div class="logo-full flex items-center gap-2 overflow-hidden">
+                <img id="sidebar-logo" src="" alt="真珠" class="h-10 object-contain"
+                    onerror="this.style.display='none'; document.getElementById('sidebar-logo-text').style.display='block'">
+                <span id="sidebar-logo-text" class="font-serif font-bold text-lg tracking-widest whitespace-nowrap" style="display:none">真珠 ADMIN</span>
+            </div>
+            <!-- 收合時顯示小圖示 -->
+            <div class="logo-icon items-center justify-center w-8 h-8">
+                <span class="font-serif font-black text-lg text-amber-400">珠</span>
+            </div>
+            <!-- 摺疊按鈕 -->
+            <button id="toggle-btn" onclick="toggleSidebar()"
+                class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-emerald-700 transition flex-shrink-0 ml-1"
+                title="收合側欄">
+                <svg id="toggle-icon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- 選單 -->
+        <nav class="flex-1 py-4 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
+            <button id="btn-orders"     onclick="switchTab('orders')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📋</span><span class="nav-label">訂單監控</span></button>
+            <button id="btn-campaigns"  onclick="switchTab('campaigns')"  class="nav-btn nav-btn-tab"><span class="nav-emoji">🎗️</span><span class="nav-label">活動代號</span></button>
+            <button id="btn-categories" onclick="switchTab('categories')" class="nav-btn nav-btn-tab"><span class="nav-emoji">🗂️</span><span class="nav-label">分類管理</span></button>
+            <button id="btn-menu"       onclick="switchTab('menu')"       class="nav-btn nav-btn-tab"><span class="nav-emoji">🍱</span><span class="nav-label">菜單編輯</span></button>
+            <button id="btn-flavors"    onclick="switchTab('flavors')"    class="nav-btn nav-btn-tab"><span class="nav-emoji">🌶️</span><span class="nav-label">口味定義</span></button>
+            <button id="btn-settings"   onclick="switchTab('settings')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">⚙️</span><span class="nav-label">系統設定</span></button>
+            <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">🔗</span><span class="nav-label">活動網址配置</span></button>
+            <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📊</span><span class="nav-label">備料統計報表</span></button>
+            <div class="border-t border-emerald-800 my-2"></div>
+            <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
         </nav>
     </aside>
 
@@ -362,7 +400,7 @@ let editCart      = [];
 // ──────────────────────────────────────────────
 async function switchTab(t) {
     document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('sidebar-btn-active'));
+    document.querySelectorAll('.nav-btn-tab').forEach(b => b.classList.remove('sidebar-btn-active'));
     document.getElementById(`sec-${t}`).classList.remove('hidden');
     document.getElementById(`btn-${t}`).classList.add('sidebar-btn-active');
 
@@ -815,6 +853,7 @@ async function uploadLogo() {
         await _s.from('store_settings').update({ logo_url: data.publicUrl }).eq('id', 1);
         alert('成功');
         loadSettings();
+        loadSidebarLogo();
     }
 }
 
@@ -1351,6 +1390,33 @@ function exportFullData() {
     </script>
     <script>
         switchTab('orders');
+
+        // ── 側欄摺疊 ──
+        function toggleSidebar() {
+            const sb   = document.getElementById('sidebar');
+            const icon = document.getElementById('toggle-icon');
+            sb.classList.toggle('collapsed');
+            if (sb.classList.contains('collapsed')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // ── 載入 Sidebar Logo ──
+        async function loadSidebarLogo() {
+            const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
+            if (data?.logo_url) {
+                const img = document.getElementById('sidebar-logo');
+                img.src = `${data.logo_url}?t=${Date.now()}`;
+                img.style.display = 'block';
+                document.getElementById('sidebar-logo-text').style.display = 'none';
+            } else {
+                document.getElementById('sidebar-logo').style.display = 'none';
+                document.getElementById('sidebar-logo-text').style.display = 'block';
+            }
+        }
+        loadSidebarLogo();
     </script>
 </body>
 </html>
