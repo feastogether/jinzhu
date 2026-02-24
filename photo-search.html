@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>真珠 | 珍藏回憶 · 紀念照下載</title>
+    <link rel="stylesheet" href="https://www.jinzhu.com.tw/css/animate.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --p-green: #004d40; --p-gold: #b89150; --p-cream: #f9f5f0; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--p-green);
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        .font-serif { font-family: 'Noto Serif TC', serif; }
+
+        /* 背景裝飾圓 */
+        .bg-circle-1 {
+            position: fixed; top: -120px; right: -80px;
+            width: 350px; height: 350px; border-radius: 50%;
+            background: rgba(184,145,80,0.08); pointer-events: none;
+        }
+        .bg-circle-2 {
+            position: fixed; bottom: -100px; left: -80px;
+            width: 280px; height: 280px; border-radius: 50%;
+            background: rgba(255,255,255,0.04); pointer-events: none;
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 56px; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px;
+            background: rgba(0,77,64,0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .navbar img { max-height: 32px; object-fit: contain; filter: brightness(0) invert(1); }
+
+        /* 主卡片 */
+        .main-card {
+            background: white;
+            border-radius: 2rem;
+            padding: 36px 28px 32px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.25);
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* 輸入框 */
+        .search-input {
+            width: 100%;
+            border: none;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 12px 0;
+            font-size: 16px;
+            font-weight: bold;
+            background: transparent;
+            outline: none;
+            color: #1a2e2b;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: var(--p-gold); }
+        .search-input::placeholder { color: #cbd5e1; font-weight: normal; }
+
+        /* 搜尋按鈕 */
+        .search-btn {
+            width: 100%;
+            background: var(--p-green);
+            color: white;
+            border: none;
+            border-radius: 999px;
+            padding: 15px;
+            font-size: 15px;
+            font-weight: bold;
+            font-family: 'Noto Serif TC', serif;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 8px 20px rgba(0,77,64,0.25);
+        }
+        .search-btn:active { transform: scale(0.97); opacity: 0.9; }
+        .search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* 結果區 */
+        #result-area { display: none; }
+
+        .photo-card {
+            border-radius: 1.5rem;
+            overflow: hidden;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            animation: fadeInUp 0.4s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .photo-card img {
+            width: 100%; aspect-ratio: 4/3;
+            object-fit: cover; display: block;
+        }
+        .download-btn {
+            display: block;
+            width: 100%;
+            background: var(--p-gold);
+            color: white;
+            text-align: center;
+            padding: 14px;
+            font-weight: bold;
+            font-size: 14px;
+            text-decoration: none;
+            border-radius: 999px;
+            transition: opacity 0.2s;
+            box-shadow: 0 6px 16px rgba(184,145,80,0.3);
+        }
+        .download-btn:hover { opacity: 0.88; color: white; text-decoration: none; }
+
+        /* 狀態文字 */
+        .status-text {
+            text-align: center;
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: bold;
+            padding: 12px 0;
+            display: none;
+        }
+
+        /* 分隔線 */
+        .divider {
+            display: flex; align-items: center; gap: 10px;
+            color: #e2e8f0; font-size: 11px; font-weight: bold;
+            margin: 20px 0;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px; background: #f1f5f9;
+        }
+
+        /* 多筆結果分頁點 */
+        .photo-dots {
+            display: flex; justify-content: center; gap: 6px; margin-top: 12px;
+        }
+        .photo-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #e2e8f0; cursor: pointer; transition: background 0.2s;
+        }
+        .photo-dot.active { background: var(--p-gold); }
+
+        /* 返回連結 */
+        .back-link {
+            color: rgba(255,255,255,0.35);
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: rgba(255,255,255,0.7); }
+    </style>
+</head>
+<body>
+
+    <!-- 背景裝飾 -->
+    <div class="bg-circle-1"></div>
+    <div class="bg-circle-2"></div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="index.html" class="back-link">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            返回
+        </a>
+        <img id="nav-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠">
+        <div style="width:48px"></div>
+    </nav>
+
+    <!-- 主要內容 -->
+    <div class="min-h-screen flex flex-col items-center justify-center px-4 pt-16 pb-12">
+
+        <!-- 標題區 -->
+        <div class="text-center mb-8 animate__animated animate__fadeIn">
+            <div class="text-5xl mb-4">📷</div>
+            <h1 class="text-white font-serif font-black text-3xl tracking-widest mb-2">珍藏回憶</h1>
+            <p class="text-white/50 text-sm tracking-widest">紀念照片下載專區</p>
+            <div class="w-10 h-0.5 bg-p-gold mx-auto mt-4" style="background:var(--p-gold)"></div>
+        </div>
+
+        <!-- 搜尋卡片 -->
+        <div class="main-card animate__animated animate__fadeInUp">
+
+            <p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-6 text-center">
+                請輸入您的訂位資訊領取專屬紀念照
+            </p>
+
+            <!-- 輸入姓名 -->
+            <div class="mb-4">
+                <label class="text-[10px] font-bold text-stone-300 uppercase tracking-widest block mb-1">姓名 Name</label>
+                <input id="input-name" type="text" class="search-input" placeholder="請輸入訂位姓名"
+                    onkeydown="if(event.key==='Enter') doSearch()">
+            </div>
+
+            <!-- 或電話 -->
+            <div class="mb-6">
+                <label class="text-[10px] font-bold text-stone-300 uppercase tracking-widest block mb-1">電話 Phone</label>
+                <input id="input-phone" type="tel" class="search-input" placeholder="請輸入聯絡電話"
+                    onkeydown="if(event.key==='Enter') doSearch()">
+            </div>
+
+            <!-- 搜尋按鈕 -->
+            <button id="search-btn" class="search-btn" onclick="doSearch()">
+                立即搜尋回憶 ✦
+            </button>
+
+            <!-- 狀態：搜尋中 -->
+            <div id="status-searching" class="status-text">搜尋中⋯</div>
+
+            <!-- 狀態：無結果 -->
+            <div id="status-empty" class="status-text" style="color:#f87171">
+                找不到相符的紀念照<br>
+                <span style="font-weight:normal; font-size:12px; color:#94a3b8">請確認輸入的姓名或電話是否正確</span>
+            </div>
+
+            <!-- 結果區 -->
+            <div id="result-area">
+                <div class="divider">找到您的紀念照</div>
+
+                <!-- 照片卡片 -->
+                <div id="photo-card" class="photo-card mb-4">
+                    <img id="photo-img" src="" alt="紀念照">
+                    <div class="p-4">
+                        <p id="photo-name" class="font-bold text-p-green font-serif text-base mb-0.5" style="color:var(--p-green)"></p>
+                        <p id="photo-note" class="text-xs text-stone-400 mb-3"></p>
+                        <p id="photo-date" class="text-[10px] text-stone-300 mb-4"></p>
+                        <a id="download-btn" href="" download class="download-btn">
+                            ⬇ &nbsp;點此下載照片
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 多張照片分頁點 -->
+                <div id="photo-dots" class="photo-dots"></div>
+
+                <!-- 多張提示 -->
+                <p id="multi-hint" class="text-center text-[10px] text-stone-300 mt-3 hidden">
+                    點擊下方圓點切換多張照片
+                </p>
+            </div>
+
+        </div>
+
+        <!-- 底部說明 -->
+        <p class="text-white/20 text-[10px] text-center mt-8 tracking-widest">
+            Jin Zhu Taichung · 真珠 台灣佳味
+        </p>
+
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+        const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let foundPhotos = [];
+        let currentIdx  = 0;
+
+        // 載入 logo
+        async function init() {
+            const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
+            if (data?.logo_url) {
+                document.getElementById('nav-logo').src = `${data.logo_url}?t=${Date.now()}`;
+            }
+        }
+        init();
+
+        // 搜尋
+        async function doSearch() {
+            const name  = document.getElementById('input-name').value.trim();
+            const phone = document.getElementById('input-phone').value.trim();
+
+            if (!name && !phone) {
+                document.getElementById('input-name').focus();
+                return;
+            }
+
+            // 重置 UI
+            setStatus('searching');
+
+            // 組合查詢條件
+            let orClause = [];
+            if (name)  orClause.push(`customer_name.ilike.%${name}%`);
+            if (phone) orClause.push(`phone.ilike.%${phone}%`);
+
+            const { data, error } = await _s
+                .from('customer_photos')
+                .select('*')
+                .or(orClause.join(','))
+                .order('created_at', { ascending: false });
+
+            if (error || !data || data.length === 0) {
+                setStatus('empty');
+                return;
+            }
+
+            foundPhotos = data;
+            currentIdx  = 0;
+            setStatus('result');
+            renderPhoto(0);
+            renderDots();
+        }
+
+        // 渲染單張照片
+        function renderPhoto(idx) {
+            currentIdx = idx;
+            const p = foundPhotos[idx];
+            document.getElementById('photo-img').src      = p.photo_url;
+            document.getElementById('photo-name').innerText = p.customer_name || '您的紀念照';
+            document.getElementById('photo-note').innerText = p.note || '';
+            document.getElementById('photo-date').innerText = p.created_at
+                ? '拍攝日期：' + new Date(p.created_at).toLocaleDateString('zh-TW', { year:'numeric', month:'long', day:'numeric' })
+                : '';
+
+            // 下載連結：透過 fetch 轉 blob，避免瀏覽器直接開新頁
+            const dlBtn = document.getElementById('download-btn');
+            dlBtn.href     = p.photo_url;
+            dlBtn.download = `真珠紀念照_${p.customer_name || idx + 1}.jpg`;
+
+            // 更新分頁點 active
+            document.querySelectorAll('.photo-dot').forEach((d, i) => {
+                d.classList.toggle('active', i === idx);
+            });
+        }
+
+        // 渲染分頁點
+        function renderDots() {
+            const dots = document.getElementById('photo-dots');
+            const hint = document.getElementById('multi-hint');
+            if (foundPhotos.length <= 1) {
+                dots.innerHTML = '';
+                hint.classList.add('hidden');
+                return;
+            }
+            hint.classList.remove('hidden');
+            dots.innerHTML = foundPhotos.map((_, i) =>
+                `<div class="photo-dot ${i === 0 ? 'active' : ''}" onclick="renderPhoto(${i})"></div>`
+            ).join('');
+        }
+
+        // 切換狀態
+        function setStatus(state) {
+            document.getElementById('status-searching').style.display = state === 'searching' ? 'block' : 'none';
+            document.getElementById('status-empty').style.display     = state === 'empty'     ? 'block' : 'none';
+            document.getElementById('result-area').style.display      = state === 'result'    ? 'block' : 'none';
+            const btn = document.getElementById('search-btn');
+            btn.disabled    = state === 'searching';
+            btn.innerText   = state === 'searching' ? '搜尋中⋯' : '立即搜尋回憶 ✦';
+        }
+    </script>
+</body>
+</html>
