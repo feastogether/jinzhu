@@ -109,6 +109,7 @@
             <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">🔗</span><span class="nav-label">活動網址配置</span></button>
             <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📊</span><span class="nav-label">備料統計報表</span></button>
             <button id="btn-photos"     onclick="switchTab('photos')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📸</span><span class="nav-label">紀念照管理</span></button>
+            <button id="btn-linenotify" onclick="switchTab('linenotify')" class="nav-btn nav-btn-tab"><span class="nav-emoji">💬</span><span class="nav-label">LINE 通知管理</span></button>
             <div class="border-t border-emerald-800 my-2"></div>
             <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
         </nav>
@@ -433,7 +434,64 @@
             <div id="photo-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
         </section>
 
+        <!-- ===== LINE 通知管理 ===== -->
+        <section id="sec-linenotify" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">💬 LINE 通知管理</h2>
+                <div class="flex gap-2">
+                    <a href="line-bind.html" target="_blank"
+                       class="px-4 py-2 border-2 border-p-green text-p-green rounded-xl font-bold text-sm hover:bg-stone-50 transition">
+                        🔗 綁定頁面
+                    </a>
+                    <button onclick="openAddTargetModal()" class="bg-p-green text-white px-6 py-2 rounded-xl font-bold shadow-lg">
+                        ＋ 手動新增
+                    </button>
+                </div>
+            </div>
+
+            <!-- 說明 -->
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 font-semibold">
+                💡 新增對象前，請先讓對方加 Bot 為好友並傳一則訊息，然後到 Edge Function Logs 取得他的 User ID（格式：U 開頭 + 32 字元）
+            </div>
+
+            <!-- 通知對象列表 -->
+            <div id="line-targets-list" class="space-y-3"></div>
+        </section>
+
     </main>
+
+    <!-- ===== 彈窗：新增 LINE 通知對象 ===== -->
+    <div id="line-target-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-5">
+            <h3 class="text-xl font-bold text-p-green font-serif border-b pb-3">新增通知對象</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">名稱（例：店長、外場一）</label>
+                    <input type="text" id="lt-name" class="w-full border-2 border-stone-200 rounded-xl p-3 font-bold outline-none focus:border-p-green" placeholder="王小明">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">LINE User ID</label>
+                    <input type="text" id="lt-uid" class="w-full border-2 border-stone-200 rounded-xl p-3 font-bold outline-none focus:border-p-green font-mono text-sm" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <p class="text-xs text-stone-400 mt-1">讓對方加 Bot 好友並傳訊息後，從 Edge Function Logs 取得</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">接收通知類型</label>
+                    <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer">
+                        <input type="checkbox" id="lt-notify-order" checked class="accent-p-green w-4 h-4">
+                        <span class="font-bold text-sm">🔔 新訂單通知</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer">
+                        <input type="checkbox" id="lt-notify-photo" checked class="accent-p-green w-4 h-4">
+                        <span class="font-bold text-sm">📸 照片上傳通知</span>
+                    </label>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeTargetModal()" class="flex-1 py-3 border-2 border-stone-200 rounded-xl font-bold text-stone-500 hover:bg-stone-50">取消</button>
+                <button onclick="saveLineTarget()" class="flex-1 py-3 bg-p-green text-white rounded-xl font-bold shadow-lg">儲存</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== 彈窗：上傳照片 ===== -->
     <div id="upload-photo-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
@@ -667,6 +725,7 @@ async function switchTab(t) {
     if (t === 'eventurl')   initEventUrl();
     if (t === 'report')     initReport();
     if (t === 'photos')     loadPhotos();
+    if (t === 'linenotify') loadLineNotify();
 }
 
 // ──────────────────────────────────────────────
@@ -1901,6 +1960,121 @@ function exportFullData() {
             }
         }
         loadSidebarLogo();
+    </script>
+
+    <script>
+    // ============================================================
+    //  💬 LINE 通知管理
+    // ============================================================
+    async function loadLineNotify() {
+        const { data, error } = await _s
+            .from('line_notify_targets')
+            .select('*')
+            .order('created_at', { ascending: true })
+
+        const container = document.getElementById('line-targets-list')
+        if (error) {
+            container.innerHTML = `<p class="text-red-400 text-sm font-bold p-4">${error.message}</p>`
+            return
+        }
+        if (!data?.length) {
+            container.innerHTML = `<div class="text-center py-12 text-stone-300 font-bold">尚無通知對象，點右上角新增</div>`
+            return
+        }
+        container.innerHTML = data.map(t => `
+            <div class="bg-white rounded-2xl border shadow-sm p-5">
+                <div class="flex flex-wrap items-start gap-4">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-black text-p-green text-base">${t.name}</span>
+                            ${t.is_active
+                                ? `<span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">✅ 啟用</span>`
+                                : `<span class="text-[10px] font-bold bg-stone-100 text-stone-400 px-2 py-0.5 rounded-full">⏸ 停用</span>`}
+                        </div>
+                        <div class="font-mono text-xs text-stone-400 mb-2 truncate">${t.user_id}</div>
+                        <div class="flex gap-2 flex-wrap">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" ${t.notify_order ? 'checked' : ''}
+                                    onchange="updateTarget('${t.id}','notify_order',this.checked)"
+                                    class="accent-p-green">
+                                <span class="text-xs font-bold text-stone-600">🔔 訂單通知</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" ${t.notify_photo ? 'checked' : ''}
+                                    onchange="updateTarget('${t.id}','notify_photo',this.checked)"
+                                    class="accent-p-green">
+                                <span class="text-xs font-bold text-stone-600">📸 照片通知</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button onclick="testSendLine('${t.user_id}','${t.name}')"
+                            class="px-3 py-1.5 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200 transition">
+                            📤 測試
+                        </button>
+                        <button onclick="toggleTarget('${t.id}', ${t.is_active})"
+                            class="px-3 py-1.5 ${t.is_active ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'} rounded-lg text-xs font-bold">
+                            ${t.is_active ? '⏸ 停用' : '▶ 啟用'}
+                        </button>
+                        <button onclick="deleteTarget('${t.id}','${t.name}')"
+                            class="px-3 py-1.5 bg-red-50 text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 transition">
+                            刪除
+                        </button>
+                    </div>
+                </div>
+            </div>`).join('')
+    }
+
+    function openAddTargetModal() {
+        document.getElementById('lt-name').value = ''
+        document.getElementById('lt-uid').value  = ''
+        document.getElementById('lt-notify-order').checked = true
+        document.getElementById('lt-notify-photo').checked = true
+        document.getElementById('line-target-modal').classList.remove('hidden')
+    }
+
+    function closeTargetModal() {
+        document.getElementById('line-target-modal').classList.add('hidden')
+    }
+
+    async function saveLineTarget() {
+        const name  = document.getElementById('lt-name').value.trim()
+        const uid   = document.getElementById('lt-uid').value.trim()
+        const order = document.getElementById('lt-notify-order').checked
+        const photo = document.getElementById('lt-notify-photo').checked
+
+        if (!name || !uid) return alert('請填寫名稱和 User ID')
+        if (!uid.startsWith('U') || uid.length < 10) return alert('User ID 格式錯誤，應以 U 開頭')
+
+        const { error } = await _s.from('line_notify_targets').insert({
+            name, user_id: uid, notify_order: order, notify_photo: photo, is_active: true
+        })
+        if (error) return alert('儲存失敗：' + error.message)
+
+        closeTargetModal()
+        loadLineNotify()
+        alert(`✅ 已新增「${name}」`)
+    }
+
+    async function updateTarget(id, field, value) {
+        await _s.from('line_notify_targets').update({ [field]: value }).eq('id', id)
+    }
+
+    async function toggleTarget(id, current) {
+        await _s.from('line_notify_targets').update({ is_active: !current }).eq('id', id)
+        loadLineNotify()
+    }
+
+    async function deleteTarget(id, name) {
+        if (!confirm(`確定刪除「${name}」的通知設定嗎？`)) return
+        await _s.from('line_notify_targets').delete().eq('id', id)
+        loadLineNotify()
+    }
+
+    async function testSendLine(userId, name) {
+        const token = 'LINE_CHANNEL_TOKEN 需透過後端發送'
+        alert(`📤 測試功能需透過 Edge Function 執行\n\n請到 Supabase → Edge Functions → notify-new-order\n手動觸發或從點餐頁下一筆測試訂單`)
+    }
     </script>
 
     <script>
