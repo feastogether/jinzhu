@@ -416,18 +416,47 @@
         </section>
 
         <!-- ===== 紀念照管理 ===== -->
-        <section id="sec-photos" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
+        <section id="sec-photos" class="hidden space-y-5">
+
+            <!-- 標題列 -->
+            <div class="flex flex-wrap justify-between items-center gap-3">
                 <h2 class="text-3xl font-bold text-p-green font-serif">紀念照管理</h2>
-                <button onclick="openUploadModal()" class="bg-p-green text-white px-6 py-2 rounded-xl font-bold shadow-lg flex items-center gap-2">
-                    📤 上傳新照片
-                </button>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="autoDeleteOld()" class="px-4 py-2 border-2 border-red-200 text-red-400 rounded-xl font-bold text-sm hover:bg-red-50 transition">
+                        🗑 刪除 7 天前
+                    </button>
+                    <button onclick="openUploadModal()" class="bg-p-green text-white px-5 py-2 rounded-xl font-bold shadow-lg text-sm">
+                        📤 上傳新照片
+                    </button>
+                </div>
             </div>
 
-            <!-- 搜尋列 -->
-            <div class="bg-white p-4 rounded-2xl shadow-sm border flex gap-3 items-center">
-                <input type="text" id="photo-admin-search" oninput="searchAdminPhotos()" placeholder="搜尋顧客姓名、電話、訂單備註…" class="flex-1 border p-2 rounded-lg text-sm outline-none">
-                <span id="photo-count-tag" class="text-xs text-stone-400 font-bold whitespace-nowrap">共 0 張</span>
+            <!-- 篩選列 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-3">
+                <div class="flex flex-wrap gap-3 items-center">
+                    <input type="text" id="photo-admin-search" oninput="filterPhotos()"
+                        placeholder="搜尋姓名、電話、訂單號…"
+                        class="flex-1 min-w-[180px] border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
+                    <input type="date" id="photo-filter-from" onchange="filterPhotos()"
+                        class="border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
+                    <span class="text-stone-300 font-bold text-xs">至</span>
+                    <input type="date" id="photo-filter-to" onchange="filterPhotos()"
+                        class="border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
+                    <button onclick="clearPhotoFilters()" class="text-xs font-bold text-stone-400 hover:text-stone-600 whitespace-nowrap">清除篩選</button>
+                </div>
+                <!-- 批次操作列 -->
+                <div class="flex flex-wrap gap-2 items-center">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="photo-select-all" onchange="toggleSelectAll(this.checked)" class="accent-p-green w-4 h-4">
+                        <span class="text-xs font-bold text-stone-500">全選</span>
+                    </label>
+                    <span id="photo-selected-count" class="text-xs font-bold text-amber-600 hidden">已選 0 張</span>
+                    <button id="batch-delete-btn" onclick="batchDelete()"
+                        class="hidden px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-xs font-bold hover:bg-red-100 transition">
+                        🗑 批次刪除
+                    </button>
+                    <span class="ml-auto text-xs text-stone-400 font-bold" id="photo-count-tag">共 0 張</span>
+                </div>
             </div>
 
             <!-- 照片格狀列表 -->
@@ -2081,36 +2110,77 @@ function exportFullData() {
     // ============================================================
     //  📸 紀念照管理
     // ============================================================
-    let allPhotos = [];
-    let uploadFile = null;
+    let allPhotos     = [];
+    let selectedIds   = new Set();
+    let uploadFile    = null;
 
     // ── 載入所有照片 ──
     async function loadPhotos() {
+        selectedIds.clear();
+        updateBatchUI();
         const { data, error } = await _s.from('customer_photos').select('*').order('created_at', { ascending: false });
         allPhotos = data || [];
-        renderPhotoGrid(allPhotos);
+        filterPhotos();
     }
 
-    // ── 搜尋過濾 ──
-    function searchAdminPhotos() {
-        const kw = document.getElementById('photo-admin-search').value.toLowerCase();
-        const filtered = allPhotos.filter(p =>
-            (p.customer_name || '').toLowerCase().includes(kw) ||
-            (p.phone         || '').toLowerCase().includes(kw) ||
-            (p.order_no      || '').toLowerCase().includes(kw) ||
-            (p.note          || '').toLowerCase().includes(kw)
-        );
+    // ── 篩選（關鍵字 + 日期範圍） ──
+    function filterPhotos() {
+        const kw   = (document.getElementById('photo-admin-search').value || '').toLowerCase();
+        const from = document.getElementById('photo-filter-from').value;
+        const to   = document.getElementById('photo-filter-to').value;
+
+        const filtered = allPhotos.filter(p => {
+            const matchKw = !kw ||
+                (p.customer_name || '').toLowerCase().includes(kw) ||
+                (p.phone         || '').toLowerCase().includes(kw) ||
+                (p.order_no      || '').toLowerCase().includes(kw) ||
+                (p.note          || '').toLowerCase().includes(kw);
+            const date = p.created_at?.split('T')[0];
+            const matchFrom = !from || date >= from;
+            const matchTo   = !to   || date <= to;
+            return matchKw && matchFrom && matchTo;
+        });
+
         renderPhotoGrid(filtered);
+    }
+
+    function clearPhotoFilters() {
+        document.getElementById('photo-admin-search').value  = '';
+        document.getElementById('photo-filter-from').value   = '';
+        document.getElementById('photo-filter-to').value     = '';
+        filterPhotos();
     }
 
     // ── 渲染格狀照片列表 ──
     function renderPhotoGrid(photos) {
         document.getElementById('photo-count-tag').innerText = `共 ${photos.length} 張`;
-        document.getElementById('photo-grid').innerHTML = photos.length === 0
-            ? `<div class="col-span-full py-20 text-center text-stone-300 font-bold">尚無照片資料</div>`
-            : photos.map(p => `
-            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden group">
-                <div class="aspect-square overflow-hidden bg-stone-100 relative">
+        const grid = document.getElementById('photo-grid');
+
+        if (photos.length === 0) {
+            grid.innerHTML = `<div class="col-span-full py-20 text-center text-stone-300 font-bold">尚無照片資料</div>`;
+            return;
+        }
+
+        // 計算幾天前
+        const daysAgo = (dateStr) => {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const d = Math.floor(diff / 86400000);
+            return d === 0 ? '今天' : `${d} 天前`;
+        };
+
+        grid.innerHTML = photos.map(p => {
+            const isSelected = selectedIds.has(p.id);
+            const isOld = (Date.now() - new Date(p.created_at).getTime()) > 7 * 86400000;
+            return `
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden group relative ${isSelected ? 'ring-2 ring-amber-400' : ''} ${isOld ? 'opacity-70' : ''}">
+                <!-- 勾選框 -->
+                <div class="absolute top-2 left-2 z-10">
+                    <input type="checkbox" ${isSelected ? 'checked' : ''}
+                        onchange="toggleSelect('${p.id}', this.checked)"
+                        class="accent-amber-500 w-5 h-5 cursor-pointer shadow">
+                </div>
+                ${isOld ? `<div class="absolute top-2 right-2 z-10 bg-red-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">逾期</div>` : ''}
+                <div class="aspect-square overflow-hidden bg-stone-100 cursor-pointer" onclick="previewPhoto('${p.photo_url}')">
                     <img src="${p.photo_url}" alt="${p.customer_name || ''}"
                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                 </div>
@@ -2119,16 +2189,113 @@ function exportFullData() {
                     <p class="text-[10px] text-stone-400 truncate">${p.phone || '—'}</p>
                     ${p.order_no ? `<p class="text-[10px] text-blue-400 truncate mt-0.5">單號：${p.order_no}</p>` : ''}
                     ${p.note ? `<p class="text-[10px] text-amber-600 truncate mt-0.5">${p.note}</p>` : ''}
-                    <p class="text-[9px] text-stone-300 mt-1">${new Date(p.created_at).toLocaleDateString()}</p>
+                    <p class="text-[9px] text-stone-300 mt-1">${daysAgo(p.created_at)}</p>
                 </div>
                 <div class="flex border-t">
                     <a href="${p.photo_url}" target="_blank"
                        class="flex-1 text-center py-2 text-xs font-bold text-blue-500 hover:bg-blue-50 transition">預覽</a>
-                    <button onclick="deletePhoto('${p.id}', '${p.storage_path}')"
+                    <button onclick="deletePhoto('${p.id}', '${p.storage_path || ''}')"
                             class="flex-1 py-2 text-xs font-bold text-red-300 hover:bg-red-50 transition border-l">刪除</button>
                 </div>
-            </div>`).join('');
+            </div>`
+        }).join('');
     }
+
+    // ── 勾選單張 ──
+    function toggleSelect(id, checked) {
+        if (checked) selectedIds.add(id);
+        else         selectedIds.delete(id);
+        updateBatchUI();
+    }
+
+    // ── 全選 / 取消全選 ──
+    function toggleSelectAll(checked) {
+        // 只對目前顯示的照片操作
+        const visibleIds = Array.from(
+            document.getElementById('photo-grid').querySelectorAll('input[type=checkbox]')
+        ).map(el => el.closest('[class*=rounded-2xl]')?.querySelector('input')?.getAttribute('onchange')?.match(/'([^']+)'/)?.[1]).filter(Boolean);
+
+        // 改用直接從 allPhotos 過濾顯示中的
+        const kw   = (document.getElementById('photo-admin-search').value || '').toLowerCase();
+        const from = document.getElementById('photo-filter-from').value;
+        const to   = document.getElementById('photo-filter-to').value;
+        const filtered = allPhotos.filter(p => {
+            const matchKw = !kw ||
+                (p.customer_name || '').toLowerCase().includes(kw) ||
+                (p.phone         || '').toLowerCase().includes(kw) ||
+                (p.order_no      || '').toLowerCase().includes(kw) ||
+                (p.note          || '').toLowerCase().includes(kw);
+            const date = p.created_at?.split('T')[0];
+            return matchKw && (!from || date >= from) && (!to || date <= to);
+        });
+
+        if (checked) filtered.forEach(p => selectedIds.add(p.id));
+        else         filtered.forEach(p => selectedIds.delete(p.id));
+        updateBatchUI();
+        filterPhotos(); // 重新渲染勾選狀態
+    }
+
+    function updateBatchUI() {
+        const count   = selectedIds.size;
+        const countEl = document.getElementById('photo-selected-count');
+        const btn     = document.getElementById('batch-delete-btn');
+        if (count > 0) {
+            countEl.classList.remove('hidden');
+            countEl.innerText = `已選 ${count} 張`;
+            btn.classList.remove('hidden');
+        } else {
+            countEl.classList.add('hidden');
+            btn.classList.add('hidden');
+            document.getElementById('photo-select-all').checked = false;
+        }
+    }
+
+    // ── 批次刪除 ──
+    async function batchDelete() {
+        if (!selectedIds.size) return;
+        if (!confirm(`確定刪除選取的 ${selectedIds.size} 張照片？此操作無法復原`)) return;
+
+        const ids = Array.from(selectedIds);
+        // 取得 storage_path 後刪除
+        const targets = allPhotos.filter(p => ids.includes(p.id));
+        const paths   = targets.map(p => p.storage_path).filter(Boolean);
+
+        if (paths.length) await _s.storage.from('assets').remove(paths);
+        await _s.from('customer_photos').delete().in('id', ids);
+
+        selectedIds.clear();
+        loadPhotos();
+    }
+
+    // ── 刪除 7 天前的照片 ──
+    async function autoDeleteOld() {
+        const cutoff = new Date(Date.now() - 7 * 86400000).toISOString();
+        const oldPhotos = allPhotos.filter(p => p.created_at < cutoff);
+        if (!oldPhotos.length) return alert('沒有超過 7 天的照片');
+
+        if (!confirm(`將刪除 ${oldPhotos.length} 張 7 天前的照片，確定嗎？`)) return;
+
+        const paths = oldPhotos.map(p => p.storage_path).filter(Boolean);
+        const ids   = oldPhotos.map(p => p.id);
+
+        if (paths.length) await _s.storage.from('assets').remove(paths);
+        await _s.from('customer_photos').delete().in('id', ids);
+
+        loadPhotos();
+        alert(`✅ 已刪除 ${oldPhotos.length} 張舊照片`);
+    }
+
+    // ── 預覽照片 ──
+    function previewPhoto(url) {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/80 flex items-center justify-center z-[999] cursor-pointer p-4';
+        overlay.innerHTML = `<img src="${url}" class="max-w-full max-h-full rounded-2xl shadow-2xl object-contain">`;
+        overlay.onclick = () => document.body.removeChild(overlay);
+        document.body.appendChild(overlay);
+    }
+
+    // ── 搜尋（舊名相容） ──
+    function searchAdminPhotos() { filterPhotos(); }
 
     // ── 打開上傳 Modal ──
     function openUploadModal() {
