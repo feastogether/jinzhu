@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>真珠 | LINE 通知綁定</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --green:#004d40; --green2:#00695c; --gold:#b89150; --gold2:#d4a85a; --cream:#f9f5f0; }
+        body { font-family:'Noto Sans TC',sans-serif; background:var(--cream); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+        .serif { font-family:'Noto Serif TC',serif; }
+        .card { background:white; border-radius:24px; box-shadow:0 8px 40px rgba(0,77,64,.12); border:1px solid rgba(184,145,80,.15); width:100%; max-width:440px; overflow:hidden; }
+        .inp { border:2px solid #e2e8f0; border-radius:12px; padding:12px 16px; font-size:14px; font-weight:600; outline:none; width:100%; transition:border .2s; font-family:'Noto Sans TC',sans-serif; background:#fafaf8; }
+        .inp:focus { border-color:var(--gold); background:white; }
+        .btn-green { background:var(--green); color:white; border:none; border-radius:12px; padding:14px; font-weight:700; font-size:15px; cursor:pointer; width:100%; transition:all .2s; font-family:'Noto Sans TC',sans-serif; letter-spacing:.05em; }
+        .btn-green:hover { background:var(--green2); transform:translateY(-1px); }
+        .btn-green:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+        .step-circle { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; flex-shrink:0; }
+        .spin { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:rot .6s linear infinite; vertical-align:middle; margin-right:6px; }
+        @keyframes rot { to { transform:rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <!-- 頂部裝飾 -->
+    <div style="background:linear-gradient(135deg,var(--green),var(--green2));padding:32px 28px 28px">
+        <div class="flex items-center gap-3 mb-2">
+            <div style="background:rgba(184,145,80,.3);border-radius:12px;padding:8px 12px;font-size:22px">💬</div>
+            <div>
+                <div class="serif text-white font-black text-xl tracking-wider">LINE 通知綁定</div>
+                <div style="color:rgba(255,255,255,.6);font-size:12px;font-weight:600;margin-top:2px">真珠 台灣佳味 後台系統</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="p-7 space-y-6">
+
+        <!-- 狀態顯示 -->
+        <div id="status-area" class="hidden p-4 rounded-2xl text-sm font-semibold"></div>
+
+        <!-- ── 步驟說明 ── -->
+        <div id="step-guide" class="space-y-3">
+            <p class="text-xs font-bold text-stone-400 uppercase tracking-widest">綁定步驟</p>
+            <div class="space-y-2.5">
+                <div class="flex items-start gap-3">
+                    <div class="step-circle bg-green-100 text-green-700">1</div>
+                    <div class="text-sm font-semibold text-stone-600 pt-0.5">
+                        加 <strong style="color:var(--green)">真珠 Bot</strong> 為 LINE 好友
+                        <a id="bot-qr-link" href="#" target="_blank"
+                           class="ml-2 text-xs underline font-bold" style="color:var(--gold)">
+                           點此加入 →
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="step-circle bg-green-100 text-green-700">2</div>
+                    <div class="text-sm font-semibold text-stone-600 pt-0.5">
+                        傳送任意訊息給 Bot（例如：「你好」）
+                    </div>
+                </div>
+                <div class="flex items-start gap-3">
+                    <div class="step-circle bg-green-100 text-green-700">3</div>
+                    <div class="text-sm font-semibold text-stone-600 pt-0.5">
+                        填寫下方表單完成綁定
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr style="border:none;border-top:1.5px dashed rgba(184,145,80,.2)">
+
+        <!-- ── 綁定表單 ── -->
+        <div id="bind-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">你的姓名 / 職稱</label>
+                <input type="text" id="f-name" class="inp" placeholder="例：王小明　或　外場一">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">LINE User ID</label>
+                <div class="flex gap-2">
+                    <input type="text" id="f-uid" class="inp flex-1 font-mono text-xs" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <button onclick="howToGetUid()" style="background:#f8fafc;border:2px solid #e2e8f0;border-radius:12px;padding:0 14px;font-size:12px;font-weight:700;color:#94a3b8;cursor:pointer;white-space:nowrap;flex-shrink:0">
+                        怎麼取得？
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-stone-400 uppercase tracking-widest mb-2">接收哪些通知</label>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition">
+                        <input type="checkbox" id="f-order" checked class="accent-p-green w-4 h-4">
+                        <div>
+                            <div class="font-bold text-sm text-stone-700">🔔 新訂單通知</div>
+                            <div class="text-xs text-stone-400">有顧客下單時立即通知</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer hover:bg-stone-100 transition">
+                        <input type="checkbox" id="f-photo" checked class="accent-p-green w-4 h-4">
+                        <div>
+                            <div class="font-bold text-sm text-stone-700">📸 照片上傳通知</div>
+                            <div class="text-xs text-stone-400">紀念照上傳成功時通知</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button id="bind-btn" onclick="doBind()" class="btn-green mt-2">
+                <span id="bind-lbl">完成綁定</span>
+            </button>
+        </div>
+
+        <!-- ── 已綁定成功畫面 ── -->
+        <div id="success-screen" class="hidden text-center py-4 space-y-4">
+            <div style="font-size:56px">🎉</div>
+            <div class="serif font-black text-xl" style="color:var(--green)">綁定成功！</div>
+            <div class="text-sm text-stone-500 font-semibold" id="success-msg"></div>
+            <div style="background:#f0fdf4;border-radius:14px;padding:14px 18px;font-size:12px;color:var(--green);font-weight:600;text-align:left">
+                ✅ 新訂單會立即傳送 LINE 通知給你<br>
+                📸 如要上傳紀念照，直接傳照片給 Bot 即可
+            </div>
+            <button onclick="resetForm()" style="background:var(--cream);border:2px solid #e2e8f0;border-radius:12px;padding:10px;font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;width:100%">
+                綁定另一位
+            </button>
+        </div>
+
+        <!-- UID 取得說明 Modal -->
+        <div id="uid-help" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+            <div style="background:white;border-radius:20px;padding:28px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+                <h3 class="serif font-black text-base mb-4" style="color:var(--green)">如何取得 LINE User ID？</h3>
+                <div class="space-y-3 text-sm text-stone-600 font-semibold">
+                    <div class="flex gap-2"><span class="text-stone-300 font-black">1.</span> 加真珠 Bot 為好友</div>
+                    <div class="flex gap-2"><span class="text-stone-300 font-black">2.</span> 傳任意訊息給 Bot（例：「你好」）</div>
+                    <div class="flex gap-2"><span class="text-stone-300 font-black">3.</span> Bot 會自動回覆你的 User ID</div>
+                    <div style="background:#f0fdf4;border-radius:10px;padding:12px;font-size:11px;color:var(--green)">
+                        格式：U 開頭 + 32 個英數字元<br>
+                        例：<span class="font-mono">Ua8e0631684507eb3ad3b364f8169dd9d</span>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('uid-help').classList.add('hidden')"
+                    class="btn-green mt-5" style="padding:11px">了解了</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co'
+const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v'
+const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// 設定 Bot 加入連結（從 LINE Developers 取得 Bot basic ID）
+const BOT_ID = '@' // ← 填入你的 Bot Basic ID（例：@123abcde）
+document.getElementById('bot-qr-link').href = `https://line.me/R/ti/p/${BOT_ID}`
+
+function howToGetUid() {
+    document.getElementById('uid-help').classList.remove('hidden')
+}
+
+async function doBind() {
+    const name  = document.getElementById('f-name').value.trim()
+    const uid   = document.getElementById('f-uid').value.trim()
+    const order = document.getElementById('f-order').checked
+    const photo = document.getElementById('f-photo').checked
+
+    if (!name) return showStatus('請填寫姓名或職稱', 'error')
+    if (!uid)  return showStatus('請填寫 LINE User ID', 'error')
+    if (!uid.startsWith('U') || uid.length < 20)
+        return showStatus('User ID 格式錯誤，應為 U 開頭 + 32 個字元', 'error')
+
+    const btn = document.getElementById('bind-btn')
+    const lbl = document.getElementById('bind-lbl')
+    btn.disabled = true
+    lbl.innerHTML = '<span class="spin"></span>綁定中...'
+
+    // 檢查是否已存在
+    const { data: existing } = await _s
+        .from('line_notify_targets')
+        .select('id, name')
+        .eq('user_id', uid)
+        .single()
+
+    if (existing) {
+        // 已存在則更新
+        const { error } = await _s
+            .from('line_notify_targets')
+            .update({ name, notify_order: order, notify_photo: photo, is_active: true })
+            .eq('user_id', uid)
+
+        if (error) {
+            showStatus('更新失敗：' + error.message, 'error')
+            btn.disabled = false
+            lbl.innerText = '完成綁定'
+            return
+        }
+        showSuccess(name, '（已更新原有設定）')
+    } else {
+        // 新增
+        const { error } = await _s
+            .from('line_notify_targets')
+            .insert({ name, user_id: uid, notify_order: order, notify_photo: photo, is_active: true })
+
+        if (error) {
+            showStatus('綁定失敗：' + error.message, 'error')
+            btn.disabled = false
+            lbl.innerText = '完成綁定'
+            return
+        }
+        showSuccess(name, '')
+    }
+
+    btn.disabled = false
+    lbl.innerText = '完成綁定'
+}
+
+function showSuccess(name, extra) {
+    document.getElementById('bind-form').classList.add('hidden')
+    document.getElementById('step-guide').classList.add('hidden')
+    document.getElementById('success-screen').classList.remove('hidden')
+    document.getElementById('success-msg').innerText =
+        `${name} 已成功綁定到真珠通知系統 ${extra}`
+    hideStatus()
+}
+
+function resetForm() {
+    document.getElementById('bind-form').classList.remove('hidden')
+    document.getElementById('step-guide').classList.remove('hidden')
+    document.getElementById('success-screen').classList.add('hidden')
+    document.getElementById('f-name').value = ''
+    document.getElementById('f-uid').value  = ''
+}
+
+function showStatus(msg, type) {
+    const el = document.getElementById('status-area')
+    el.classList.remove('hidden')
+    el.className = `p-4 rounded-2xl text-sm font-semibold ${
+        type === 'error'
+            ? 'bg-red-50 text-red-600'
+            : 'bg-green-50 text-green-700'
+    }`
+    el.innerText = type === 'error' ? '❌ ' + msg : '✅ ' + msg
+}
+
+function hideStatus() {
+    document.getElementById('status-area').classList.add('hidden')
+}
+</script>
+</body>
+</html>
