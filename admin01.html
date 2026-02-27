@@ -153,6 +153,18 @@
                     <button onclick="loadOrders()" class="bg-p-green text-white px-8 py-2 rounded-lg font-bold shadow-md">執行篩選</button>
                     <button onclick="resetFilters()" class="text-stone-400 text-xs">重置</button>
                 </div>
+                <!-- 批次操作列 -->
+                <div class="flex flex-wrap items-center gap-3 pt-1 border-t border-stone-100">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="order-select-all" onchange="toggleOrderSelectAll(this.checked)" class="accent-red-400 w-4 h-4">
+                        <span class="text-xs font-bold text-stone-500">全選</span>
+                    </label>
+                    <span id="order-selected-count" class="text-xs font-bold text-red-500 hidden">已選 0 筆</span>
+                    <button id="order-batch-delete-btn" onclick="batchDeleteOrders()"
+                        class="hidden px-4 py-1.5 bg-red-50 text-red-500 rounded-lg text-xs font-bold hover:bg-red-100 transition border border-red-100">
+                        🗑 批次刪除
+                    </button>
+                </div>
             </div>
             <div id="order-list" class="grid grid-cols-1 xl:grid-cols-2 gap-6"></div>
         </section>
@@ -773,6 +785,8 @@ async function loadCampaignOptions() {
 }
 
 async function loadOrders() {
+    selectedOrderIds.clear();
+    updateOrderBatchUI();
     const search   = document.getElementById('filter-search').value;
     const status   = document.getElementById('filter-status').value;
     const preset   = document.getElementById('filter-date-preset').value;
@@ -808,9 +822,16 @@ async function loadOrders() {
             bTime = `${Y}-${M}-${D}T${H}:${min}`;
         }
         return `
-        <div class="bg-white p-6 rounded-3xl shadow-sm border transition ${o.status === 'synced' ? 'order-card-completed' : 'border-emerald-200'}">
-            <div class="flex justify-between font-bold text-xl mb-2">
-                <span>${o.customer_name}</span><span class="text-p-gold">$${o.total_price}</span>
+        <div id="order-card-${o.id}" class="bg-white p-6 rounded-3xl shadow-sm border transition ${o.status === 'synced' ? 'order-card-completed' : 'border-emerald-200'} ${selectedOrderIds.has(o.id) ? 'ring-2 ring-red-300' : ''}">
+            <!-- 勾選 + 標題列 -->
+            <div class="flex items-start gap-3 mb-2">
+                <input type="checkbox" ${selectedOrderIds.has(o.id) ? 'checked' : ''}
+                    onchange="toggleOrderSelect('${o.id}', this.checked)"
+                    class="accent-red-400 w-5 h-5 mt-1 flex-shrink-0 cursor-pointer">
+                <div class="flex justify-between items-start font-bold text-xl flex-1 min-w-0">
+                    <span class="truncate">${o.customer_name}</span>
+                    <span class="text-p-gold ml-2 flex-shrink-0">$${o.total_price}</span>
+                </div>
             </div>
             <div class="text-[10px] text-stone-400 mb-4 tracking-widest">
                 下單於: ${new Date(o.created_at).toLocaleString()} | ${o.phone}
@@ -921,9 +942,68 @@ async function toggleSync(id, cur) {
     loadOrders();
 }
 
+let selectedOrderIds = new Set();
+
+function toggleOrderSelect(id, checked) {
+    if (checked) selectedOrderIds.add(id);
+    else         selectedOrderIds.delete(id);
+    updateOrderBatchUI();
+    // 更新卡片外框
+    const card = document.getElementById(`order-card-${id}`);
+    if (card) {
+        if (checked) card.classList.add('ring-2', 'ring-red-300');
+        else         card.classList.remove('ring-2', 'ring-red-300');
+    }
+}
+
+function toggleOrderSelectAll(checked) {
+    const ids = (window.ordersRef || []).map(o => o.id);
+    if (checked) ids.forEach(id => selectedOrderIds.add(id));
+    else         selectedOrderIds.clear();
+    updateOrderBatchUI();
+    // 重新渲染卡片勾選狀態
+    ids.forEach(id => {
+        const card = document.getElementById(`order-card-${id}`);
+        const cb   = card?.querySelector('input[type=checkbox]');
+        if (cb) cb.checked = checked;
+        if (card) {
+            if (checked) card.classList.add('ring-2', 'ring-red-300');
+            else         card.classList.remove('ring-2', 'ring-red-300');
+        }
+    });
+}
+
+function updateOrderBatchUI() {
+    const count    = selectedOrderIds.size;
+    const countEl  = document.getElementById('order-selected-count');
+    const btn      = document.getElementById('order-batch-delete-btn');
+    const selectAll = document.getElementById('order-select-all');
+    if (count > 0) {
+        countEl.classList.remove('hidden');
+        countEl.innerText = `已選 ${count} 筆`;
+        btn.classList.remove('hidden');
+    } else {
+        countEl.classList.add('hidden');
+        btn.classList.add('hidden');
+        if (selectAll) selectAll.checked = false;
+    }
+}
+
+async function batchDeleteOrders() {
+    if (!selectedOrderIds.size) return;
+    if (!confirm(`確定永久刪除選取的 ${selectedOrderIds.size} 筆訂單？此操作無法復原`)) return;
+    const ids = Array.from(selectedOrderIds);
+    await _s.from('orders').delete().in('id', ids);
+    selectedOrderIds.clear();
+    updateOrderBatchUI();
+    loadOrders();
+}
+
 async function delOrder(id) {
     if (confirm('確定刪除？')) {
         await _s.from('orders').delete().eq('id', id);
+        selectedOrderIds.delete(id);
+        updateOrderBatchUI();
         loadOrders();
     }
 }
