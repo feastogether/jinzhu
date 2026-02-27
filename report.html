@@ -2,273 +2,697 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>真珠 | 精確備料統計中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p-green: #004d40; --p-gold: #b89150; --p-cream: #f9f5f0; }
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--p-cream); color: #333; }
-        .font-serif { font-family: 'Noto Serif TC', serif; }
-        .btn-gold { background-color: var(--p-gold); color: white; transition: 0.3s; }
-        .btn-gold:hover { background-color: #a67f40; transform: translateY(-1px); shadow: 0 4px 12px rgba(184, 145, 80, 0.4); }
-        .btn-green { background-color: var(--p-green); color: white; transition: 0.3s; }
-        .btn-green:hover { background-color: #00362d; transform: translateY(-1px); shadow: 0 4px 12px rgba(0, 77, 64, 0.4); }
-        .card-shadow { border-radius: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(184, 145, 80, 0.15); background: white; }
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--p-gold); border-radius: 10px; }
-        @media print { .no-print { display: none !important; } .print-card { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; } }
+        :root { --green:#004d40; --green2:#00695c; --gold:#b89150; --gold2:#d4a85a; --cream:#f9f5f0; --ink:#1a2420; }
+        * { box-sizing: border-box; margin:0; padding:0; }
+        body { font-family:'Noto Sans TC',sans-serif; background:var(--cream); color:var(--ink); min-height:100vh; }
+        .serif { font-family:'Noto Serif TC',serif; }
+
+        /* ── 頂部篩選列 ── */
+        #filter-panel {
+            background: linear-gradient(135deg, var(--green) 0%, var(--green2) 100%);
+            padding: 24px 32px 20px;
+            box-shadow: 0 4px 24px rgba(0,77,64,.3);
+        }
+        .filter-label { font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:rgba(255,255,255,.45); display:block; margin-bottom:5px; }
+        .f-input {
+            background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18);
+            color:white; border-radius:10px; padding:9px 13px; font-size:13px; font-weight:600;
+            outline:none; width:100%; transition:border .2s; font-family:'Noto Sans TC',sans-serif;
+        }
+        .f-input:focus { border-color:var(--gold2); }
+        .f-input option { background:#1a2e2b; }
+        .preset-btn {
+            padding:6px 14px; border-radius:999px; font-size:11px; font-weight:700; cursor:pointer;
+            border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.55); background:transparent;
+            transition:all .15s; white-space:nowrap; font-family:'Noto Sans TC',sans-serif;
+        }
+        .preset-btn:hover,.preset-btn.on { background:var(--gold); border-color:var(--gold); color:white; }
+        .query-btn {
+            background:var(--gold); color:white; border:none; border-radius:12px; padding:12px 32px;
+            font-weight:700; font-size:14px; cursor:pointer; transition:all .2s; letter-spacing:.06em;
+            font-family:'Noto Sans TC',sans-serif; box-shadow:0 4px 16px rgba(184,145,80,.4);
+            white-space:nowrap;
+        }
+        .query-btn:hover { background:var(--gold2); transform:translateY(-1px); }
+        .query-btn:active { transform:scale(.97); }
+        .query-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+
+        /* ── KPI 卡片 ── */
+        .kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:28px; }
+        .kpi { background:white; border-radius:16px; padding:18px 20px; border:1px solid rgba(0,0,0,.05); box-shadow:0 2px 10px rgba(0,0,0,.04); position:relative; overflow:hidden; }
+        .kpi::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--gold); border-radius:3px 3px 0 0; }
+        .kpi.g::after { background:var(--green); }
+        .kpi.r::after { background:#f43f5e; }
+        .kpi.b::after { background:#3b82f6; }
+        .kpi-lbl { font-size:9px; font-weight:700; color:#94a3b8; letter-spacing:.12em; text-transform:uppercase; margin-bottom:6px; }
+        .kpi-val { font-size:1.9rem; font-weight:900; color:var(--green); line-height:1; font-family:'Noto Serif TC',serif; }
+        .kpi-sub { font-size:11px; color:#94a3b8; font-weight:600; margin-top:4px; }
+
+        /* ── 分頁 Tab ── */
+        .tabs { display:flex; gap:4px; background:#f1f5f9; border-radius:14px; padding:4px; margin-bottom:20px; }
+        .tab { flex:1; padding:10px 6px; border-radius:10px; font-size:12px; font-weight:700; border:none; background:transparent; color:#94a3b8; cursor:pointer; transition:all .15s; font-family:'Noto Sans TC',sans-serif; white-space:nowrap; }
+        .tab.on { background:white; color:var(--green); box-shadow:0 1px 8px rgba(0,0,0,.08); }
+
+        /* ── 卡片容器 ── */
+        .panel { background:white; border-radius:20px; border:1px solid rgba(184,145,80,.12); box-shadow:0 4px 20px rgba(0,0,0,.05); overflow:hidden; }
+        .panel-head { padding:16px 22px; display:flex; justify-content:space-between; align-items:center; }
+        .panel-title { font-weight:700; font-family:'Noto Serif TC',serif; letter-spacing:.06em; font-size:15px; }
+        .badge { border-radius:999px; font-size:11px; font-weight:700; padding:4px 14px; }
+
+        /* ── 備料表格 ── */
+        .prep-table { width:100%; border-collapse:collapse; font-size:13px; }
+        .prep-table thead th { background:#f8fafc; color:#94a3b8; font-size:9px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; padding:10px 18px; text-align:left; border-bottom:1px solid #f1f5f9; }
+        .prep-table tbody td { padding:12px 18px; border-bottom:1px solid #fafaf8; vertical-align:middle; }
+        .prep-table tbody tr:last-child td { border-bottom:none; }
+        .prep-table tbody tr:hover td { background:#fafaf8; }
+        .bar-wrap { background:#f1f5f9; border-radius:999px; height:5px; overflow:hidden; }
+        .bar-fill { background:var(--gold); height:100%; border-radius:999px; transition:width .5s ease; }
+
+        /* ── 套餐卡片 ── */
+        .set-card { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:#f9f5f0; border-radius:14px; border:1px solid rgba(184,145,80,.15); }
+        .set-name { font-weight:700; color:var(--green); font-size:14px; }
+        .set-count { font-family:'Noto Serif TC',serif; font-weight:900; color:var(--gold); font-size:26px; line-height:1; }
+
+        /* ── 訂單卡片 ── */
+        .order-card { border-radius:18px; border:1px solid #f1f5f9; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.04); }
+        .order-head { background:linear-gradient(135deg,var(--green),var(--green2)); padding:14px 20px; display:flex; justify-content:space-between; align-items:flex-start; }
+        .order-idx { color:rgba(255,255,255,.4); font-size:10px; font-weight:700; }
+        .order-name { color:white; font-size:18px; font-weight:900; font-family:'Noto Serif TC',serif; }
+        .order-phone { color:var(--gold2); font-size:12px; font-weight:700; margin-top:2px; }
+        .order-meta { display:flex; gap:8px; flex-wrap:wrap; padding:12px 18px; border-bottom:1px solid #f8fafc; }
+        .meta-pip { background:#f8fafc; border-radius:8px; padding:5px 12px; font-size:11px; font-weight:700; color:#64748b; }
+        .meta-pip span { color:var(--green); }
+        .order-lines { padding:10px 18px; }
+        .order-line { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f8fafc; font-size:12px; }
+        .order-line:last-child { border-bottom:none; }
+        .order-foot { padding:10px 18px; background:#fafaf8; display:flex; justify-content:flex-end; align-items:center; gap:8px; }
+        .order-note-bar { margin:0 18px 14px; padding:10px 14px; background:#f0fdf4; border-left:3px solid var(--green); border-radius:0 8px 8px 0; font-size:12px; color:var(--green); font-weight:600; }
+
+        /* ── 匯出按鈕 ── */
+        .exp-btn { display:flex; align-items:center; gap:6px; padding:10px 20px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; border:none; font-family:'Noto Sans TC',sans-serif; transition:all .15s; }
+        .exp-pdf   { background:#fee2e2; color:#dc2626; }
+        .exp-pdf:hover   { background:#fecaca; }
+        .exp-excel { background:#dcfce7; color:#16a34a; }
+        .exp-excel:hover { background:#bbf7d0; }
+
+        /* ── 捲動 ── */
+        .scroll-z { overflow-y:auto; }
+        .scroll-z::-webkit-scrollbar { width:4px; }
+        .scroll-z::-webkit-scrollbar-thumb { background:var(--gold); border-radius:4px; }
+
+        /* ── 空白 ── */
+        .empty { padding:40px; text-align:center; color:#cbd5e1; font-weight:700; font-size:13px; }
+
+        /* ── Spinner ── */
+        .spin { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:rot .6s linear infinite; }
+        @keyframes rot { to { transform:rotate(360deg); } }
+
+        /* ── 列印 ── */
+        @media print {
+            #filter-panel, .tabs, .no-print { display:none !important; }
+            body { background:white !important; }
+            .print-show { display:block !important; }
+            .panel { box-shadow:none !important; border:1px solid #ddd !important; break-inside:avoid; }
+            .order-card { box-shadow:none !important; border:1px solid #ddd !important; break-inside:avoid; }
+            .kpi { box-shadow:none !important; border:1px solid #ddd !important; }
+            #tab-prepare,#tab-setmenu,#tab-orders { display:block !important; margin-bottom:28px; }
+            .scroll-z { max-height:none !important; overflow:visible !important; }
+            .print-header { display:flex !important; }
+        }
+        .print-header { display:none; justify-content:space-between; align-items:flex-end; margin-bottom:20px; border-bottom:2px solid var(--green); padding-bottom:12px; }
     </style>
 </head>
-<body class="p-4 md:p-10">
+<body>
 
+<!-- ═══════ 篩選列 ═══════ -->
+<div id="filter-panel" class="no-print">
     <div class="max-w-[1400px] mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-end mb-10 border-b-2 border-[#004d40] pb-6 gap-6">
-            <div class="text-left">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-1.5 h-8 bg-[#b89150]"></div>
-                    <h1 class="text-4xl font-black text-[#004d40] font-serif tracking-tighter">營運全量統計報表</h1>
-                </div>
-                <p id="report-period-display" class="text-[#b89150] font-bold text-sm tracking-widest px-4 italic">真珠 台灣佳味</p>
-            </div>
-            <div class="flex gap-4 no-print">
-                <button onclick="window.print()" class="px-6 py-3 border-2 border-[#004d40] text-[#004d40] rounded-xl font-black hover:bg-stone-100 transition">列印 PDF</button>
-                <button onclick="exportFullData()" class="px-6 py-3 btn-green rounded-xl font-black shadow-lg">匯出 Excel 報表</button>
-            </div>
-        </div>
 
-        <div class="card-shadow p-8 mb-10 no-print">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-left">
-                <div class="md:col-span-2 space-y-3">
-                    <label class="block text-xs font-black text-stone-400 tracking-widest uppercase">查詢日期區間</label>
-                    <div class="flex gap-2">
-                        <button onclick="setDateRange('today')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200">今日</button>
-                        <button onclick="setDateRange('month')" class="flex-1 py-2 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200">當月</button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <input type="date" id="start-date" class="flex-1 border-b-2 border-stone-200 p-2 outline-none focus:border-[#b89150] bg-transparent font-bold text-sm">
-                        <span class="text-stone-300">~</span>
-                        <input type="date" id="end-date" class="flex-1 border-b-2 border-stone-200 p-2 outline-none focus:border-[#b89150] bg-transparent font-bold text-sm">
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    <label class="block text-xs font-black text-stone-400 tracking-widest uppercase">活動代號篩選</label>
-                    <select id="report-campaign" class="w-full border-b-2 border-stone-200 p-2.5 bg-transparent font-bold outline-none focus:border-[#b89150]">
-                        <option value="all">所有來源 (全部)</option>
-                        <option value="none">一般訂單 (無代號)</option>
-                    </select>
-                </div>
-                <div class="flex items-end">
-                    <button onclick="fetchData()" class="w-full btn-gold py-4 rounded-xl font-black shadow-lg tracking-widest uppercase">更新統計數據</button>
-                </div>
+        <!-- 標題行 -->
+        <div class="flex justify-between items-center mb-5">
+            <div class="flex items-center gap-3">
+                <div class="w-1 h-7 rounded-full" style="background:var(--gold)"></div>
+                <h1 class="serif text-white text-xl font-black tracking-widest">備料統計中心</h1>
+                <span id="period-tag" class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(184,145,80,.2);color:var(--gold2)">尚未查詢</span>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="doPrint()" class="exp-btn exp-pdf no-print">🖨 列印 PDF</button>
+                <button onclick="exportExcel()" class="exp-btn exp-excel no-print">📊 匯出 Excel</button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-5 space-y-8">
-                <div class="card-shadow overflow-hidden print-card">
-                    <div class="bg-[#004d40] p-5 text-white flex justify-between items-center">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl">🍱</span>
-                            <h3 class="font-bold font-serif tracking-widest">套餐銷售總量</h3>
-                        </div>
-                        <span id="set-menu-total" class="bg-[#b89150] px-4 py-1 rounded-full text-xs font-black">0 組</span>
-                    </div>
-                    <div id="set-menu-body" class="p-6 space-y-3">
-                        </div>
-                </div>
+        <!-- 篩選控件 -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 items-end">
 
-                <div class="card-shadow overflow-hidden print-card">
-                    <div class="bg-stone-800 p-5 text-white flex justify-between items-center">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl">🍳</span>
-                            <h3 class="font-bold font-serif tracking-widest">全品項備料總量 (含飲料)</h3>
-                        </div>
-                        <span id="ingredient-total" class="bg-stone-600 px-4 py-1 rounded-full text-xs font-black">0 項</span>
-                    </div>
-                    <div class="max-h-[60vh] overflow-y-auto custom-scrollbar">
-                        <table class="w-full text-left">
-                            <thead class="bg-stone-50 text-[10px] text-stone-400 font-black uppercase tracking-widest">
-                                <tr>
-                                    <th class="px-6 py-3">品名 (含加購/單點/套餐內容)</th>
-                                    <th class="px-6 py-3 text-right">總數</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dish-summary-body" class="divide-y divide-stone-100">
-                                </tbody>
-                        </table>
-                    </div>
+            <!-- 快速預設 -->
+            <div class="sm:col-span-1">
+                <span class="filter-label">快速選擇</span>
+                <div class="flex flex-wrap gap-1.5">
+                    <button class="preset-btn" onclick="setPreset('today')">今日</button>
+                    <button class="preset-btn" onclick="setPreset('yesterday')">昨日</button>
+                    <button class="preset-btn" onclick="setPreset('week')">本週</button>
+                    <button class="preset-btn" onclick="setPreset('month')">本月</button>
                 </div>
             </div>
 
-            <div class="lg:col-span-7">
-                <div class="card-shadow overflow-hidden print-card h-full">
-                    <div class="bg-[#b89150] p-5 text-white flex justify-between items-center">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xl">📋</span>
-                            <h3 class="font-bold font-serif tracking-widest">訂單詳細流水帳</h3>
-                        </div>
-                        <span id="order-count-tag" class="bg-white text-[#b89150] px-4 py-1 rounded-full text-xs font-black">0 筆</span>
-                    </div>
-                    <div id="order-detail-container" class="p-8 space-y-10 max-h-[110vh] overflow-y-auto custom-scrollbar">
-                        </div>
+            <!-- 開始日 -->
+            <div>
+                <span class="filter-label">開始日期</span>
+                <input type="date" id="f-s-date" class="f-input">
+            </div>
+
+            <!-- 結束日 -->
+            <div>
+                <span class="filter-label">結束日期</span>
+                <input type="date" id="f-e-date" class="f-input">
+            </div>
+
+            <!-- 開始時間 -->
+            <div>
+                <span class="filter-label">開始時間</span>
+                <input type="time" id="f-s-time" value="00:00" class="f-input">
+            </div>
+
+            <!-- 結束時間 -->
+            <div>
+                <span class="filter-label">結束時間</span>
+                <input type="time" id="f-e-time" value="23:59" class="f-input">
+            </div>
+
+            <!-- 活動代號 -->
+            <div>
+                <span class="filter-label">活動代號</span>
+                <select id="f-campaign" class="f-input">
+                    <option value="all">全部來源</option>
+                    <option value="none">一般訂單</option>
+                </select>
+            </div>
+
+            <!-- 執行 -->
+            <div class="flex items-end">
+                <button id="run-btn" onclick="runReport()" class="query-btn w-full">
+                    <span id="run-lbl">▶ 查詢統計</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ═══════ 主內容 ═══════ -->
+<div class="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
+
+    <!-- 列印標頭（只列印時顯示） -->
+    <div class="print-header">
+        <div>
+            <div style="font-size:24px;font-weight:900;color:var(--green);font-family:'Noto Serif TC',serif;letter-spacing:.1em">真珠 備料統計報表</div>
+            <div id="print-period" style="color:var(--gold);font-size:13px;font-weight:700;margin-top:4px"></div>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:700">列印時間：<span id="print-time"></span></div>
+    </div>
+
+    <!-- KPI 總覽 -->
+    <div class="kpi-row">
+        <div class="kpi g">
+            <div class="kpi-lbl">訂單數</div>
+            <div class="kpi-val" id="kpi-orders">—</div>
+            <div class="kpi-sub">筆訂單</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-lbl">大人</div>
+            <div class="kpi-val" id="kpi-adult">—</div>
+            <div class="kpi-sub">位大人</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-lbl">小孩</div>
+            <div class="kpi-val" id="kpi-kid">—</div>
+            <div class="kpi-sub">位小孩</div>
+        </div>
+        <div class="kpi" style="border-top-color:#fb923c!important">
+            <div class="kpi-lbl">兒童</div>
+            <div class="kpi-val" id="kpi-child">—</div>
+            <div class="kpi-sub">位兒童</div>
+        </div>
+        <div class="kpi b">
+            <div class="kpi-lbl">總人數</div>
+            <div class="kpi-val" id="kpi-total-people">—</div>
+            <div class="kpi-sub">位用餐</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-lbl">套餐組數</div>
+            <div class="kpi-val" id="kpi-sets">—</div>
+            <div class="kpi-sub">組套餐</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-lbl">備料品項</div>
+            <div class="kpi-val" id="kpi-items">—</div>
+            <div class="kpi-sub">種品項</div>
+        </div>
+        <div class="kpi r">
+            <div class="kpi-lbl">預估營收</div>
+            <div class="kpi-val" id="kpi-rev" style="font-size:1.4rem">—</div>
+            <div class="kpi-sub">元（未含服務費）</div>
+        </div>
+    </div>
+
+    <!-- Tab 列 -->
+    <div class="tabs no-print">
+        <button class="tab on" onclick="switchTab('prepare')">🍳 備料總表</button>
+        <button class="tab"    onclick="switchTab('setmenu')">🍱 套餐明細</button>
+        <button class="tab"    onclick="switchTab('orders')">📋 訂單流水帳</button>
+    </div>
+
+    <!-- ── Tab: 備料總表 ── -->
+    <div id="tab-prepare">
+        <div class="panel">
+            <div class="panel-head" style="background:var(--ink)">
+                <div class="flex items-center gap-2">
+                    <span style="font-size:18px">🍳</span>
+                    <span class="panel-title" style="color:white">全品項備料總量（含套餐拆解、單點、加購）</span>
                 </div>
+                <span id="badge-items" class="badge" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)">0 項</span>
+            </div>
+            <div class="scroll-z" style="max-height:65vh">
+                <table class="prep-table">
+                    <thead>
+                        <tr>
+                            <th style="width:44px">#</th>
+                            <th>品名</th>
+                            <th style="text-align:right;width:110px">備料數</th>
+                            <th style="width:180px" class="no-print">佔比</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prep-body">
+                        <tr><td colspan="4" class="empty">尚未查詢，請先設定篩選條件</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <script>
-        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
-        const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <!-- ── Tab: 套餐明細 ── -->
+    <div id="tab-setmenu" class="hidden">
+        <div class="panel">
+            <div class="panel-head" style="background:var(--green)">
+                <div class="flex items-center gap-2">
+                    <span style="font-size:18px">🍱</span>
+                    <span class="panel-title" style="color:white">套餐銷售明細</span>
+                </div>
+                <span id="badge-sets" class="badge" style="background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)">0 套</span>
+            </div>
+            <div class="p-6 space-y-3" id="setmenu-body">
+                <div class="empty">尚未查詢</div>
+            </div>
+        </div>
+    </div>
 
-        async function init() {
-            setDateRange('today');
-            const { data } = await _s.from('campaign_settings').select('*');
-            if(data) {
-                const select = document.getElementById('report-campaign');
-                data.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = opt.innerText = c.code_name;
-                    select.appendChild(opt);
+    <!-- ── Tab: 訂單流水帳 ── -->
+    <div id="tab-orders" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex items-center gap-2">
+                <div style="width:4px;height:22px;background:var(--gold);border-radius:2px"></div>
+                <h3 class="serif font-bold text-base" style="color:var(--green)">訂單詳細流水帳</h3>
+            </div>
+            <span id="badge-orders" class="badge" style="background:var(--green);color:white">0 筆</span>
+        </div>
+        <div id="orders-body" class="space-y-4">
+            <div class="empty bg-white rounded-2xl">尚未查詢</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let cache = null;
+
+// ── 初始化 ──
+async function init() {
+    setPreset('today');
+    // 載入活動代號選項
+    const { data } = await _s.from('campaign_settings').select('*');
+    if (data) {
+        const sel = document.getElementById('f-campaign');
+        data.forEach(c => {
+            const o = document.createElement('option');
+            o.value = o.innerText = c.code_name;
+            sel.appendChild(o);
+        });
+    }
+}
+init();
+
+// ── 快速日期預設 ──
+function setPreset(type) {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('on'));
+    const b = document.querySelector(`.preset-btn[onclick="setPreset('${type}')"]`);
+    if (b) b.classList.add('on');
+
+    const now   = new Date();
+    const today = now.toISOString().split('T')[0];
+    const sd    = document.getElementById('f-s-date');
+    const ed    = document.getElementById('f-e-date');
+
+    if (type === 'today') {
+        sd.value = ed.value = today;
+    } else if (type === 'yesterday') {
+        const y = new Date(now); y.setDate(y.getDate() - 1);
+        sd.value = ed.value = y.toISOString().split('T')[0];
+    } else if (type === 'week') {
+        const mon = new Date(now);
+        mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+        sd.value = mon.toISOString().split('T')[0];
+        ed.value = today;
+    } else if (type === 'month') {
+        sd.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        ed.value = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+    }
+}
+
+// ── 執行查詢 ──
+async function runReport() {
+    const sd  = document.getElementById('f-s-date').value;
+    const ed  = document.getElementById('f-e-date').value;
+    const st  = document.getElementById('f-s-time').value || '00:00';
+    const et  = document.getElementById('f-e-time').value || '23:59';
+    const cam = document.getElementById('f-campaign').value;
+    if (!sd || !ed) return alert('請選擇日期區間');
+
+    const btn = document.getElementById('run-btn');
+    const lbl = document.getElementById('run-lbl');
+    btn.disabled = true;
+    lbl.innerHTML = '<span class="spin"></span>';
+
+    let q = _s.from('orders').select('*')
+        .gte('created_at', `${sd}T${st}:00`)
+        .lte('created_at', `${ed}T${et}:59`)
+        .order('created_at', { ascending: true });
+    if (cam === 'none')     q = q.is('campaign_code', null);
+    else if (cam !== 'all') q = q.eq('campaign_code', cam);
+
+    const { data: orders, error } = await q;
+    btn.disabled = false;
+    lbl.innerText = '▶ 查詢統計';
+
+    if (error) { alert('查詢失敗：' + error.message); return; }
+
+    const camLabel = cam === 'all' ? '全部' : cam === 'none' ? '一般訂單' : cam;
+    const periodStr = `${sd} ${st} ～ ${ed} ${et}　｜　${camLabel}`;
+    document.getElementById('period-tag').innerText = periodStr;
+    document.getElementById('print-period').innerText = periodStr;
+    document.getElementById('print-time').innerText = new Date().toLocaleString('zh-TW');
+
+    processAndRender(orders || []);
+}
+
+// ── 資料處理 & 渲染 ──
+function processAndRender(orders) {
+    const dishCount    = {};
+    const setMenuCount = {};
+    let totalAdult = 0, totalKid = 0, totalChild = 0, totalRev = 0;
+
+    orders.forEach(o => {
+        totalAdult  += (o.adult_count  || 0);
+        totalKid    += (o.kid_count    || 0);
+        totalChild  += (o.child_count  || 0);
+        totalRev    += (o.total_price  || 0);
+
+        (o.order_content || []).forEach(item => {
+            const qtyM    = item.name.match(/ x(\d+)/);
+            const qty     = qtyM ? parseInt(qtyM[1]) : 1;
+            let cleanName = item.name.split(' [')[0].replace(/ x\d+/g, '').trim();
+            const isSet   = cleanName.includes('(') && (cleanName.includes('、') || cleanName.includes('套餐'));
+
+            if (isSet) {
+                const brand = cleanName.split(' (')[0].trim();
+                setMenuCount[brand] = (setMenuCount[brand] || 0) + qty;
+                const cm = cleanName.match(/\((.*?)\)/);
+                if (cm) cm[1].split('、').forEach(sub => {
+                    const s = sub.trim();
+                    if (s) dishCount[s] = (dishCount[s] || 0) + qty;
                 });
-            }
-            fetchData();
-        }
-
-        function setDateRange(type) {
-            const start = document.getElementById('start-date');
-            const end = document.getElementById('end-date');
-            const now = new Date();
-            if(type === 'today') {
-                const s = now.toISOString().split('T')[0];
-                start.value = end.value = s;
             } else {
-                start.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-                end.value = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+                dishCount[cleanName] = (dishCount[cleanName] || 0) + qty;
             }
-        }
+        });
+    });
 
-        async function fetchData() {
-            const start = document.getElementById('start-date').value;
-            const end = document.getElementById('end-date').value;
-            const campaign = document.getElementById('report-campaign').value;
-            document.getElementById('report-period-display').innerText = `數據區間：${start} ~ ${end}`;
+    const sorted   = Object.entries(dishCount).sort((a, b) => b[1] - a[1]);
+    const totalSets= Object.values(setMenuCount).reduce((a, b) => a + b, 0);
+    const maxQty   = sorted[0]?.[1] || 1;
 
-            let query = _s.from('orders').select('*').order('created_at', {ascending: true});
-            if(start && end) query = query.gte('created_at', `${start}T00:00:00`).lte('created_at', `${end}T23:59:59`);
-            if(campaign === 'none') query = query.is('campaign_code', null);
-            else if(campaign !== 'all') query = query.eq('campaign_code', campaign);
+    // 快取供匯出使用
+    cache = { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev, totalSets };
 
-            const { data: orders, error } = await query;
-            if(!error) renderReports(orders || []);
-        }
+    // ── KPI ──
+    document.getElementById('kpi-orders').innerText       = orders.length;
+    document.getElementById('kpi-adult').innerText        = totalAdult;
+    document.getElementById('kpi-kid').innerText          = totalKid;
+    document.getElementById('kpi-child').innerText        = totalChild;
+    document.getElementById('kpi-total-people').innerText = totalAdult + totalKid + totalChild;
+    document.getElementById('kpi-sets').innerText         = totalSets;
+    document.getElementById('kpi-items').innerText        = sorted.length;
+    document.getElementById('kpi-rev').innerText          = '$' + totalRev.toLocaleString();
 
-        function renderReports(orders) {
-            const dishCount = {}; // 全品項統計 (包含拆解後的套餐內容)
-            const setMenuCount = {}; // 純套餐組數統計
-            let orderHtml = "";
+    // ── Badge ──
+    document.getElementById('badge-items').innerText  = `${sorted.length} 項`;
+    document.getElementById('badge-sets').innerText   = `${totalSets} 套`;
+    document.getElementById('badge-orders').innerText = `${orders.length} 筆`;
 
-            orders.forEach((o, idx) => {
-                o.order_content.forEach(item => {
-                    // 1. 取得基本數量 (例如 x2)
-                    const qtyMatch = item.name.match(/ x(\d+)/);
-                    const qty = qtyMatch ? parseInt(qtyMatch[1]) : 1;
-                    
-                    // 2. 名稱清理：移除 [口味備註] 與 x數量
-                    let cleanName = item.name.split(' [')[0].replace(/ x\d+/g, "").trim();
-
-                    // 3. 判斷是否為「組合套餐」 (規則：包含括號 且 括號內有頓號 或是 明顯的套餐字眼)
-                    const isComplexSet = cleanName.includes('(') && (cleanName.includes('、') || cleanName.includes('套餐'));
-
-                    if (isComplexSet) {
-                        // A. 統計套餐組數：取括號前名稱
-                        const setBrand = cleanName.split(' (')[0].trim();
-                        setMenuCount[setBrand] = (setMenuCount[setBrand] || 0) + qty;
-                        
-                        // B. 拆解套餐內容並計入全品項
-                        const contentMatch = cleanName.match(/\((.*?)\)/);
-                        if (contentMatch) {
-                            contentMatch[1].split('、').forEach(sub => {
-                                const subName = sub.trim();
-                                if(subName) dishCount[subName] = (dishCount[subName] || 0) + qty;
-                            });
-                        }
-                    } else {
-                        // 4. 一般單點、加購、或單一品項 (如: (素)黃瓜、(加購)白飯)
-                        // 這些不視為套餐組數，直接計入全品項總計
-                        dishCount[cleanName] = (dishCount[cleanName] || 0) + qty;
-                    }
-                });
-
-                // 訂單流水帳 HTML
-                orderHtml += `
-                <div class="pb-10 border-b border-stone-100 last:border-0 text-left">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <span class="text-3xl font-black text-[#004d40] font-serif tracking-tight">#${idx+1} ${o.customer_name}</span>
-                            <span class="ml-4 text-sm font-bold text-[#b89150] bg-amber-50 px-3 py-1 rounded-lg">${o.phone}</span>
-                        </div>
-                        <span class="text-[10px] border border-stone-200 text-stone-400 px-3 py-1 rounded-full font-black uppercase tracking-widest">${o.campaign_code||'一般來源'}</span>
+    // ── 備料表 ──
+    document.getElementById('prep-body').innerHTML = sorted.length === 0
+        ? `<tr><td colspan="4" class="empty">查無資料</td></tr>`
+        : sorted.map(([name, count], i) => `
+            <tr>
+                <td class="text-xs font-bold" style="color:#cbd5e1">${i + 1}</td>
+                <td class="font-bold" style="color:var(--ink)">${name}</td>
+                <td style="text-align:right">
+                    <span class="serif font-black text-2xl" style="color:var(--green)">${count}</span>
+                    <span class="text-xs ml-1" style="color:#cbd5e1">份</span>
+                </td>
+                <td class="no-print" style="padding-right:22px">
+                    <div class="bar-wrap">
+                        <div class="bar-fill" style="width:${Math.round(count / maxQty * 100)}%"></div>
                     </div>
-                    <div class="grid grid-cols-3 gap-4 mb-6">
-                        <div class="bg-stone-50 p-3 rounded-xl text-center"><p class="text-[10px] text-stone-400 font-bold uppercase">桌號</p><p class="font-black text-[#004d40]">${o.table_no||'--'}</p></div>
-                        <div class="bg-stone-50 p-3 rounded-xl text-center"><p class="text-[10px] text-stone-400 font-bold uppercase">人數</p><p class="font-black text-[#004d40]">${o.adult_count}大 ${o.kid_count}小</p></div>
-                        <div class="bg-stone-50 p-3 rounded-xl text-center"><p class="text-[10px] text-stone-400 font-bold uppercase">總額</p><p class="font-black text-[#b89150]">$${o.total_price}</p></div>
-                    </div>
-                    <div class="space-y-1 bg-white p-2 border border-stone-50 rounded-xl">
-                        ${o.order_content.map(i => `<div class="flex justify-between text-sm py-1.5 px-3 border-b border-stone-50 last:border-0"><span class="text-stone-600 font-medium">• ${i.name}</span></div>`).join('')}
-                    </div>
-                    ${o.note ? `<div class="mt-4 p-4 bg-emerald-50 text-[#004d40] text-xs font-bold rounded-2xl border-l-4 border-[#004d40]">特別備註：${o.note}</div>` : ''}
-                </div>`;
-            });
+                </td>
+            </tr>`).join('');
 
-            // 渲染左側統計：套餐
-            const setMenuHtml = Object.entries(setMenuCount).map(([name, count]) => `
-                <div class="flex justify-between items-center p-4 bg-[#f9f5f0] border border-[#b8915033] rounded-2xl">
-                    <span class="font-black text-[#004d40] tracking-tight">${name}</span>
-                    <span class="font-serif font-black text-[#b89150] text-2xl">${count} <small class="text-xs">組</small></span>
+    // ── 套餐明細 ──
+    document.getElementById('setmenu-body').innerHTML = Object.keys(setMenuCount).length === 0
+        ? `<div class="empty">查無套餐訂單</div>`
+        : Object.entries(setMenuCount)
+            .sort((a, b) => b[1] - a[1])
+            .map(([name, count]) => `
+                <div class="set-card">
+                    <div>
+                        <div class="set-name">${name}</div>
+                        <div class="text-xs font-semibold mt-0.5" style="color:#94a3b8">套餐組合</div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="set-count">${count}</span>
+                        <span class="text-xs font-bold" style="color:#94a3b8">組</span>
+                    </div>
                 </div>`).join('');
-            document.getElementById('set-menu-body').innerHTML = setMenuHtml || '<p class="text-stone-300 text-sm text-center py-6 font-bold">目前無套餐訂單</p>';
 
-            // 渲染左側統計：全品項 (按數量排序)
-            const sortedDishes = Object.entries(dishCount).sort((a,b)=>b[1]-a[1]);
-            document.getElementById('dish-summary-body').innerHTML = sortedDishes.map(([name, count]) => `
-                <tr class="hover:bg-stone-50 transition">
-                    <td class="px-6 py-4 text-sm font-bold text-stone-700">${name}</td>
-                    <td class="px-6 py-4 text-right font-serif font-black text-[#004d40] text-2xl">${count} <span class="text-[10px] text-stone-300">份</span></td>
-                </tr>`).join('');
+    // ── 訂單流水帳 ──
+    document.getElementById('orders-body').innerHTML = orders.length === 0
+        ? `<div class="empty bg-white rounded-2xl">查無訂單</div>`
+        : orders.map((o, idx) => `
+            <div class="order-card">
+                <div class="order-head">
+                    <div>
+                        <div class="order-idx"># ${String(idx + 1).padStart(3, '0')}</div>
+                        <div class="order-name">${o.customer_name || '—'}</div>
+                        <div class="order-phone">${o.phone || '—'}</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700">
+                            ${new Date(o.created_at).toLocaleString('zh-TW', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                        </div>
+                        ${o.campaign_code
+                            ? `<span style="background:rgba(184,145,80,.3);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;display:inline-block;margin-top:4px">${o.campaign_code}</span>`
+                            : ''}
+                    </div>
+                </div>
+                <div class="order-meta">
+                    ${o.table_no    ? `<div class="meta-pip">桌號 <span>${o.table_no}</span></div>` : ''}
+                    <div class="meta-pip">大人 <span>${o.adult_count || 0}</span> 位</div>
+                    <div class="meta-pip">小孩 <span>${o.kid_count || 0}</span> 位</div>
+                    <div class="meta-pip">兒童 <span>${o.child_count || 0}</span> 位</div>
+                    <div class="meta-pip">合計 <span style="color:var(--gold);font-size:13px">$${o.total_price || 0}</span></div>
+                </div>
+                <div class="order-lines">
+                    ${(o.order_content || []).map(item => `
+                        <div class="order-line">
+                            <span style="color:#475569;font-weight:500">• ${item.name}</span>
+                            <span style="color:var(--gold);font-weight:700;white-space:nowrap;margin-left:8px">$${item.price}</span>
+                        </div>`).join('')}
+                </div>
+                <div class="order-foot">
+                    <span style="font-size:11px;color:#94a3b8;font-weight:700">訂單合計</span>
+                    <span class="serif font-black text-lg" style="color:var(--green)">$${o.total_price || 0}</span>
+                </div>
+                ${o.note ? `<div class="order-note-bar">📝 ${o.note}</div>` : ''}
+            </div>`).join('');
+}
 
-            // 更新標籤
-            document.getElementById('order-detail-container').innerHTML = orderHtml || '<p class="py-20 text-center text-stone-300 font-black italic underline">NO DATA FOUND</p>';
-            document.getElementById('set-menu-total').innerText = `${Object.values(setMenuCount).reduce((a, b) => a + b, 0)} 套`;
-            document.getElementById('ingredient-total').innerText = `${sortedDishes.length} 品項`;
-            document.getElementById('order-count-tag').innerText = `${orders.length} 筆訂單`;
-            
-            window.lastData = { dishCount, setMenuCount, orders };
+// ── Tab 切換 ──
+function switchTab(name) {
+    ['prepare', 'setmenu', 'orders'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== name);
+    });
+    document.querySelectorAll('.tab').forEach((b, i) => {
+        b.classList.toggle('on', ['prepare', 'setmenu', 'orders'][i] === name);
+    });
+}
+
+// ── 列印 ──
+function doPrint() {
+    // 列印前展開全部 tab
+    ['prepare', 'setmenu', 'orders'].forEach(t =>
+        document.getElementById(`tab-${t}`).classList.remove('hidden'));
+    window.print();
+    // 列印後還原
+    setTimeout(() => switchTab('prepare'), 500);
+}
+
+// ── 匯出 Excel ──
+function exportExcel() {
+    if (!cache) return alert('請先執行查詢');
+    const { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev } = cache;
+    const wb = XLSX.utils.book_new();
+
+    // ══ 分頁 1：逐桌明細（主要新功能）══
+    const tableRows = [];
+
+    // 依桌號排序（空白桌號排最後）
+    const sorted_orders = [...orders].sort((a, b) => {
+        const ta = a.table_no || 'zzz';
+        const tb = b.table_no || 'zzz';
+        return ta.localeCompare(tb, 'zh-TW', { numeric: true });
+    });
+
+    sorted_orders.forEach((o, idx) => {
+        const items = o.order_content || [];
+        const timeStr = new Date(o.created_at).toLocaleString('zh-TW', {
+            month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+
+        // 第一行：桌號 + 姓名 + 電話 + 人數 + 金額
+        tableRows.push({
+            '桌號':     o.table_no    || '—',
+            '姓名':     o.customer_name || '—',
+            '手機':     o.phone       || '—',
+            '大人':     o.adult_count || 0,
+            '小孩':     o.kid_count   || 0,
+            '兒童':     o.child_count || 0,
+            '活動':     o.campaign_code || '—',
+            '餐點':     items[0]?.name || '',
+            '金額':     items[0]?.price ?? '',
+            '訂單合計': o.total_price || 0,
+            '時間':     timeStr,
+            '備註':     o.note || '',
+        });
+
+        // 後續餐點行（桌號等留空，視覺上屬於同桌）
+        for (let i = 1; i < items.length; i++) {
+            tableRows.push({
+                '桌號': '', '姓名': '', '手機': '',
+                '大人': '', '小孩': '', '兒童': '',
+                '活動': '',
+                '餐點':  items[i].name,
+                '金額':  items[i].price ?? '',
+                '訂單合計': '', '時間': '', '備註': '',
+            });
         }
 
-        function exportFullData() {
-            if(!window.lastData) return alert("請先查詢數據");
-            const wb = XLSX.utils.book_new();
-            // 分頁 1
-            const ws1 = XLSX.utils.json_to_sheet(Object.entries(window.lastData.setMenuCount).map(e=>({"套餐類別":e[0],"銷售組數":e[1]})));
-            XLSX.utils.book_append_sheet(wb, ws1, "套餐總量統計");
-            // 分頁 2
-            const ws2 = XLSX.utils.json_to_sheet(Object.entries(window.lastData.dishCount).sort((a,b)=>b[1]-a[1]).map(e=>({"品名/食材":e[0],"備料總數":e[1]})));
-            XLSX.utils.book_append_sheet(wb, ws2, "全品項備料表");
-            // 分頁 3
-            const ws3 = XLSX.utils.json_to_sheet(window.lastData.orders.map(o=>({
-                "客戶":o.customer_name,"電話":o.phone,"人數":o.adult_count+"大"+o.kid_count+"小","桌號":o.table_no,
-                "點餐內容":o.order_content.map(i=>i.name).join(' / '),"金額":o.total_price,"備註":o.note
-            })));
-            XLSX.utils.book_append_sheet(wb, ws3, "詳細流水帳");
-            
-            XLSX.writeFile(wb, `真珠營運分析_${new Date().toLocaleDateString()}.xlsx`);
-        }
+        // 每桌後加一空行分隔
+        tableRows.push({
+            '桌號': '', '姓名': '', '手機': '',
+            '大人': '', '小孩': '', '兒童': '',
+            '活動': '', '餐點': '', '金額': '',
+            '訂單合計': '', '時間': '', '備註': '',
+        });
+    });
 
-        init();
-    </script>
+    const wsTable = XLSX.utils.json_to_sheet(tableRows);
+
+    // 欄寬設定
+    wsTable['!cols'] = [
+        { wch: 8  }, // 桌號
+        { wch: 12 }, // 姓名
+        { wch: 14 }, // 手機
+        { wch: 6  }, // 大人
+        { wch: 6  }, // 小孩
+        { wch: 6  }, // 兒童
+        { wch: 10 }, // 活動
+        { wch: 30 }, // 餐點
+        { wch: 8  }, // 金額
+        { wch: 10 }, // 訂單合計
+        { wch: 16 }, // 時間
+        { wch: 20 }, // 備註
+    ];
+    XLSX.utils.book_append_sheet(wb, wsTable, '🪑 逐桌明細');
+
+    // ══ 分頁 2：摘要 ══
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+        { 項目:'訂單數',    數值:orders.length },
+        { 項目:'大人人數',  數值:totalAdult },
+        { 項目:'小孩人數',  數值:totalKid },
+        { 項目:'兒童人數',  數值:totalChild },
+        { 項目:'總人數',    數值:totalAdult + totalKid + totalChild },
+        { 項目:'套餐組數',  數值:Object.values(setMenuCount).reduce((a,b)=>a+b,0) },
+        { 項目:'備料品項數',數值:sorted.length },
+        { 項目:'預估營收',  數值:totalRev },
+    ]), '📊 摘要');
+
+    // ══ 分頁 3：備料總表 ══
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+        sorted.map(([name, count], i) => ({ 排名:i+1, 品名:name, 備料數量:count }))
+    ), '🍳 備料總表');
+
+    // ══ 分頁 4：套餐明細 ══
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+        Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1])
+            .map(([name, count]) => ({ 套餐名稱:name, 銷售組數:count }))
+    ), '🍱 套餐明細');
+
+    // ══ 分頁 5：訂單流水帳（完整版）══
+    const rows = [];
+    orders.forEach((o, idx) => {
+        (o.order_content || []).forEach((item, li) => {
+            rows.push({
+                序號:      li === 0 ? idx + 1 : '',
+                時間:      li === 0 ? new Date(o.created_at).toLocaleString('zh-TW') : '',
+                姓名:      li === 0 ? (o.customer_name || '') : '',
+                電話:      li === 0 ? (o.phone || '') : '',
+                桌號:      li === 0 ? (o.table_no || '') : '',
+                大人:      li === 0 ? (o.adult_count || 0) : '',
+                小孩:      li === 0 ? (o.kid_count || 0) : '',
+                兒童:      li === 0 ? (o.child_count || 0) : '',
+                活動代號:  li === 0 ? (o.campaign_code || '一般') : '',
+                品項名稱:  item.name,
+                品項金額:  item.price,
+                訂單合計:  li === 0 ? (o.total_price || 0) : '',
+                備註:      li === 0 ? (o.note || '') : '',
+            });
+        });
+    });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), '📋 訂單流水帳');
+
+    const d = new Date().toLocaleDateString('zh-TW').replace(/\//g,'-');
+    XLSX.writeFile(wb, `真珠備料統計_${d}.xlsx`);
+}
+</script>
 </body>
 </html>
