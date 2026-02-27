@@ -1894,10 +1894,50 @@ function reportPrint() {
 
 function exportFullData() {
     if (!window.lastData) return alert('請先查詢數據');
-    const { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalRev, totalSets } = window.lastData;
+    const { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev, totalSets } = window.lastData;
     const wb = XLSX.utils.book_new();
 
-    // 摘要
+    // ══ 分頁 1：逐桌明細 ══
+    const tableRows = [];
+    const sorted_orders = [...orders].sort((a, b) => {
+        const ta = a.table_no || 'zzz';
+        const tb = b.table_no || 'zzz';
+        return ta.localeCompare(tb, 'zh-TW', { numeric: true });
+    });
+
+    sorted_orders.forEach(o => {
+        const items = o.order_content || [];
+        const timeStr = new Date(o.created_at).toLocaleString('zh-TW', {
+            month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false
+        });
+        tableRows.push({
+            '桌號': o.table_no || '—', '姓名': o.customer_name || '—',
+            '手機': o.phone || '—',
+            '大人': o.adult_count || 0, '小孩': o.kid_count || 0, '兒童': o.child_count || 0,
+            '活動': o.campaign_code || '—',
+            '餐點': items[0]?.name || '', '金額': items[0]?.price ?? '',
+            '訂單合計': o.total_price || 0, '時間': timeStr, '備註': o.note || '',
+        });
+        for (let i = 1; i < items.length; i++) {
+            tableRows.push({
+                '桌號': '', '姓名': '', '手機': '',
+                '大人': '', '小孩': '', '兒童': '', '活動': '',
+                '餐點': items[i].name, '金額': items[i].price ?? '',
+                '訂單合計': '', '時間': '', '備註': '',
+            });
+        }
+        tableRows.push({ '桌號':'','姓名':'','手機':'','大人':'','小孩':'','兒童':'','活動':'','餐點':'','金額':'','訂單合計':'','時間':'','備註':'' });
+    });
+
+    const wsTable = XLSX.utils.json_to_sheet(tableRows);
+    wsTable['!cols'] = [
+        {wch:8},{wch:12},{wch:14},{wch:6},{wch:6},{wch:6},
+        {wch:10},{wch:30},{wch:8},{wch:10},{wch:16},{wch:20}
+    ];
+    XLSX.utils.book_append_sheet(wb, wsTable, '🪑 逐桌明細');
+
+    // ══ 分頁 2：摘要 ══
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
         { 項目:'訂單數',    數值:orders.length },
         { 項目:'大人人數',  數值:totalAdult },
@@ -1909,17 +1949,17 @@ function exportFullData() {
         { 項目:'預估營收',  數值:totalRev },
     ]), '📊 摘要');
 
-    // 備料總表
+    // ══ 分頁 3：備料總表 ══
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
         sorted.map(([name, count], i) => ({ 排名:i+1, 品名:name, 備料數量:count }))
     ), '🍳 備料總表');
 
-    // 套餐明細
+    // ══ 分頁 4：套餐明細 ══
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
         Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name, count]) => ({ 套餐名稱:name, 銷售組數:count }))
     ), '🍱 套餐明細');
 
-    // 訂單流水帳（每道菜拆行）
+    // ══ 分頁 5：訂單流水帳 ══
     const rows = [];
     orders.forEach((o, idx) => {
         (o.order_content || []).forEach((item, li) => {
