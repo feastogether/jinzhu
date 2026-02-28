@@ -380,23 +380,25 @@ function processAndRender(orders) {
             const qtyM = item.name.match(/ x(\d+)/);
             const qty  = qtyM ? parseInt(qtyM[1]) : 1;
 
-            // ✅ 修正：先去掉口味標籤 [xxx] 及數量標記，完整保留品名
+            // ✅ 去掉口味標籤 [xxx] 及數量標記
             let cleanName = item.name.replace(/\s*\[.*?\]/g, '').replace(/ x\d+/g, '').trim();
 
-            // ✅ 修正：套餐判斷必須符合「套餐名 空格( 品項A、品項B )」格式
-            // 括號內含「、」才視為套餐拆解，避免「加購 xxx」被誤判截斷
-            const setMatch = cleanName.match(/^(.+?)\s+\((.+)\)$/);
-            const isSet    = setMatch && setMatch[2].includes('、');
+            // ✅ 用 indexOf 找第一個「 (」位置，避免 (加購)xxx 巢狀括號被 regex 誤判
+            const parenIdx = cleanName.indexOf(' (');
+            const brand    = parenIdx > -1 ? cleanName.slice(0, parenIdx).trim() : null;
+            // 取出最外層括號內容：從第一個 ( 到最後一個 )
+            const inner    = parenIdx > -1 ? cleanName.slice(parenIdx + 2, -1) : null;
+            const isSet    = inner && inner.includes('、');
 
             if (isSet) {
-                const brand = setMatch[1].trim();
                 setMenuCount[brand] = (setMenuCount[brand] || 0) + qty;
-                setMatch[2].split('、').forEach(sub => {
+                inner.split('、').forEach(sub => {
+                    // 去掉子品項自身的口味標籤，但保留 (加購) 前綴
                     const s = sub.replace(/\s*\[.*?\]/g, '').trim();
                     if (s) dishCount[s] = (dishCount[s] || 0) + qty;
                 });
             } else {
-                // 非套餐：完整保留品名（含「加購 xxx」「附餐 xxx」等括號說明）
+                // 非套餐 or 單一括號說明：完整保留品名
                 dishCount[cleanName] = (dishCount[cleanName] || 0) + qty;
             }
         });
