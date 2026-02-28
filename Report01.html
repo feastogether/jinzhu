@@ -150,8 +150,6 @@
 
         <!-- 篩選控件 -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4 items-end">
-
-            <!-- 快速預設 -->
             <div class="sm:col-span-1">
                 <span class="filter-label">快速選擇</span>
                 <div class="flex flex-wrap gap-1.5">
@@ -161,32 +159,22 @@
                     <button class="preset-btn" onclick="setPreset('month')">本月</button>
                 </div>
             </div>
-
-            <!-- 開始日 -->
             <div>
                 <span class="filter-label">開始日期</span>
                 <input type="date" id="f-s-date" class="f-input">
             </div>
-
-            <!-- 結束日 -->
             <div>
                 <span class="filter-label">結束日期</span>
                 <input type="date" id="f-e-date" class="f-input">
             </div>
-
-            <!-- 開始時間 -->
             <div>
                 <span class="filter-label">開始時間</span>
                 <input type="time" id="f-s-time" value="00:00" class="f-input">
             </div>
-
-            <!-- 結束時間 -->
             <div>
                 <span class="filter-label">結束時間</span>
                 <input type="time" id="f-e-time" value="23:59" class="f-input">
             </div>
-
-            <!-- 活動代號 -->
             <div>
                 <span class="filter-label">活動代號</span>
                 <select id="f-campaign" class="f-input">
@@ -194,14 +182,11 @@
                     <option value="none">一般訂單</option>
                 </select>
             </div>
-
-            <!-- 執行 -->
             <div class="flex items-end">
                 <button id="run-btn" onclick="runReport()" class="query-btn w-full">
                     <span id="run-lbl">▶ 查詢統計</span>
                 </button>
             </div>
-
         </div>
     </div>
 </div>
@@ -209,7 +194,7 @@
 <!-- ═══════ 主內容 ═══════ -->
 <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-8">
 
-    <!-- 列印標頭（只列印時顯示） -->
+    <!-- 列印標頭 -->
     <div class="print-header">
         <div>
             <div style="font-size:24px;font-weight:900;color:var(--green);font-family:'Noto Serif TC',serif;letter-spacing:.1em">真珠 備料統計報表</div>
@@ -220,46 +205,14 @@
 
     <!-- KPI 總覽 -->
     <div class="kpi-row">
-        <div class="kpi g">
-            <div class="kpi-lbl">訂單數</div>
-            <div class="kpi-val" id="kpi-orders">—</div>
-            <div class="kpi-sub">筆訂單</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-lbl">大人</div>
-            <div class="kpi-val" id="kpi-adult">—</div>
-            <div class="kpi-sub">位大人</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-lbl">小孩</div>
-            <div class="kpi-val" id="kpi-kid">—</div>
-            <div class="kpi-sub">位小孩</div>
-        </div>
-        <div class="kpi" style="border-top-color:#fb923c!important">
-            <div class="kpi-lbl">兒童</div>
-            <div class="kpi-val" id="kpi-child">—</div>
-            <div class="kpi-sub">位兒童</div>
-        </div>
-        <div class="kpi b">
-            <div class="kpi-lbl">總人數</div>
-            <div class="kpi-val" id="kpi-total-people">—</div>
-            <div class="kpi-sub">位用餐</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-lbl">套餐組數</div>
-            <div class="kpi-val" id="kpi-sets">—</div>
-            <div class="kpi-sub">組套餐</div>
-        </div>
-        <div class="kpi">
-            <div class="kpi-lbl">備料品項</div>
-            <div class="kpi-val" id="kpi-items">—</div>
-            <div class="kpi-sub">種品項</div>
-        </div>
-        <div class="kpi r">
-            <div class="kpi-lbl">預估營收</div>
-            <div class="kpi-val" id="kpi-rev" style="font-size:1.4rem">—</div>
-            <div class="kpi-sub">元（未含服務費）</div>
-        </div>
+        <div class="kpi g"><div class="kpi-lbl">訂單數</div><div class="kpi-val" id="kpi-orders">—</div><div class="kpi-sub">筆訂單</div></div>
+        <div class="kpi"><div class="kpi-lbl">大人</div><div class="kpi-val" id="kpi-adult">—</div><div class="kpi-sub">位大人</div></div>
+        <div class="kpi"><div class="kpi-lbl">小孩</div><div class="kpi-val" id="kpi-kid">—</div><div class="kpi-sub">位小孩</div></div>
+        <div class="kpi" style="border-top-color:#fb923c!important"><div class="kpi-lbl">兒童</div><div class="kpi-val" id="kpi-child">—</div><div class="kpi-sub">位兒童</div></div>
+        <div class="kpi b"><div class="kpi-lbl">總人數</div><div class="kpi-val" id="kpi-total-people">—</div><div class="kpi-sub">位用餐</div></div>
+        <div class="kpi"><div class="kpi-lbl">套餐組數</div><div class="kpi-val" id="kpi-sets">—</div><div class="kpi-sub">組套餐</div></div>
+        <div class="kpi"><div class="kpi-lbl">備料品項</div><div class="kpi-val" id="kpi-items">—</div><div class="kpi-sub">種品項</div></div>
+        <div class="kpi r"><div class="kpi-lbl">預估營收</div><div class="kpi-val" id="kpi-rev" style="font-size:1.4rem">—</div><div class="kpi-sub">元（未含服務費）</div></div>
     </div>
 
     <!-- Tab 列 -->
@@ -269,7 +222,7 @@
         <button class="tab"    onclick="switchTab('orders')">📋 訂單流水帳</button>
     </div>
 
-    <!-- ── Tab: 備料總表 ── -->
+    <!-- Tab: 備料總表 -->
     <div id="tab-prepare">
         <div class="panel">
             <div class="panel-head" style="background:var(--ink)">
@@ -297,7 +250,7 @@
         </div>
     </div>
 
-    <!-- ── Tab: 套餐明細 ── -->
+    <!-- Tab: 套餐明細 -->
     <div id="tab-setmenu" class="hidden">
         <div class="panel">
             <div class="panel-head" style="background:var(--green)">
@@ -313,7 +266,7 @@
         </div>
     </div>
 
-    <!-- ── Tab: 訂單流水帳 ── -->
+    <!-- Tab: 訂單流水帳 -->
     <div id="tab-orders" class="hidden">
         <div class="flex justify-between items-center mb-4">
             <div class="flex items-center gap-2">
@@ -338,7 +291,6 @@ let cache = null;
 // ── 初始化 ──
 async function init() {
     setPreset('today');
-    // 載入活動代號選項
     const { data } = await _s.from('campaign_settings').select('*');
     if (data) {
         const sel = document.getElementById('f-campaign');
@@ -356,12 +308,10 @@ function setPreset(type) {
     document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('on'));
     const b = document.querySelector(`.preset-btn[onclick="setPreset('${type}')"]`);
     if (b) b.classList.add('on');
-
     const now   = new Date();
     const today = now.toISOString().split('T')[0];
     const sd    = document.getElementById('f-s-date');
     const ed    = document.getElementById('f-e-date');
-
     if (type === 'today') {
         sd.value = ed.value = today;
     } else if (type === 'yesterday') {
@@ -427,20 +377,26 @@ function processAndRender(orders) {
         totalRev    += (o.total_price  || 0);
 
         (o.order_content || []).forEach(item => {
-            const qtyM    = item.name.match(/ x(\d+)/);
-            const qty     = qtyM ? parseInt(qtyM[1]) : 1;
-            let cleanName = item.name.split(' [')[0].replace(/ x\d+/g, '').trim();
-            const isSet   = cleanName.includes('(') && (cleanName.includes('、') || cleanName.includes('套餐'));
+            const qtyM = item.name.match(/ x(\d+)/);
+            const qty  = qtyM ? parseInt(qtyM[1]) : 1;
+
+            // ✅ 修正：先去掉口味標籤 [xxx] 及數量標記，完整保留品名
+            let cleanName = item.name.replace(/\s*\[.*?\]/g, '').replace(/ x\d+/g, '').trim();
+
+            // ✅ 修正：套餐判斷必須符合「套餐名 空格( 品項A、品項B )」格式
+            // 括號內含「、」才視為套餐拆解，避免「加購 xxx」被誤判截斷
+            const setMatch = cleanName.match(/^(.+?)\s+\((.+)\)$/);
+            const isSet    = setMatch && setMatch[2].includes('、');
 
             if (isSet) {
-                const brand = cleanName.split(' (')[0].trim();
+                const brand = setMatch[1].trim();
                 setMenuCount[brand] = (setMenuCount[brand] || 0) + qty;
-                const cm = cleanName.match(/\((.*?)\)/);
-                if (cm) cm[1].split('、').forEach(sub => {
-                    const s = sub.trim();
+                setMatch[2].split('、').forEach(sub => {
+                    const s = sub.replace(/\s*\[.*?\]/g, '').trim();
                     if (s) dishCount[s] = (dishCount[s] || 0) + qty;
                 });
             } else {
+                // 非套餐：完整保留品名（含「加購 xxx」「附餐 xxx」等括號說明）
                 dishCount[cleanName] = (dishCount[cleanName] || 0) + qty;
             }
         });
@@ -450,7 +406,6 @@ function processAndRender(orders) {
     const totalSets= Object.values(setMenuCount).reduce((a, b) => a + b, 0);
     const maxQty   = sorted[0]?.[1] || 1;
 
-    // 快取供匯出使用
     cache = { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev, totalSets };
 
     // ── KPI ──
@@ -480,28 +435,24 @@ function processAndRender(orders) {
                     <span class="text-xs ml-1" style="color:#cbd5e1">份</span>
                 </td>
                 <td class="no-print" style="padding-right:22px">
-                    <div class="bar-wrap">
-                        <div class="bar-fill" style="width:${Math.round(count / maxQty * 100)}%"></div>
-                    </div>
+                    <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(count / maxQty * 100)}%"></div></div>
                 </td>
             </tr>`).join('');
 
     // ── 套餐明細 ──
     document.getElementById('setmenu-body').innerHTML = Object.keys(setMenuCount).length === 0
         ? `<div class="empty">查無套餐訂單</div>`
-        : Object.entries(setMenuCount)
-            .sort((a, b) => b[1] - a[1])
-            .map(([name, count]) => `
-                <div class="set-card">
-                    <div>
-                        <div class="set-name">${name}</div>
-                        <div class="text-xs font-semibold mt-0.5" style="color:#94a3b8">套餐組合</div>
-                    </div>
-                    <div class="flex items-baseline gap-1">
-                        <span class="set-count">${count}</span>
-                        <span class="text-xs font-bold" style="color:#94a3b8">組</span>
-                    </div>
-                </div>`).join('');
+        : Object.entries(setMenuCount).sort((a, b) => b[1] - a[1]).map(([name, count]) => `
+            <div class="set-card">
+                <div>
+                    <div class="set-name">${name}</div>
+                    <div class="text-xs font-semibold mt-0.5" style="color:#94a3b8">套餐組合</div>
+                </div>
+                <div class="flex items-baseline gap-1">
+                    <span class="set-count">${count}</span>
+                    <span class="text-xs font-bold" style="color:#94a3b8">組</span>
+                </div>
+            </div>`).join('');
 
     // ── 訂單流水帳 ──
     document.getElementById('orders-body').innerHTML = orders.length === 0
@@ -518,13 +469,11 @@ function processAndRender(orders) {
                         <div style="color:rgba(255,255,255,.4);font-size:10px;font-weight:700">
                             ${new Date(o.created_at).toLocaleString('zh-TW', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' })}
                         </div>
-                        ${o.campaign_code
-                            ? `<span style="background:rgba(184,145,80,.3);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;display:inline-block;margin-top:4px">${o.campaign_code}</span>`
-                            : ''}
+                        ${o.campaign_code ? `<span style="background:rgba(184,145,80,.3);color:var(--gold2);font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;display:inline-block;margin-top:4px">${o.campaign_code}</span>` : ''}
                     </div>
                 </div>
                 <div class="order-meta">
-                    ${o.table_no    ? `<div class="meta-pip">桌號 <span>${o.table_no}</span></div>` : ''}
+                    ${o.table_no ? `<div class="meta-pip">桌號 <span>${o.table_no}</span></div>` : ''}
                     <div class="meta-pip">大人 <span>${o.adult_count || 0}</span> 位</div>
                     <div class="meta-pip">小孩 <span>${o.kid_count || 0}</span> 位</div>
                     <div class="meta-pip">兒童 <span>${o.child_count || 0}</span> 位</div>
@@ -557,65 +506,212 @@ function switchTab(name) {
 
 // ── 列印 ──
 function doPrint() {
-    // 列印前展開全部 tab
     ['prepare', 'setmenu', 'orders'].forEach(t =>
         document.getElementById(`tab-${t}`).classList.remove('hidden'));
     window.print();
-    // 列印後還原
     setTimeout(() => switchTab('prepare'), 500);
 }
 
-// ── 匯出 Excel ──
+// ── 匯出 Excel（美化版）──
 function exportExcel() {
     if (!cache) return alert('請先執行查詢');
-    const { orders, dishCount, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev } = cache;
+    const { orders, setMenuCount, sorted, totalAdult, totalKid, totalChild, totalRev, totalSets } = cache;
     const wb = XLSX.utils.book_new();
 
-    // 分頁 1：摘要
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
-        { 項目:'訂單數',    數值:orders.length },
-        { 項目:'大人人數',  數值:totalAdult },
-        { 項目:'小孩人數',  數值:totalKid },
-        { 項目:'兒童人數',  數值:totalChild },
-        { 項目:'總人數',    數值:totalAdult + totalKid + totalChild },
-        { 項目:'套餐組數',  數值:Object.values(setMenuCount).reduce((a,b)=>a+b,0) },
-        { 項目:'備料品項數',數值:sorted.length },
-        { 項目:'預估營收',  數值:totalRev },
-    ]), '📊 摘要');
+    // ══ 色票 ══
+    const C_GREEN  = '004D40';
+    const C_GOLD   = 'B89150';
+    const C_WHITE  = 'FFFFFF';
+    const C_STRIPE = 'F0FDF9';  // 淡綠交替列
+    const C_TEXT   = '1A2420';
+    const C_GRAY   = '94A3B8';
 
-    // 分頁 2：備料總表
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-        sorted.map(([name, count], i) => ({ 排名:i+1, 品名:name, 備料數量:count }))
-    ), '🍳 備料總表');
+    // ── 通用樣式工廠 ──
+    const headStyle = (bg = C_GREEN) => ({
+        font:      { bold: true, color: { rgb: C_WHITE }, sz: 11, name: 'Noto Sans TC' },
+        fill:      { patternType: 'solid', fgColor: { rgb: bg } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: {
+            bottom: { style: 'medium', color: { rgb: C_GOLD } },
+            right:  { style: 'thin',   color: { rgb: C_GOLD } },
+        }
+    });
+    const cellStyle = (isEvenRow, align = 'center', bold = false, color = C_TEXT) => ({
+        font:      { sz: 10, bold, color: { rgb: color }, name: 'Noto Sans TC' },
+        fill:      { patternType: 'solid', fgColor: { rgb: isEvenRow ? C_STRIPE : C_WHITE } },
+        alignment: { horizontal: align, vertical: 'center', wrapText: true },
+        border: {
+            bottom: { style: 'hair', color: { rgb: 'E2E8F0' } },
+            right:  { style: 'hair', color: { rgb: 'E2E8F0' } },
+        }
+    });
 
-    // 分頁 3：套餐明細
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
-        Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1])
-            .map(([name, count]) => ({ 套餐名稱:name, 銷售組數:count }))
-    ), '🍱 套餐明細');
+    // ══════════════════════════════════════════════
+    // 分頁 1：逐桌明細（每道菜一列，樣式美化）
+    // ══════════════════════════════════════════════
+    const aoa = [['桌號','姓名','手機','大人','小孩','兒童','活動','序','菜色名稱','單價','訂單合計','時間','備註']];
 
-    // 分頁 4：訂單流水帳（每道菜拆行）
-    const rows = [];
+    const sorted_orders = [...orders].sort((a, b) =>
+        (a.table_no || 'zzz').localeCompare(b.table_no || 'zzz', 'zh-TW', { numeric: true })
+    );
+
+    sorted_orders.forEach(o => {
+        const items   = o.order_content || [];
+        const timeStr = new Date(o.created_at).toLocaleString('zh-TW', {
+            month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12: false
+        });
+        items.forEach((item, i) => {
+            aoa.push([
+                i === 0 ? (o.table_no || '—')        : '',
+                i === 0 ? (o.customer_name || '—')   : '',
+                i === 0 ? (o.phone || '—')            : '',
+                i === 0 ? (o.adult_count  || 0)       : '',
+                i === 0 ? (o.kid_count    || 0)       : '',
+                i === 0 ? (o.child_count  || 0)       : '',
+                i === 0 ? (o.campaign_code || '—')    : '',
+                i + 1,                                     // 序（第幾道）
+                item.name,                                 // 菜色名稱 — 每道一格
+                item.price ?? '',
+                i === 0 ? (o.total_price || 0)        : '',
+                i === 0 ? timeStr                     : '',
+                i === 0 ? (o.note || '')              : '',
+            ]);
+        });
+        aoa.push(new Array(13).fill(''));  // 訂單間空白列
+    });
+
+    const ws1 = XLSX.utils.aoa_to_sheet(aoa);
+
+    // 欄寬
+    ws1['!cols'] = [
+        {wch:8},{wch:12},{wch:14},{wch:5},{wch:5},{wch:5},
+        {wch:10},{wch:4},{wch:38},{wch:8},{wch:10},{wch:16},{wch:22}
+    ];
+
+    // 套用標題列樣式
+    const COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M'];
+    COLS.forEach(c => {
+        const cell = ws1[c + '1'];
+        if (cell) cell.s = headStyle();
+    });
+
+    // 套用資料列樣式
+    let rowIdx = 2;
+    sorted_orders.forEach((o, oi) => {
+        const items    = o.order_content || [];
+        const isEven   = oi % 2 === 0;
+        items.forEach(() => {
+            COLS.forEach((c, ci) => {
+                const addr = c + rowIdx;
+                if (!ws1[addr]) ws1[addr] = { v: '', t: 's' };
+                const isNameCol  = ci === 8;   // 菜色名稱欄
+                const isTopInfo  = ci < 2;     // 桌號/姓名
+                ws1[addr].s = cellStyle(
+                    isEven,
+                    isNameCol ? 'left' : 'center',
+                    isTopInfo,
+                    isNameCol ? C_GREEN : C_TEXT
+                );
+            });
+            rowIdx++;
+        });
+        rowIdx++; // 空白列
+    });
+
+    // 凍結首列
+    ws1['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    XLSX.utils.book_append_sheet(wb, ws1, '🪑 逐桌明細');
+
+    // ══════════════════════════════════════════════
+    // 分頁 2：摘要
+    // ══════════════════════════════════════════════
+    const summaryAoa = [
+        ['項目', '數值'],
+        ['訂單數',    orders.length],
+        ['大人人數',  totalAdult],
+        ['小孩人數',  totalKid],
+        ['兒童人數',  totalChild],
+        ['總人數',    totalAdult + totalKid + totalChild],
+        ['套餐組數',  totalSets],
+        ['備料品項數',sorted.length],
+        ['預估營收',  totalRev],
+    ];
+    const ws2 = XLSX.utils.aoa_to_sheet(summaryAoa);
+    ws2['!cols'] = [{wch:16},{wch:14}];
+    ['A','B'].forEach(c => { if (ws2[c+'1']) ws2[c+'1'].s = headStyle(); });
+    for (let r = 2; r <= summaryAoa.length; r++) {
+        const isEven = r % 2 === 0;
+        if (ws2['A'+r]) ws2['A'+r].s = cellStyle(isEven, 'left', true, C_GREEN);
+        if (ws2['B'+r]) ws2['B'+r].s = cellStyle(isEven, 'center', false, C_TEXT);
+    }
+    XLSX.utils.book_append_sheet(wb, ws2, '📊 摘要');
+
+    // ══════════════════════════════════════════════
+    // 分頁 3：備料總表
+    // ══════════════════════════════════════════════
+    const prepAoa = [['排名','品名','備料數量']];
+    sorted.forEach(([name, count], i) => prepAoa.push([i + 1, name, count]));
+    const ws3 = XLSX.utils.aoa_to_sheet(prepAoa);
+    ws3['!cols'] = [{wch:6},{wch:36},{wch:12}];
+    ['A','B','C'].forEach(c => { if (ws3[c+'1']) ws3[c+'1'].s = headStyle(); });
+    for (let r = 2; r <= prepAoa.length; r++) {
+        const isEven = r % 2 === 0;
+        if (ws3['A'+r]) ws3['A'+r].s = cellStyle(isEven,'center',false,C_GRAY);
+        if (ws3['B'+r]) ws3['B'+r].s = cellStyle(isEven,'left',  true, C_GREEN);
+        if (ws3['C'+r]) ws3['C'+r].s = { ...cellStyle(isEven,'center',true,C_GREEN),
+            font: { sz:14, bold:true, color:{ rgb:C_GREEN }, name:'Noto Serif TC' } };
+    }
+    XLSX.utils.book_append_sheet(wb, ws3, '🍳 備料總表');
+
+    // ══════════════════════════════════════════════
+    // 分頁 4：套餐明細
+    // ══════════════════════════════════════════════
+    const setAoa = [['套餐名稱','銷售組數']];
+    Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).forEach(([name,count]) => setAoa.push([name,count]));
+    const ws4 = XLSX.utils.aoa_to_sheet(setAoa);
+    ws4['!cols'] = [{wch:30},{wch:12}];
+    ['A','B'].forEach(c => { if (ws4[c+'1']) ws4[c+'1'].s = headStyle(); });
+    for (let r = 2; r <= setAoa.length; r++) {
+        const isEven = r % 2 === 0;
+        if (ws4['A'+r]) ws4['A'+r].s = cellStyle(isEven,'left',true,C_GREEN);
+        if (ws4['B'+r]) ws4['B'+r].s = { ...cellStyle(isEven,'center',true,C_GOLD),
+            font: { sz:14, bold:true, color:{ rgb:C_GOLD }, name:'Noto Serif TC' } };
+    }
+    XLSX.utils.book_append_sheet(wb, ws4, '🍱 套餐明細');
+
+    // ══════════════════════════════════════════════
+    // 分頁 5：訂單流水帳（每道菜拆行）
+    // ══════════════════════════════════════════════
+    const ledgerAoa = [['序號','時間','姓名','電話','桌號','大人','小孩','兒童','活動代號','品項名稱','品項金額','訂單合計','備註']];
     orders.forEach((o, idx) => {
         (o.order_content || []).forEach((item, li) => {
-            rows.push({
-                序號:      li === 0 ? idx + 1 : '',
-                時間:      li === 0 ? new Date(o.created_at).toLocaleString('zh-TW') : '',
-                姓名:      li === 0 ? (o.customer_name || '') : '',
-                電話:      li === 0 ? (o.phone || '') : '',
-                桌號:      li === 0 ? (o.table_no || '') : '',
-                大人:      li === 0 ? (o.adult_count || 0) : '',
-                小孩:      li === 0 ? (o.kid_count || 0) : '',
-                兒童:      li === 0 ? (o.child_count || 0) : '',
-                活動代號:  li === 0 ? (o.campaign_code || '一般') : '',
-                品項名稱:  item.name,
-                品項金額:  item.price,
-                訂單合計:  li === 0 ? (o.total_price || 0) : '',
-                備註:      li === 0 ? (o.note || '') : '',
-            });
+            ledgerAoa.push([
+                li === 0 ? idx + 1                              : '',
+                li === 0 ? new Date(o.created_at).toLocaleString('zh-TW') : '',
+                li === 0 ? (o.customer_name || '')              : '',
+                li === 0 ? (o.phone || '')                      : '',
+                li === 0 ? (o.table_no || '')                   : '',
+                li === 0 ? (o.adult_count  || 0)                : '',
+                li === 0 ? (o.kid_count    || 0)                : '',
+                li === 0 ? (o.child_count  || 0)                : '',
+                li === 0 ? (o.campaign_code || '一般')          : '',
+                item.name,
+                item.price,
+                li === 0 ? (o.total_price || 0)                 : '',
+                li === 0 ? (o.note || '')                       : '',
+            ]);
         });
     });
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), '📋 訂單流水帳');
+    const ws5 = XLSX.utils.aoa_to_sheet(ledgerAoa);
+    ws5['!cols'] = [
+        {wch:6},{wch:18},{wch:12},{wch:14},{wch:8},
+        {wch:5},{wch:5},{wch:5},{wch:10},{wch:38},{wch:10},{wch:10},{wch:22}
+    ];
+    ['A','B','C','D','E','F','G','H','I','J','K','L','M'].forEach(c => {
+        if (ws5[c+'1']) ws5[c+'1'].s = headStyle(C_GREEN);
+    });
+    XLSX.utils.book_append_sheet(wb, ws5, '📋 訂單流水帳');
 
     const d = new Date().toLocaleDateString('zh-TW').replace(/\//g,'-');
     XLSX.writeFile(wb, `真珠備料統計_${d}.xlsx`);
