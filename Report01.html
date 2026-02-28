@@ -562,7 +562,35 @@ function exportExcel() {
         const timeStr = new Date(o.created_at).toLocaleString('zh-TW', {
             month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12: false
         });
-        items.forEach((item, i) => {
+
+        // 將每個品項拆解成「顯示列」陣列
+        // 套餐 → 套餐名一列 + 每道子菜各一列（縮排顯示）
+        // 單點 → 直接一列
+        const displayRows = [];
+        items.forEach(item => {
+            const clean = item.name.replace(/\s*\[.*?\]/g, '').replace(/ x\d+/g, '').trim();
+            const parenIdx = clean.indexOf(' (');
+            const inner    = parenIdx > -1 ? clean.slice(parenIdx + 2, -1) : null;
+            const isSet    = inner && inner.includes('、');
+
+            if (isSet) {
+                const brand = clean.slice(0, parenIdx).trim();
+                // 套餐直接拆成子菜列，不另顯示套餐名稱列
+                inner.split('、').forEach((sub, si) => {
+                    const s = sub.replace(/\s*\[.*?\]/g, '').trim();
+                    if (s) displayRows.push({
+                        dish: s,
+                        price: si === 0 ? item.price : '',  // 金額只放在第一道
+                        isSetHeader: false,
+                        setLabel: si === 0 ? `[${brand}]` : ''  // 第一道備註套餐名
+                    });
+                });
+            } else {
+                displayRows.push({ dish: clean, price: item.price, isSetHeader: false, setLabel: '' });
+            }
+        });
+
+        displayRows.forEach((row, i) => {
             aoa.push([
                 i === 0 ? (o.table_no || '—')        : '',
                 i === 0 ? (o.customer_name || '—')   : '',
@@ -571,9 +599,9 @@ function exportExcel() {
                 i === 0 ? (o.kid_count    || 0)       : '',
                 i === 0 ? (o.child_count  || 0)       : '',
                 i === 0 ? (o.campaign_code || '—')    : '',
-                i + 1,                                     // 序（第幾道）
-                item.name,                                 // 菜色名稱 — 每道一格
-                item.price ?? '',
+                i + 1,
+                row.dish,     // 每道菜各一格
+                row.price,    // 套餐只在第一道子菜顯示金額
                 i === 0 ? (o.total_price || 0)        : '',
                 i === 0 ? timeStr                     : '',
                 i === 0 ? (o.note || '')              : '',
@@ -602,12 +630,22 @@ function exportExcel() {
     sorted_orders.forEach((o, oi) => {
         const items    = o.order_content || [];
         const isEven   = oi % 2 === 0;
-        items.forEach(() => {
+        // 計算實際輸出列數（套餐會拆成多列）
+        let rowCount = 0;
+        items.forEach(item => {
+            const clean = item.name.replace(/\s*\[.*?\]/g, '').replace(/ x\d+/g, '').trim();
+            const parenIdx = clean.indexOf(' (');
+            const inner    = parenIdx > -1 ? clean.slice(parenIdx + 2, -1) : null;
+            const isSet    = inner && inner.includes('、');
+            // 套餐直接拆成子菜數量列（無 header 列）
+            rowCount += isSet ? inner.split('、').filter(s=>s.trim()).length : 1;
+        });
+        for (let r = 0; r < rowCount; r++) {
             COLS.forEach((c, ci) => {
                 const addr = c + rowIdx;
                 if (!ws1[addr]) ws1[addr] = { v: '', t: 's' };
-                const isNameCol  = ci === 8;   // 菜色名稱欄
-                const isTopInfo  = ci < 2;     // 桌號/姓名
+                const isNameCol = ci === 8;
+                const isTopInfo = ci < 2;
                 ws1[addr].s = cellStyle(
                     isEven,
                     isNameCol ? 'left' : 'center',
@@ -616,7 +654,7 @@ function exportExcel() {
                 );
             });
             rowIdx++;
-        });
+        }
         rowIdx++; // 空白列
     });
 
