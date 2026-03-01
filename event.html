@@ -13,42 +13,32 @@
         :root { --p-green: #004d40; --p-gold: #b89150; --p-cream: #f9f5f0; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--p-cream); -webkit-tap-highlight-color: transparent; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
-        
-        /* Navbar */
         .navbar-custom { background-color: #ffffff; height: 60px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: fixed; top: 0; width: 100%; z-index: 1000; }
         .navbar-brand img { max-height: 35px; object-fit: contain; }
-        
-        /* KV Section (如同 Index) */
         .kv-section { height: 100vh; transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; position: relative; z-index: 10; }
         .kv-hidden { height: 0px !important; }
         .main-title { font-size: 2.2rem; letter-spacing: 0.15em; text-shadow: 0 2px 15px rgba(0,0,0,0.5); font-weight: 700; color: #fff; }
-        
-        /* 內容區疊加 (如同 Index) */
         .main-container { position: relative; z-index: 20; margin-top: -160px; padding: 0 1rem; }
         .order-card { background: #fff; border-radius: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 1px solid white; }
-        
-        /* 選單樣式 */
         .cat-btn { border: 1px solid var(--p-green); color: var(--p-green); padding: 6px 18px; border-radius: 999px; white-space: nowrap; font-weight: bold; font-size: 0.9rem; }
         .cat-active { background-color: var(--p-green) !important; color: #fff !important; }
         .sticky-nav { position: sticky; top: 60px; z-index: 40; background: rgba(249, 245, 240, 0.95); padding: 12px 8px; backdrop-filter: blur(8px); }
         .img-contain { width: 100%; height: 100%; object-fit: contain; }
-
-        /* 詳情彈窗 */
         .btn-close-custom { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2200; font-size: 16px; border: none; backdrop-filter: blur(4px); }
         .modal-content-wrap { background: white; width: 100%; max-width: 500px; max-height: 85vh; border-radius: 1.5rem 1.5rem 0 0; display: flex; flex-direction: column; position: relative; }
         .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .img-wrap { width: 100%; background: white; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .img-wrap img { width: 100%; max-height: 250px; object-fit: contain; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* 修正輸入框文字對齊 */
+        .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; font-weight: bold; }
+        .opt-selected { border: 2.5px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
         input::placeholder { color: #ccc; }
     </style>
 </head>
 <body class="pb-24 text-slate-800 text-left">
 
     <header class="navbar-custom">
-        <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" style="max-height:35px">
+        <img id="main-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" style="max-height:35px">
     </header>
 
     <div id="kv-area" class="kv-section bg-stone-900">
@@ -60,7 +50,6 @@
     </div>
 
     <main class="max-w-xl mx-auto main-container">
-        
         <section id="step-1" class="animate__animated animate__fadeInUp">
             <div class="order-card p-8 md:p-10">
                 <div class="text-center mb-8">
@@ -100,6 +89,25 @@
         </section>
     </main>
 
+    <!-- 公告彈窗 -->
+    <div id="announce-popup" class="fixed inset-0 bg-black/70 z-[200] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate__animated animate__fadeInUp animate__faster">
+            <div style="background:#004d40" class="px-6 py-5">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📢</span>
+                    <h3 id="popup-title" class="font-black text-white text-lg tracking-wide"></h3>
+                </div>
+            </div>
+            <div class="p-6">
+                <p id="popup-content" class="text-stone-600 text-sm leading-relaxed whitespace-pre-line"></p>
+            </div>
+            <div class="px-6 pb-6">
+                <button onclick="closeAnnouncePopup()" style="background:#004d40" class="w-full text-white py-3 rounded-2xl font-bold shadow-md active:scale-95 transition">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 餐點詳情彈窗 -->
     <div id="detail-modal" class="fixed inset-0 bg-black/80 z-[110] hidden flex items-end justify-center backdrop-blur-sm">
         <div class="modal-content-wrap animate__animated animate__slideInUp animate__faster">
             <button onclick="closeDetail()" class="btn-close-custom">✕</button>
@@ -127,6 +135,7 @@
         </div>
     </div>
 
+    <!-- 預覽彈窗 -->
     <div id="preview-modal" class="fixed inset-0 bg-black/80 z-[120] hidden flex items-center justify-center p-4 backdrop-blur-sm text-left">
         <div class="bg-white w-full max-w-md rounded-[2rem] overflow-hidden flex flex-col max-h-[85vh]">
             <div class="p-4 bg-stone-50 border-b font-bold text-center font-serif text-p-green">活動點餐明細</div>
@@ -137,11 +146,15 @@
                     <div class="text-left"><span class="text-xs text-stone-400 font-bold block uppercase tracking-tighter">Total Amount</span><span class="text-[9px] text-p-gold font-bold leading-tight">* 金額以現場為主</span></div>
                     <span id="preview-total" class="text-2xl font-black text-p-green font-serif">$0</span>
                 </div>
-                <div class="flex gap-2"><button onclick="closePreview()" class="w-20 py-4 border rounded-2xl text-stone-400 font-bold">返回</button><button onclick="finalSubmit()" class="flex-1 bg-[#004d40] text-white py-4 rounded-2xl font-bold shadow-lg">確認送出預定</button></div>
+                <div class="flex gap-2">
+                    <button onclick="closePreview()" class="w-20 py-4 border rounded-2xl text-stone-400 font-bold">返回</button>
+                    <button onclick="finalSubmit()" class="flex-1 bg-[#004d40] text-white py-4 rounded-2xl font-bold shadow-lg">確認送出預定</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 購物車底部按鈕 -->
     <div id="cart-bar" class="fixed bottom-6 left-4 right-4 max-w-xl mx-auto z-50 hidden animate__animated animate__fadeInUp">
         <button onclick="openPreview()" class="w-full bg-[#004d40] p-1.5 pl-6 pr-1.5 rounded-full flex justify-between items-center shadow-2xl active:scale-95 transition">
             <span class="text-white font-bold tracking-widest text-xs font-serif uppercase">View My Order</span>
@@ -156,60 +169,64 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const campaignCode = urlParams.get('code');
-        
+
         let menuData = [], cart = [], guest = {}, tempItem = null, currentQty = 1;
 
         async function init() {
-            if(!campaignCode) {
-                alert("網址代碼無效");
-                return location.href = "index.html";
-            }
+            if (!campaignCode) { alert("網址代碼無效"); return location.href = "index.html"; }
             document.getElementById('act-title-kv').innerText = campaignCode;
             document.getElementById('act-title-menu').innerText = `${campaignCode} 限定選單`;
             document.getElementById('event-code-display').innerText = "Campaign Code: " + campaignCode;
-            
             const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
-            if (data?.logo_url) document.getElementById('main-logo').src = data.logo_url;
+            const logoEl = document.getElementById('main-logo');
+            if (data?.logo_url && logoEl) logoEl.src = data.logo_url;
         }
         init();
 
         async function startOrder() {
             guest = { name: document.getElementById('custName').value, phone: document.getElementById('custPhone').value };
-            if(!guest.name || !guest.phone) return alert("請完整填寫姓名與電話");
-            
-            // 與 Index 一致：隱藏 KV 與 Step 1
+            if (!guest.name || !guest.phone) return alert("請完整填寫姓名與電話");
             document.getElementById('kv-area').classList.add('kv-hidden');
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.remove('hidden');
             document.getElementById('cart-bar').classList.remove('hidden');
-            
-            // 重置內容區域邊距
             document.querySelector('.main-container').style.marginTop = "80px";
-            
+            // ✅ 進入選單後才跳出公告
+            loadAnnouncement();
             loadEventContent();
+        }
+
+        // ── 公告彈窗 ──
+        async function loadAnnouncement() {
+            const { data } = await _s.from('announcements').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1);
+            if (!data || data.length === 0) return;
+            document.getElementById('popup-title').innerText = data[0].title;
+            document.getElementById('popup-content').innerText = data[0].content || '';
+            document.getElementById('announce-popup').classList.remove('hidden');
+        }
+
+        function closeAnnouncePopup() {
+            document.getElementById('announce-popup').classList.add('hidden');
         }
 
         async function loadEventContent() {
             const { data: cats } = await _s.from('categories').select('*').eq('campaign_code', campaignCode).order('sort_order');
-            if(!cats || cats.length === 0) return alert("暫無活動餐點");
-
+            if (!cats || cats.length === 0) return alert("暫無活動餐點");
             const catIds = cats.map(c => c.id);
             const { data: items } = await _s.from('menu_items')
-                .select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))')
-                .in('category_id', catIds).eq('is_hidden', false);
-
+                .select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))  )')
+                .in('category_id', catIds).eq('is_hidden', false).order('sort_order', { ascending: true });
             menuData = items;
             document.getElementById('cat-nav').innerHTML = cats.map(c => `<button class="cat-btn" onclick="renderItems('${c.id}', this)">${c.name}</button>`).join('');
-            if(cats.length) renderItems(cats[0].id, document.querySelector('.cat-btn'));
+            if (cats.length) renderItems(cats[0].id, document.querySelector('.cat-btn'));
         }
 
         function renderItems(cid, el) {
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('cat-active'));
             el.classList.add('cat-active');
-            const filtered = menuData.filter(i => i.category_id === cid);
-            document.getElementById('menu-grid').innerHTML = filtered.map(i => `
+            document.getElementById('menu-grid').innerHTML = menuData.filter(i => i.category_id === cid).map(i => `
                 <div class="bg-white rounded-3xl p-4 shadow-sm flex h-32 gap-4 border" onclick="openDetail('${i.id}')">
-                    <div class="w-28 flex-shrink-0 h-full"><img src="${i.image_url||''}" class="img-contain"></div>
+                    <div class="w-28 flex-shrink-0 h-full"><img src="${i.image_url || ''}" class="img-contain"></div>
                     <div class="flex-1 flex flex-col justify-between overflow-hidden text-left py-1">
                         <h3 class="font-bold text-p-green text-base font-serif truncate">${i.name}</h3>
                         <div class="flex justify-between items-end"><span class="text-p-gold font-bold text-base font-serif">$${i.price}</span><span class="text-[8px] bg-stone-100 px-3 py-1.5 rounded-full font-bold uppercase">Choose</span></div>
@@ -218,24 +235,28 @@
         }
 
         function openDetail(id) {
-            tempItem = menuData.find(i => i.id === id); if(!tempItem) return;
+            tempItem = menuData.find(i => i.id === id); if (!tempItem) return;
             currentQty = 1; document.getElementById('item-qty').innerText = 1;
             document.getElementById('detail-img').src = tempItem.image_url || '';
             document.getElementById('detail-title').innerText = tempItem.name;
             document.getElementById('detail-desc').innerText = tempItem.description || "";
             document.getElementById('flavor-container').innerHTML = '';
             document.getElementById('set-group-container').innerHTML = '';
-            if(tempItem.item_flavor_relation?.length > 0) renderFlavorUI(tempItem.item_flavor_relation, 'flavor-container', 'main-item');
-            if(tempItem.is_set_menu && tempItem.set_menu_groups) {
-                document.getElementById('set-group-container').innerHTML = tempItem.set_menu_groups.map(g => `
+            if (tempItem.item_flavor_relation?.length > 0) renderFlavorUI(tempItem.item_flavor_relation, 'flavor-container', 'main-item');
+            if (tempItem.is_set_menu && tempItem.set_menu_groups) {
+                const sortedGroups = [...tempItem.set_menu_groups].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+                document.getElementById('set-group-container').innerHTML = sortedGroups.map(g => {
+                    const sortedContents = [...g.set_menu_contents].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+                    return `
                     <div class="group-block" data-name="${g.group_name}" data-limit="${g.selection_limit}">
                         <div class="flex justify-between items-center mb-3 text-left"><p class="font-bold text-p-green font-serif border-l-2 border-p-gold pl-2 uppercase text-[12px]">${g.group_name}</p><span class="text-[9px] text-stone-300 font-bold">Limit ${g.selection_limit}</span></div>
-                        <div class="grid grid-cols-2 gap-2 text-left">${g.set_menu_contents.map((c, idx) => `
+                        <div class="grid grid-cols-2 gap-2 text-left">${sortedContents.map((c, idx) => `
                             <div class="set-item-card border rounded-xl overflow-hidden" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}" data-selected-flv="">
-                                <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="p-3 bg-stone-50 flex justify-between items-center cursor-pointer text-xs font-bold"><span>${c.menu_items.name}</span>${c.menu_items.item_flavor_relation?.length>0?'<span class="text-[8px] text-p-gold">●</span>':''}</div>
+                                <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="p-3 bg-stone-50 flex justify-between items-center cursor-pointer text-xs font-bold"><span>${c.menu_items.name}</span>${c.menu_items.item_flavor_relation?.length > 0 ? '<span class="text-[8px] text-p-gold">●</span>' : ''}</div>
                                 <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="bg-stone-100 p-2 hidden border-t"></div>
                             </div>`).join('')}</div>
-                    </div>`).join('');
+                    </div>`;
+                }).join('');
             }
             document.getElementById('detail-modal').classList.remove('hidden');
             document.querySelector('.scroll-area').scrollTop = 0;
@@ -262,7 +283,7 @@
 
         function handleSubClick(uid) {
             const card = document.getElementById(uid); const block = card.closest('.group-block'); const limit = parseInt(block.dataset.limit);
-            if (limit === 1) { 
+            if (limit === 1) {
                 Array.from(block.querySelectorAll('.set-item-card')).forEach(c => { c.classList.remove('opt-selected'); c.querySelector('div[id^="flv-"]').classList.add('hidden'); });
                 card.classList.add('opt-selected');
             } else {
@@ -294,25 +315,25 @@
                     }
                 }
             }
-            const name = `${tempItem.name}${currentQty>1?' x'+currentQty:''}${mn}${sn.length?' ('+sn.join('、')+')':''}`;
+            const name = `${tempItem.name}${currentQty > 1 ? ' x' + currentQty : ''}${mn}${sn.length ? ' (' + sn.join('、') + ')' : ''}`;
             cart.push({ name, price: tempItem.price * currentQty });
-            document.getElementById('cart-count').innerText = cart.length; closeDetail();
+            document.getElementById('cart-count').innerText = cart.length;
+            closeDetail();
         }
 
         async function finalSubmit() {
             const { error } = await _s.from('orders').insert([{
                 customer_name: guest.name, phone: guest.phone,
-                order_content: cart, total_price: cart.reduce((s,i)=>s+i.price,0),
+                order_content: cart, total_price: cart.reduce((s, i) => s + i.price, 0),
                 note: document.getElementById('order-note').value,
-                campaign_code: campaignCode,
-                status: 'pending'
+                campaign_code: campaignCode, status: 'pending'
             }]);
-            if(!error) {
+            if (!error) {
                 document.getElementById('preview-modal').classList.add('hidden');
                 document.getElementById('step-2').classList.add('hidden');
                 document.getElementById('cart-bar').classList.add('hidden');
                 document.getElementById('step-3').classList.remove('hidden');
-                window.scrollTo(0,0);
+                window.scrollTo(0, 0);
             }
         }
 
@@ -320,9 +341,13 @@
         function closeDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
         function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); }
         function openPreview() {
-            if(!cart.length) return;
-            document.getElementById('preview-list').innerHTML = cart.map((i, idx) => `<div class="flex justify-between items-start bg-stone-50 p-3 rounded-xl border text-left leading-relaxed"><div class="text-[11px] font-bold text-p-green flex-1">${i.name}<br><span class="text-p-gold font-serif mt-1 block">$${i.price}</span></div><button onclick="cart.splice(${idx},1);openPreview();document.getElementById('cart-count').innerText=cart.length;if(!cart.length)closePreview();" class="text-red-200 p-2 text-lg">✕</button></div>`).join('');
-            document.getElementById('preview-total').innerText = `$${cart.reduce((s,i)=>s+i.price,0)}`;
+            if (!cart.length) return;
+            document.getElementById('preview-list').innerHTML = cart.map((i, idx) => `
+                <div class="flex justify-between items-start bg-stone-50 p-3 rounded-xl border text-left leading-relaxed">
+                    <div class="text-[11px] font-bold text-p-green flex-1">${i.name}<br><span class="text-p-gold font-serif mt-1 block">$${i.price}</span></div>
+                    <button onclick="cart.splice(${idx},1);openPreview();document.getElementById('cart-count').innerText=cart.length;if(!cart.length)closePreview();" class="text-red-200 p-2 text-lg">✕</button>
+                </div>`).join('');
+            document.getElementById('preview-total').innerText = `$${cart.reduce((s, i) => s + i.price, 0)}`;
             document.getElementById('preview-modal').classList.remove('hidden');
         }
     </script>
