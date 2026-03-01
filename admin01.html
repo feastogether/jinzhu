@@ -36,6 +36,45 @@
         .rpt-spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:rspin .6s linear infinite; vertical-align:middle; }
         @keyframes rspin { to { transform:rotate(360deg); } }
 
+        /* ── 登入畫面 ── */
+        #login-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #002e27 0%, #004d40 50%, #00695c 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #login-screen.hidden { display: none; }
+        .login-card {
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 2rem;
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
+        .login-input {
+            width: 100%; padding: 14px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; color: white;
+            font-size: 15px; outline: none;
+            transition: border 0.2s;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .login-input::placeholder { color: rgba(255,255,255,0.35); }
+        .login-input:focus { border-color: #b89150; }
+        .login-btn {
+            width: 100%; padding: 15px;
+            background: #b89150; color: white;
+            border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: opacity 0.2s;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .login-btn:hover { opacity: 0.9; }
+        .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
         /* ── 側欄摺疊 ── */
         #sidebar { width: 240px; transition: width 0.25s ease; overflow: hidden; }
         #sidebar.collapsed { width: 64px; }
@@ -63,6 +102,30 @@
     </style>
 </head>
 <body class="min-h-screen flex text-slate-700">
+
+
+    <!-- ===== 登入畫面 ===== -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="text-center mb-8">
+                <div class="font-serif font-black text-5xl text-amber-400 mb-2">珠</div>
+                <div class="font-serif font-bold text-xl text-white tracking-widest">真珠 Admin</div>
+                <div class="text-xs text-white/40 tracking-widest mt-1 uppercase">後台管理系統</div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-white/40 mb-2 uppercase tracking-widest">Email</label>
+                    <input type="email" id="login-email" class="login-input" placeholder="admin@example.com" onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-white/40 mb-2 uppercase tracking-widest">密碼</label>
+                    <input type="password" id="login-password" class="login-input" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+                </div>
+                <div id="login-error" class="hidden text-red-300 text-xs font-bold text-center py-2 bg-red-900/30 rounded-xl">帳號或密碼錯誤，請再試一次</div>
+                <button id="login-btn" class="login-btn mt-2" onclick="doLogin()">登入</button>
+            </div>
+        </div>
+    </div>
 
     <!-- ===== 側欄導航 ===== -->
     <aside id="sidebar" class="bg-emerald-950 text-white sticky top-0 h-screen shadow-2xl flex flex-col flex-shrink-0">
@@ -1339,5 +1402,39 @@ function exportFullData(){
         await _s.from('customer_photos').delete().eq('id',id);loadPhotos();
     }
     </script>
+
+    <!-- ===== 登入邏輯 ===== -->
+    <script>
+    async function checkLogin() {
+        const { data: { session } } = await _s.auth.getSession();
+        if (!session) {
+            document.getElementById("login-screen").classList.remove("hidden");
+        } else {
+            document.getElementById("login-screen").classList.add("hidden");
+        }
+    }
+
+    async function doLogin() {
+        const email    = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+        const btn      = document.getElementById("login-btn");
+        const errEl    = document.getElementById("login-error");
+        if (!email || !password) return;
+        btn.disabled = true;
+        btn.innerText = "登入中…";
+        errEl.classList.add("hidden");
+        const { error } = await _s.auth.signInWithPassword({ email, password });
+        if (error) {
+            errEl.classList.remove("hidden");
+            btn.disabled = false;
+            btn.innerText = "登入";
+        } else {
+            document.getElementById("login-screen").classList.add("hidden");
+        }
+    }
+
+    checkLogin();
+    </script>
+
 </body>
 </html>
