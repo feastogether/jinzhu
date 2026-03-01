@@ -108,9 +108,9 @@
     <div id="login-screen">
         <div class="login-card">
             <div class="text-center mb-8">
-                <div class="font-serif font-black text-5xl text-amber-400 mb-2">珠</div>
-                <div class="font-serif font-bold text-xl text-white tracking-widest">真珠 Admin</div>
-                <div class="text-xs text-white/40 tracking-widest mt-1 uppercase">後台管理系統</div>
+                <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" class="h-14 mx-auto mb-4" style="filter: brightness(0) invert(1);">
+                <div class="font-serif font-bold text-base text-white/60 tracking-widest">Admin</div>
+                <div class="text-xs text-white/30 tracking-widest mt-1 uppercase">後台管理系統</div>
             </div>
             <div class="space-y-4">
                 <div>
@@ -161,10 +161,10 @@
             <button id="btn-menu"       onclick="switchTab('menu')"       class="nav-btn nav-btn-tab"><span class="nav-emoji">🍱</span><span class="nav-label">菜單編輯</span></button>
             <button id="btn-flavors"    onclick="switchTab('flavors')"    class="nav-btn nav-btn-tab"><span class="nav-emoji">🌶️</span><span class="nav-label">口味定義</span></button>
             <button id="btn-settings"   onclick="switchTab('settings')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">⚙️</span><span class="nav-label">系統設定</span></button>
-            <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">🔗</span><span class="nav-label">活動網址配置</span></button>
-            <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📊</span><span class="nav-label">備料統計報表</span></button>
-            <button id="btn-photos"     onclick="switchTab('photos')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📸</span><span class="nav-label">紀念照管理</span></button>
-            <button id="btn-linenotify" onclick="switchTab('linenotify')" class="nav-btn nav-btn-tab"><span class="nav-emoji">💬</span><span class="nav-label">LINE 通知管理</span></button>
+            <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">🔗</span><span class="nav-label">網址配置</span></button>
+            <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📊</span><span class="nav-label">統計報表</span></button>
+            <button id="btn-photos"     onclick="switchTab('photos')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📸</span><span class="nav-label">照片管理</span></button>
+            <button id="btn-linenotify" onclick="switchTab('linenotify')" class="nav-btn nav-btn-tab"><span class="nav-emoji">💬</span><span class="nav-label">通知管理</span></button>
             <button id="btn-announce"   onclick="switchTab('announce')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">📢</span><span class="nav-label">公告管理</span></button>
             <div class="border-t border-emerald-800 my-2"></div>
             <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
@@ -512,6 +512,8 @@
                 💡 新增對象前，請先讓對方加 Bot 為好友並傳一則訊息，然後到 Edge Function Logs 取得他的 User ID（格式：U 開頭 + 32 字元）
             </div>
             <div id="line-targets-list" class="space-y-3"></div>
+
+        </section>
 
         <!-- 公告管理 -->
         <section id="sec-announce" class="hidden space-y-6">
@@ -1227,7 +1229,7 @@ async function bindEvent(){
 }
 
 async function unbindCampaign(code){if(confirm(`確定解除 ${code} 的所有分類綁定嗎？`)){await _s.from('categories').update({campaign_code:null}).eq('campaign_code',code);loadActiveEvents();}}
-function copyEventLink(code){const base='https://jinzhu.netlify.app/';const url=`${base}event.html?code=${encodeURIComponent(code)}`;const tmp=document.createElement('input');tmp.value=url;document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);alert('網址已複製！\n'+url);}
+function copyEventLink(code){const base='https://jinzhu.vercel.app/';const url=`${base}event.html?code=${encodeURIComponent(code)}`;const tmp=document.createElement('input');tmp.value=url;document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);alert('網址已複製！\n'+url);}
 
 // ── 備料統計報表 ──
 async function initReport(){
