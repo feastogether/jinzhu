@@ -17,12 +17,13 @@
         .navbar-custom { background-color: #ffffff; height: 60px; display: flex; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: fixed; top: 0; width: 100%; z-index: 1000; }
         .navbar-brand img { max-height: 40px; image-rendering: -webkit-optimize-contrast; object-fit: contain; }
         
-        /* 側邊漢堡選單 */
-        .side-menu { position: fixed; top: 0; right: -280px; width: 280px; height: 100%; background: var(--p-green); z-index: 2000; transition: 0.4s; padding: 80px 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.2); }
+        /* 側邊選單 */
+        .side-menu { position: fixed; top: 0; right: -320px; width: 320px; height: 100%; background: var(--p-green); z-index: 2000; transition: 0.4s; padding: 70px 0 0; box-shadow: -5px 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
         .side-menu.active { right: 0; }
         .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; display: none; }
         .menu-overlay.active { display: block; }
-        .menu-link { color: white; font-size: 1.2rem; font-weight: bold; text-decoration: none; display: block; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .menu-link { color: white; font-size: 1.1rem; font-weight: bold; text-decoration: none; display: block; padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); transition: background 0.2s; }
+        .menu-link:hover { background: rgba(255,255,255,0.07); }
 
         .kv-section { height: 100vh; transition: all 0.7s ease; overflow: hidden; position: relative; }
         .kv-hidden { height: 0px !important; }
@@ -32,12 +33,10 @@
         .cat-btn { border: 1px solid var(--p-green); color: var(--p-green); padding: 6px 18px; border-radius: 999px; white-space: nowrap; font-weight: bold; font-size: 0.9rem; }
         .cat-active { background-color: var(--p-green) !important; color: #fff !important; }
         
-        /* 選項樣式 */
         .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; font-weight: bold; }
         .opt-selected { border: 2.5px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
         .sticky-nav { position: sticky; top: 60px; z-index: 40; background: rgba(249, 245, 240, 0.95); padding: 12px 8px; backdrop-filter: blur(8px); }
         
-        /* 彈窗：全內容滾動優化 */
         .btn-close-custom { 
             position: absolute; top: 12px; right: 12px; 
             background: rgba(0,0,0,0.4); color: white; 
@@ -47,32 +46,116 @@
         }
         
         #detail-modal .modal-content-wrap { 
-            background: white;
-            width: 100%;
-            max-width: 500px;
-            max-height: 85vh; /* 彈窗高度最高佔 85% */
-            border-radius: 1.5rem 1.5rem 0 0;
-            display: flex;
-            flex-direction: column;
-            position: relative;
+            background: white; width: 100%; max-width: 500px;
+            max-height: 85vh; border-radius: 1.5rem 1.5rem 0 0;
+            display: flex; flex-direction: column; position: relative;
         }
-
-        .scroll-area { 
-            overflow-y: auto; 
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .img-wrap {
-            width: 100%;
-            background: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px;
-        }
+        .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .img-wrap { width: 100%; background: white; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .img-wrap img { width: 100%; max-height: 250px; object-fit: contain; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        /* ── 照片搜尋區塊 ── */
+        .photo-search-section {
+            flex: 1;
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            overflow-y: auto;
+        }
+        .photo-search-section h4 {
+            color: rgba(255,255,255,0.5);
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-bottom: 14px;
+        }
+        .photo-search-input {
+            width: 100%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 999px;
+            padding: 10px 18px;
+            color: white;
+            font-size: 13px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        .photo-search-input::placeholder { color: rgba(255,255,255,0.4); }
+        .photo-search-input:focus { border-color: var(--p-gold); }
+        .photo-search-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: var(--p-gold);
+            color: white;
+            border: none;
+            border-radius: 999px;
+            padding: 11px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .photo-search-btn:active { opacity: 0.8; }
+
+        /* 搜尋結果卡片 */
+        #photo-result-card {
+            display: none;
+            margin-top: 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        #photo-result-card img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            display: block;
+        }
+        #photo-result-card .result-info {
+            padding: 12px 14px;
+        }
+        #photo-result-card .result-name {
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        #photo-result-card .result-note {
+            color: var(--p-gold);
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        #photo-result-card .download-btn {
+            display: block;
+            margin: 10px 14px 12px;
+            background: var(--p-green);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            text-align: center;
+            border-radius: 999px;
+            padding: 10px;
+            font-weight: bold;
+            font-size: 12px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        #photo-result-card .download-btn:hover { background: rgba(255,255,255,0.15); }
+        #photo-no-result {
+            display: none;
+            color: rgba(255,255,255,0.35);
+            font-size: 12px;
+            text-align: center;
+            margin-top: 16px;
+            font-weight: bold;
+        }
+        #photo-searching {
+            display: none;
+            color: rgba(255,255,255,0.5);
+            font-size: 11px;
+            text-align: center;
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body class="pb-24 text-slate-800">
@@ -86,11 +169,53 @@
     </header>
 
     <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
+
+    <!-- ===== 右側隱藏選單 ===== -->
     <nav id="side-menu" class="side-menu text-left">
-        <button onclick="toggleMenu()" class="absolute top-5 right-5 text-white text-2xl">✕</button>
-        <a href="index.html" class="menu-link font-serif">首頁 Home</a>
-        <a href="query.html" class="menu-link font-serif">訂單查詢 Tracking</a>
-        <div class="mt-10 text-white/40 text-[10px] uppercase tracking-widest font-bold text-center">Jin Zhu Taichung</div>
+        <button onclick="toggleMenu()" class="absolute top-4 right-4 text-white/50 hover:text-white text-2xl transition">✕</button>
+
+        <!-- 一般選單連結 -->
+        <div>
+            <a href="index.html" class="menu-link font-serif">首頁 Home</a>
+            <a href="query.html" class="menu-link font-serif">訂單查詢 Tracking</a>
+            <a href="photo-search.html" class="menu-link font-serif">紀念照下載 Photos</a>
+        </div>
+
+        <!-- ── 紀念照搜尋 ── -->
+        <div class="photo-search-section">
+            <h4>📷 珍藏回憶 · 下載紀念照</h4>
+            <p style="color:rgba(255,255,255,0.45); font-size:11px; margin-bottom:14px; line-height:1.6;">
+                輸入您的姓名或預訂電話，<br>即可找到並下載專屬紀念照。
+            </p>
+            <input
+                id="photo-keyword"
+                type="text"
+                class="photo-search-input"
+                placeholder="輸入姓名 或 電話號碼"
+                onkeydown="if(event.key==='Enter') doPhotoSearch()">
+            <button class="photo-search-btn" onclick="doPhotoSearch()">立即搜尋回憶 ✦</button>
+
+            <!-- 搜尋中提示 -->
+            <div id="photo-searching">搜尋中⋯</div>
+
+            <!-- 搜尋無結果 -->
+            <div id="photo-no-result">找不到相關的紀念照<br>請確認輸入的姓名或電話</div>
+
+            <!-- 搜尋結果卡片 -->
+            <div id="photo-result-card">
+                <img id="photo-result-img" src="" alt="紀念照">
+                <div class="result-info">
+                    <div class="result-name" id="photo-result-name"></div>
+                    <div class="result-note" id="photo-result-note"></div>
+                </div>
+                <a id="photo-download-btn" href="" download="紀念照.jpg" class="download-btn">⬇ 點此下載照片</a>
+            </div>
+        </div>
+
+        <!-- 底部版權 -->
+        <div style="padding: 16px 24px; color: rgba(255,255,255,0.2); font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; text-align: center; border-top: 1px solid rgba(255,255,255,0.06);">
+            Jin Zhu Taichung
+        </div>
     </nav>
 
     <div id="kv-area" class="kv-section bg-stone-900">
@@ -133,24 +258,20 @@
         </section>
     </main>
 
+    <!-- 餐點詳情彈窗 -->
     <div id="detail-modal" class="fixed inset-0 bg-black/80 z-[110] hidden flex items-end justify-center backdrop-blur-sm">
         <div class="modal-content-wrap animate__animated animate__slideInUp animate__faster">
             <button onclick="closeDetail()" class="btn-close-custom">✕</button>
-            
             <div class="scroll-area flex-1 no-scrollbar">
-                <div class="img-wrap">
-                    <img id="detail-img" src="">
-                </div>
-                
+                <div class="img-wrap"><img id="detail-img" src=""></div>
                 <div class="p-6 pt-2">
                     <h3 id="detail-title" class="text-2xl font-bold text-p-green mb-1 font-serif text-left"></h3>
                     <p id="detail-desc" class="text-stone-400 text-xs mb-6 text-left"></p>
-                    
                     <div id="flavor-container" class="space-y-6"></div>
                     <div id="set-group-container" class="space-y-8 border-t mt-6 pt-6"></div>
-                    <div class="h-10"></div> </div>
+                    <div class="h-10"></div>
+                </div>
             </div>
-            
             <div class="p-3 bg-stone-50 border-t">
                 <div class="flex items-center gap-2">
                     <div class="flex items-center gap-3 bg-white border rounded-xl p-1 px-3 shadow-sm h-10">
@@ -165,6 +286,7 @@
         </div>
     </div>
 
+    <!-- 預覽彈窗 -->
     <div id="preview-modal" class="fixed inset-0 bg-black/80 z-[120] hidden flex items-center justify-center p-4 backdrop-blur-sm text-left">
         <div class="bg-white w-full max-w-md rounded-[2rem] overflow-hidden flex flex-col max-h-[85vh]">
             <div class="p-4 bg-stone-50 border-b font-bold text-center font-serif text-p-green">預點餐明細</div>
@@ -180,12 +302,13 @@
                 </div>
                 <div class="flex gap-2">
                     <button onclick="closePreview()" class="w-20 py-4 border rounded-2xl text-stone-400 font-bold">返回</button>
-                    <button finalSubmit onclick="finalSubmit()" class="flex-1 bg-[#004d40] text-white py-4 rounded-2xl font-bold shadow-lg">確認送出預定</button>
+                    <button onclick="finalSubmit()" class="flex-1 bg-[#004d40] text-white py-4 rounded-2xl font-bold shadow-lg">確認送出預定</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- 購物車底部按鈕 -->
     <div id="cart-bar" class="fixed bottom-6 left-4 right-4 max-w-xl mx-auto z-50 hidden animate__animated animate__fadeInUp">
         <button onclick="openPreview()" class="w-full bg-[#004d40] p-1.5 pl-6 pr-1.5 rounded-full flex justify-between items-center shadow-2xl active:scale-95 transition">
             <span class="text-white font-bold tracking-widest text-sm font-serif">查看預點明細</span>
@@ -200,22 +323,31 @@
 
         let menuData = [], cart = [], guest = {}, tempItem = null, currentQty = 1;
 
+        // ── 初始化 ──
         async function init() {
             const isMob = window.innerWidth <= 768;
             const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
             if (data?.logo_url) document.getElementById('main-logo').src = `${data.logo_url}?t=${Date.now()}`;
-            document.getElementById('kv-bg').src = isMob ? "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg" : "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_PC-KV.jpeg";
+            document.getElementById('kv-bg').src = isMob
+                ? "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg"
+                : "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_PC-KV.jpeg";
         }
         init();
 
+        // ── 漢堡選單 ──
         function toggleMenu() {
             document.getElementById('side-menu').classList.toggle('active');
             document.getElementById('menu-overlay').classList.toggle('active');
+            // 每次打開時重置搜尋狀態
+            if (document.getElementById('side-menu').classList.contains('active')) {
+                resetPhotoSearch();
+            }
         }
 
+        // ── 進入選單 ──
         async function startOrder() {
             guest = { name: document.getElementById('custName').value, phone: document.getElementById('custPhone').value };
-            if(!guest.name || !guest.phone) return alert("請填寫姓名與電話");
+            if (!guest.name || !guest.phone) return alert("請填寫姓名與電話");
             document.getElementById('kv-area').classList.add('kv-hidden');
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.remove('hidden');
@@ -227,8 +359,8 @@
             const { data: cats } = await _s.from('categories').select('*').eq('is_visible', true).order('sort_order');
             const { data: items } = await _s.from('menu_items').select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))').eq('is_hidden', false);
             menuData = items;
-            document.getElementById('cat-nav').innerHTML = (cats||[]).map(c => `<button class="cat-btn" onclick="renderItems('${c.id}', this)">${c.name}</button>`).join('');
-            if(cats.length) renderItems(cats[0].id, document.querySelector('.cat-btn'));
+            document.getElementById('cat-nav').innerHTML = (cats || []).map(c => `<button class="cat-btn" onclick="renderItems('${c.id}', this)">${c.name}</button>`).join('');
+            if (cats.length) renderItems(cats[0].id, document.querySelector('.cat-btn'));
         }
 
         function renderItems(cid, el) {
@@ -245,28 +377,26 @@
         }
 
         function openDetail(id) {
-            tempItem = menuData.find(i => i.id === id); if(!tempItem) return;
+            tempItem = menuData.find(i => i.id === id); if (!tempItem) return;
             currentQty = 1; document.getElementById('item-qty').innerText = 1;
             document.getElementById('detail-img').src = tempItem.image_url || '';
             document.getElementById('detail-title').innerText = tempItem.name;
             document.getElementById('detail-desc').innerText = tempItem.description || "真心款待，誠摯滋味。";
             document.getElementById('flavor-container').innerHTML = '';
             document.getElementById('set-group-container').innerHTML = '';
-
-            if(tempItem.item_flavor_relation?.length > 0) renderFlavorUI(tempItem.item_flavor_relation, 'flavor-container', 'main-item');
-            if(tempItem.is_set_menu && tempItem.set_menu_groups) {
+            if (tempItem.item_flavor_relation?.length > 0) renderFlavorUI(tempItem.item_flavor_relation, 'flavor-container', 'main-item');
+            if (tempItem.is_set_menu && tempItem.set_menu_groups) {
                 document.getElementById('set-group-container').innerHTML = tempItem.set_menu_groups.map(g => `
                     <div class="group-block text-left" data-name="${g.group_name}" data-limit="${g.selection_limit}">
-                        <div class="flex justify-between items-center mb-3 text-left"><p class="font-bold text-p-green font-serif border-l-2 border-p-gold pl-2 uppercase text-[12px]">${g.group_name}</p><span class="text-[9px] text-stone-300 font-bold">必選 ${g.selection_limit}</span></div>
-                        <div class="grid grid-cols-2 gap-2 text-left">${g.set_menu_contents.map((c, idx) => `
+                        <div class="flex justify-between items-center mb-3"><p class="font-bold text-p-green font-serif border-l-2 border-p-gold pl-2 uppercase text-[12px]">${g.group_name}</p><span class="text-[9px] text-stone-300 font-bold">必選 ${g.selection_limit}</span></div>
+                        <div class="grid grid-cols-2 gap-2">${g.set_menu_contents.map((c, idx) => `
                             <div class="set-item-card border rounded-xl overflow-hidden" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}" data-selected-flv="">
-                                <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="p-3 bg-stone-50 flex justify-between items-center cursor-pointer text-xs font-bold"><span>${c.menu_items.name}</span>${c.menu_items.item_flavor_relation?.length>0?'<span class="text-[8px] text-p-gold">●</span>':''}</div>
+                                <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="p-3 bg-stone-50 flex justify-between items-center cursor-pointer text-xs font-bold"><span>${c.menu_items.name}</span>${c.menu_items.item_flavor_relation?.length > 0 ? '<span class="text-[8px] text-p-gold">●</span>' : ''}</div>
                                 <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="bg-stone-100 p-2 hidden border-t"></div>
                             </div>`).join('')}</div>
                     </div>`).join('');
             }
             document.getElementById('detail-modal').classList.remove('hidden');
-            // 開啟時重置滾動位置
             document.querySelector('.scroll-area').scrollTop = 0;
             document.getElementById('add-btn').onclick = confirmAdd;
         }
@@ -290,8 +420,10 @@
         }
 
         function handleSubClick(uid) {
-            const card = document.getElementById(uid); const block = card.closest('.group-block'); const limit = parseInt(block.dataset.limit);
-            if (limit === 1) { 
+            const card = document.getElementById(uid);
+            const block = card.closest('.group-block');
+            const limit = parseInt(block.dataset.limit);
+            if (limit === 1) {
                 Array.from(block.querySelectorAll('.set-item-card')).forEach(c => { c.classList.remove('opt-selected'); c.querySelector('div[id^="flv-"]').classList.add('hidden'); });
                 card.classList.add('opt-selected');
             } else {
@@ -300,7 +432,8 @@
                 card.classList.add('opt-selected');
             }
             if (card.dataset.hasFlv === "true") {
-                const area = document.getElementById(`flv-${uid}`); const sub = menuData.find(m => m.id === card.dataset.id);
+                const area = document.getElementById(`flv-${uid}`);
+                const sub  = menuData.find(m => m.id === card.dataset.id);
                 area.innerHTML = ''; renderFlavorUI(sub.item_flavor_relation, area.id, uid); area.classList.remove('hidden');
             }
         }
@@ -323,24 +456,86 @@
                     }
                 }
             }
-            const name = `${tempItem.name}${currentQty>1?' x'+currentQty:''}${mn}${sn.length?' ('+sn.join('、')+')':''}`;
+            const name = `${tempItem.name}${currentQty > 1 ? ' x' + currentQty : ''}${mn}${sn.length ? ' (' + sn.join('、') + ')' : ''}`;
             cart.push({ name, price: tempItem.price * currentQty });
-            document.getElementById('cart-count').innerText = cart.length; closeDetail();
+            document.getElementById('cart-count').innerText = cart.length;
+            closeDetail();
         }
 
         function changeQty(v) { currentQty = Math.max(1, currentQty + v); document.getElementById('item-qty').innerText = currentQty; }
         function closeDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
         function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); }
+
         function openPreview() {
-            if(!cart.length) return;
-            document.getElementById('preview-list').innerHTML = cart.map((i, idx) => `<div class="flex justify-between items-start bg-stone-50 p-3 rounded-xl border text-left leading-relaxed"><div class="text-[11px] font-bold text-p-green flex-1">${i.name}<br><span class="text-p-gold font-serif mt-1 block">$${i.price}</span></div><button onclick="cart.splice(${idx},1);openPreview();document.getElementById('cart-count').innerText=cart.length;if(!cart.length)closePreview();" class="text-red-200 p-2 text-lg">✕</button></div>`).join('');
-            document.getElementById('preview-total').innerText = `$${cart.reduce((s,i)=>s+i.price,0)}`;
+            if (!cart.length) return;
+            document.getElementById('preview-list').innerHTML = cart.map((i, idx) =>
+                `<div class="flex justify-between items-start bg-stone-50 p-3 rounded-xl border text-left leading-relaxed">
+                    <div class="text-[11px] font-bold text-p-green flex-1">${i.name}<br><span class="text-p-gold font-serif mt-1 block">$${i.price}</span></div>
+                    <button onclick="cart.splice(${idx},1);openPreview();document.getElementById('cart-count').innerText=cart.length;if(!cart.length)closePreview();" class="text-red-200 p-2 text-lg">✕</button>
+                </div>`
+            ).join('');
+            document.getElementById('preview-total').innerText = `$${cart.reduce((s, i) => s + i.price, 0)}`;
             document.getElementById('preview-modal').classList.remove('hidden');
         }
 
         async function finalSubmit() {
-            const { error } = await _s.from('orders').insert([{ customer_name: guest.name, phone: guest.phone, order_content: cart, total_price: cart.reduce((s,i)=>s+i.price,0), note: document.getElementById('order-note').value }]);
-            if(!error) { document.getElementById('preview-modal').classList.add('hidden'); document.getElementById('step-2').classList.add('hidden'); document.getElementById('cart-bar').classList.add('hidden'); document.getElementById('step-3').classList.remove('hidden'); window.scrollTo(0,0); }
+            const { error } = await _s.from('orders').insert([{
+                customer_name: guest.name, phone: guest.phone,
+                order_content: cart,
+                total_price: cart.reduce((s, i) => s + i.price, 0),
+                note: document.getElementById('order-note').value
+            }]);
+            if (!error) {
+                document.getElementById('preview-modal').classList.add('hidden');
+                document.getElementById('step-2').classList.add('hidden');
+                document.getElementById('cart-bar').classList.add('hidden');
+                document.getElementById('step-3').classList.remove('hidden');
+                window.scrollTo(0, 0);
+            }
+        }
+
+        // ============================================================
+        //  📷 紀念照搜尋
+        // ============================================================
+        function resetPhotoSearch() {
+            document.getElementById('photo-keyword').value      = '';
+            document.getElementById('photo-result-card').style.display  = 'none';
+            document.getElementById('photo-no-result').style.display    = 'none';
+            document.getElementById('photo-searching').style.display    = 'none';
+        }
+
+        async function doPhotoSearch() {
+            const keyword = document.getElementById('photo-keyword').value.trim();
+            if (!keyword) {
+                document.getElementById('photo-keyword').focus();
+                return;
+            }
+
+            // 顯示搜尋中
+            document.getElementById('photo-searching').style.display    = 'block';
+            document.getElementById('photo-result-card').style.display  = 'none';
+            document.getElementById('photo-no-result').style.display    = 'none';
+
+            const { data, error } = await _s
+                .from('customer_photos')
+                .select('*')
+                .or(`customer_name.ilike.%${keyword}%,phone.ilike.%${keyword}%,note.ilike.%${keyword}%`)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            document.getElementById('photo-searching').style.display = 'none';
+
+            if (error || !data || data.length === 0) {
+                document.getElementById('photo-no-result').style.display = 'block';
+                return;
+            }
+
+            const photo = data[0];
+            document.getElementById('photo-result-img').src        = photo.photo_url;
+            document.getElementById('photo-result-name').innerText = photo.customer_name || '您的紀念照';
+            document.getElementById('photo-result-note').innerText = photo.note ? `✦ ${photo.note}` : (photo.created_at ? new Date(photo.created_at).toLocaleDateString('zh-TW') : '');
+            document.getElementById('photo-download-btn').href     = photo.photo_url;
+            document.getElementById('photo-result-card').style.display = 'block';
         }
     </script>
 </body>
