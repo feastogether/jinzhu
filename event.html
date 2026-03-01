@@ -13,30 +13,42 @@
         :root { --p-green: #004d40; --p-gold: #b89150; --p-cream: #f9f5f0; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--p-cream); -webkit-tap-highlight-color: transparent; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
+        
+        /* Navbar */
         .navbar-custom { background-color: #ffffff; height: 60px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: fixed; top: 0; width: 100%; z-index: 1000; }
         .navbar-brand img { max-height: 35px; object-fit: contain; }
+        
+        /* KV Section (如同 Index) */
         .kv-section { height: 100vh; transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; position: relative; z-index: 10; }
         .kv-hidden { height: 0px !important; }
         .main-title { font-size: 2.2rem; letter-spacing: 0.15em; text-shadow: 0 2px 15px rgba(0,0,0,0.5); font-weight: 700; color: #fff; }
+        
+        /* 內容區疊加 (如同 Index) */
         .main-container { position: relative; z-index: 20; margin-top: -160px; padding: 0 1rem; }
         .order-card { background: #fff; border-radius: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.15); border: 1px solid white; }
+        
+        /* 選單樣式 */
         .cat-btn { border: 1px solid var(--p-green); color: var(--p-green); padding: 6px 18px; border-radius: 999px; white-space: nowrap; font-weight: bold; font-size: 0.9rem; }
         .cat-active { background-color: var(--p-green) !important; color: #fff !important; }
         .sticky-nav { position: sticky; top: 60px; z-index: 40; background: rgba(249, 245, 240, 0.95); padding: 12px 8px; backdrop-filter: blur(8px); }
         .img-contain { width: 100%; height: 100%; object-fit: contain; }
+
+        /* 詳情彈窗 */
         .btn-close-custom { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2200; font-size: 16px; border: none; backdrop-filter: blur(4px); }
         .modal-content-wrap { background: white; width: 100%; max-width: 500px; max-height: 85vh; border-radius: 1.5rem 1.5rem 0 0; display: flex; flex-direction: column; position: relative; }
         .scroll-area { overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .img-wrap { width: 100%; background: white; display: flex; align-items: center; justify-content: center; padding: 10px; }
         .img-wrap img { width: 100%; max-height: 250px; object-fit: contain; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* 修正輸入框文字對齊 */
         input::placeholder { color: #ccc; }
     </style>
 </head>
 <body class="pb-24 text-slate-800 text-left">
 
     <header class="navbar-custom">
-        <img id="main-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" style="max-height:35px">
+        <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" style="max-height:35px">
     </header>
 
     <div id="kv-area" class="kv-section bg-stone-900">
@@ -156,21 +168,24 @@
             document.getElementById('act-title-menu').innerText = `${campaignCode} 限定選單`;
             document.getElementById('event-code-display').innerText = "Campaign Code: " + campaignCode;
             
-            // ✅ 修正：加上 null 檢查，避免找不到 main-logo 時報錯
             const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
-            const logoEl = document.getElementById('main-logo');
-            if (data?.logo_url && logoEl) logoEl.src = data.logo_url;
+            if (data?.logo_url) document.getElementById('main-logo').src = data.logo_url;
         }
         init();
 
         async function startOrder() {
             guest = { name: document.getElementById('custName').value, phone: document.getElementById('custPhone').value };
             if(!guest.name || !guest.phone) return alert("請完整填寫姓名與電話");
+            
+            // 與 Index 一致：隱藏 KV 與 Step 1
             document.getElementById('kv-area').classList.add('kv-hidden');
             document.getElementById('step-1').classList.add('hidden');
             document.getElementById('step-2').classList.remove('hidden');
             document.getElementById('cart-bar').classList.remove('hidden');
+            
+            // 重置內容區域邊距
             document.querySelector('.main-container').style.marginTop = "80px";
+            
             loadEventContent();
         }
 
