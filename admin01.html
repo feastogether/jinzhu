@@ -978,8 +978,46 @@ let curItem=null,curPicks=[],pickerSelectedItems=[],currentEditingGroupId=null;
 async function loadMenu(){
     const search=document.getElementById('menu-search').value.toLowerCase();
     const catF=document.getElementById('menu-cat-filter').value;
-    const{data}=await _s.from('menu_items').select('*, categories(name)').order('created_at',{ascending:false});
-    document.getElementById('menu-grid').innerHTML=(data||[]).filter(i=>i.name.toLowerCase().includes(search)&&(catF==='all'||i.category_id===catF)).map(i=>`<div class="bg-white rounded-3xl border p-4 shadow-sm flex flex-col h-full"><div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden"><img src="${i.image_url||''}" class="max-h-full img-contain"></div><div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="flex gap-2 mt-auto pt-4"><button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-xs font-bold hover:bg-stone-200 shadow-sm">編輯</button>${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold shadow-sm">⚙️ 套餐</button>`:''}<button onclick="delItem('${i.id}')" class="px-2 text-red-200">✕</button></div></div>`).join('');
+    const{data}=await _s.from('menu_items').select('*, categories(name)').order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+    const filtered=(data||[]).filter(i=>i.name.toLowerCase().includes(search)&&(catF==='all'||i.category_id===catF));
+    const grid=document.getElementById('menu-grid');
+    grid.innerHTML=filtered.map(i=>`
+        <div class="bg-white rounded-3xl border p-4 shadow-sm flex flex-col h-full select-none"
+             draggable="true" data-id="${i.id}"
+             ondragstart="menuDragStart(event)"
+             ondragover="menuDragOver(event)"
+             ondrop="menuDrop(event)"
+             ondragend="menuDragEnd(event)">
+            <div class="text-center text-stone-300 text-xs mb-1 cursor-grab">⠿ 拖曳排序</div>
+            <div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden">
+                <img src="${i.image_url||''}" class="max-h-full img-contain">
+            </div>
+            <div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div>
+            <div class="flex gap-2 mt-auto pt-4">
+                <button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-xs font-bold hover:bg-stone-200 shadow-sm">編輯</button>
+                ${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold shadow-sm">⚙️ 套餐</button>`:''}
+                <button onclick="delItem('${i.id}')" class="px-2 text-red-200">✕</button>
+            </div>
+        </div>`).join('');
+}
+
+let menuDragSrcId=null;
+function menuDragStart(e){menuDragSrcId=e.currentTarget.dataset.id;e.currentTarget.style.opacity='0.4';}
+function menuDragEnd(e){e.currentTarget.style.opacity='1';document.querySelectorAll('#menu-grid [draggable]').forEach(el=>el.classList.remove('ring-2','ring-amber-400'));}
+function menuDragOver(e){e.preventDefault();e.currentTarget.classList.add('ring-2','ring-amber-400');}
+async function menuDrop(e){
+    e.preventDefault();
+    const targetId=e.currentTarget.dataset.id;
+    e.currentTarget.classList.remove('ring-2','ring-amber-400');
+    if(!menuDragSrcId||menuDragSrcId===targetId)return;
+    const grid=document.getElementById('menu-grid');
+    const cards=Array.from(grid.children);
+    const srcIdx=cards.findIndex(c=>c.dataset.id===menuDragSrcId);
+    const tgtIdx=cards.findIndex(c=>c.dataset.id===targetId);
+    if(srcIdx<tgtIdx)grid.insertBefore(cards[srcIdx],cards[tgtIdx].nextSibling);
+    else grid.insertBefore(cards[srcIdx],cards[tgtIdx]);
+    const newOrder=Array.from(grid.children).map((c,i)=>({id:c.dataset.id,sort_order:i}));
+    for(const o of newOrder){await _s.from('menu_items').update({sort_order:o.sort_order}).eq('id',o.id);}
 }
 
 async function openMenuModal(isEdit){
@@ -1023,9 +1061,49 @@ function togglePickerSelect(id,name){const el=document.getElementById(`picker-${
 function updatePickerStats(){document.getElementById('picker-count').innerText=`已選 ${pickerSelectedItems.length} 項`;}
 
 function addSelectedToPicks(){pickerSelectedItems.forEach(s=>{if(!curPicks.some(p=>p.id===s.id))curPicks.push(s);});pickerSelectedItems=[];renderTempPicks();document.querySelectorAll('.picker-item').forEach(el=>el.classList.remove('active'));updatePickerStats();}
-function renderTempPicks(){document.getElementById('temp-pick-display').innerHTML=curPicks.map((p,idx)=>`<div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2">${p.name}<span onclick="curPicks.splice(${idx},1);renderTempPicks();" class="cursor-pointer opacity-40 font-bold">✕</span></div>`).join('');}
+function renderTempPicks(){
+    const container=document.getElementById('temp-pick-display');
+    container.innerHTML=curPicks.map((p,idx)=>`
+        <div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-1 cursor-grab select-none"
+             draggable="true" data-pick-idx="${idx}"
+             ondragstart="pickDragStart(event)"
+             ondragover="pickDragOver(event)"
+             ondrop="pickDrop(event)"
+             ondragend="pickDragEnd(event)">
+            <span class="opacity-40">⠿</span>
+            ${p.name}
+            <span onclick="event.stopPropagation();curPicks.splice(${idx},1);renderTempPicks();" class="cursor-pointer opacity-40 font-bold ml-1">✕</span>
+        </div>`).join('');
+}
 
-async function editSetGroup(groupId){currentEditingGroupId=groupId;const{data:g}=await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('id',groupId).single();if(g){document.getElementById('g-name').value=g.group_name;document.getElementById('g-limit').value=g.selection_limit;document.getElementById('set-modal-title').innerText='編輯分組';document.getElementById('btn-save-group').innerText='儲存更新';document.getElementById('btn-cancel-edit').classList.remove('hidden');curPicks=g.set_menu_contents.map(c=>({id:c.menu_items.id,name:c.menu_items.name}));renderTempPicks();}}
+let pickDragSrcIdx=null;
+function pickDragStart(e){pickDragSrcIdx=parseInt(e.currentTarget.dataset.pickIdx);e.currentTarget.style.opacity='0.4';}
+function pickDragEnd(e){e.currentTarget.style.opacity='1';}
+function pickDragOver(e){e.preventDefault();}
+function pickDrop(e){
+    e.preventDefault();
+    const targetIdx=parseInt(e.currentTarget.dataset.pickIdx);
+    if(pickDragSrcIdx===null||pickDragSrcIdx===targetIdx)return;
+    const moved=curPicks.splice(pickDragSrcIdx,1)[0];
+    curPicks.splice(targetIdx,0,moved);
+    renderTempPicks();
+}
+
+async function editSetGroup(groupId){
+    currentEditingGroupId=groupId;
+    const{data:g}=await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('id',groupId).single();
+    if(g){
+        document.getElementById('g-name').value=g.group_name;
+        document.getElementById('g-limit').value=g.selection_limit;
+        document.getElementById('set-modal-title').innerText='編輯分組';
+        document.getElementById('btn-save-group').innerText='儲存更新';
+        document.getElementById('btn-cancel-edit').classList.remove('hidden');
+        // sort by sort_order then load picks
+        const sorted=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+        curPicks=sorted.map(c=>({id:c.menu_items.id,name:c.menu_items.name,contentId:c.id}));
+        renderTempPicks();
+    }
+}
 function resetSetForm(){currentEditingGroupId=null;document.getElementById('g-name').value='';document.getElementById('g-limit').value=1;document.getElementById('temp-pick-display').innerHTML='';document.getElementById('set-modal-title').innerText='套餐分組設定';document.getElementById('btn-save-group').innerText='確認儲存並建立分組';document.getElementById('btn-cancel-edit').classList.add('hidden');curPicks=[];pickerSelectedItems=[];updatePickerStats();}
 
 async function saveFullSet(){
@@ -1034,12 +1112,50 @@ async function saveFullSet(){
     let gid=currentEditingGroupId;
     if(gid){await _s.from('set_menu_groups').update({group_name:n,selection_limit:l}).eq('id',gid);await _s.from('set_menu_contents').delete().eq('group_id',gid);}
     else{const{data:g}=await _s.from('set_menu_groups').insert([{parent_set_id:curItem,group_name:n,selection_limit:l}]).select();if(g)gid=g[0].id;}
-    if(gid){await _s.from('set_menu_contents').insert(curPicks.map(p=>({group_id:gid,item_id:p.id})));resetSetForm();loadSavedSets();}
+    if(gid){await _s.from('set_menu_contents').insert(curPicks.map((p,i)=>({group_id:gid,item_id:p.id,sort_order:i})));resetSetForm();loadSavedSets();}
 }
 
 async function loadSavedSets(){
-    const{data}=await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('parent_set_id',curItem);
-    document.getElementById('saved-groups-view').innerHTML=(data||[]).map(g=>`<div class="p-3 bg-stone-50 border rounded-xl flex justify-between items-center shadow-inner"><div class="flex-1 text-left text-xs"><b class="text-p-green">${g.group_name} (限 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 line-clamp-1">${g.set_menu_contents.map(c=>c.menu_items?.name).join('、')}</p></div><div class="flex gap-2"><button onclick="editSetGroup('${g.id}')" class="text-p-gold border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">編輯</button><button onclick="delSetGroup('${g.id}')" class="text-red-400 border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">刪除</button></div></div>`).join('');
+    const{data}=await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('parent_set_id',curItem).order('sort_order',{ascending:true});
+    const container=document.getElementById('saved-groups-view');
+    container.innerHTML=(data||[]).map(g=>`
+        <div class="p-3 bg-stone-50 border rounded-xl shadow-inner cursor-grab select-none"
+             draggable="true" data-gid="${g.id}"
+             ondragstart="grpDragStart(event)"
+             ondragover="grpDragOver(event)"
+             ondrop="grpDrop(event)"
+             ondragend="grpDragEnd(event)">
+            <div class="flex justify-between items-center">
+                <div class="flex-1 text-left text-xs">
+                    <span class="text-stone-300 mr-2 text-[10px]">⠿</span>
+                    <b class="text-p-green">${g.group_name} (限 ${g.selection_limit})</b>
+                    <p class="text-[10px] text-gray-400 line-clamp-1 mt-0.5">${g.set_menu_contents.map(c=>c.menu_items?.name).join('、')}</p>
+                </div>
+                <div class="flex gap-2 ml-2">
+                    <button onclick="event.stopPropagation();editSetGroup('${g.id}')" class="text-p-gold border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">編輯</button>
+                    <button onclick="event.stopPropagation();delSetGroup('${g.id}')" class="text-red-400 border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">刪除</button>
+                </div>
+            </div>
+        </div>`).join('');
+}
+
+let grpDragSrcId=null;
+function grpDragStart(e){grpDragSrcId=e.currentTarget.dataset.gid;e.currentTarget.style.opacity='0.4';}
+function grpDragEnd(e){e.currentTarget.style.opacity='1';document.querySelectorAll('#saved-groups-view [draggable]').forEach(el=>el.classList.remove('ring-2','ring-amber-400'));}
+function grpDragOver(e){e.preventDefault();e.currentTarget.classList.add('ring-2','ring-amber-400');}
+async function grpDrop(e){
+    e.preventDefault();
+    const targetId=e.currentTarget.dataset.gid;
+    e.currentTarget.classList.remove('ring-2','ring-amber-400');
+    if(!grpDragSrcId||grpDragSrcId===targetId)return;
+    const container=document.getElementById('saved-groups-view');
+    const cards=Array.from(container.children);
+    const srcIdx=cards.findIndex(c=>c.dataset.gid===grpDragSrcId);
+    const tgtIdx=cards.findIndex(c=>c.dataset.gid===targetId);
+    if(srcIdx<tgtIdx)container.insertBefore(cards[srcIdx],cards[tgtIdx].nextSibling);
+    else container.insertBefore(cards[srcIdx],cards[tgtIdx]);
+    const newOrder=Array.from(container.children).map((c,i)=>({id:c.dataset.gid,sort_order:i}));
+    for(const o of newOrder){await _s.from('set_menu_groups').update({sort_order:o.sort_order}).eq('id',o.id);}
 }
 
 async function delSetGroup(id){if(confirm('刪除？')){await _s.from('set_menu_groups').delete().eq('id',id);loadSavedSets();}}
@@ -1073,7 +1189,7 @@ async function bindEvent(){
 }
 
 async function unbindCampaign(code){if(confirm(`確定解除 ${code} 的所有分類綁定嗎？`)){await _s.from('categories').update({campaign_code:null}).eq('campaign_code',code);loadActiveEvents();}}
-function copyEventLink(code){const base=window.location.href.substring(0,window.location.href.lastIndexOf('/')+1);const url=`${base}event.html?code=${encodeURIComponent(code)}`;const tmp=document.createElement('input');tmp.value=url;document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);alert('網址已複製！\n'+url);}
+function copyEventLink(code){const base='https://jinzhu.netlify.app/';const url=`${base}event.html?code=${encodeURIComponent(code)}`;const tmp=document.createElement('input');tmp.value=url;document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);alert('網址已複製！\n'+url);}
 
 // ── 備料統計報表 ──
 async function initReport(){
