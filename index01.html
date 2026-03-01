@@ -178,6 +178,24 @@
         </div>
     </div>
 
+    <!-- 公告彈窗 -->
+    <div id="announce-popup" class="fixed inset-0 bg-black/70 z-[200] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl animate__animated animate__fadeInUp animate__faster">
+            <div style="background:#004d40" class="px-6 py-5">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📢</span>
+                    <h3 id="popup-title" class="font-black text-white text-lg tracking-wide"></h3>
+                </div>
+            </div>
+            <div class="p-6">
+                <p id="popup-content" class="text-stone-600 text-sm leading-relaxed whitespace-pre-line"></p>
+            </div>
+            <div class="px-6 pb-6">
+                <button onclick="closeAnnouncePopup()" style="background:#004d40" class="w-full text-white py-3 rounded-2xl font-bold shadow-md active:scale-95 transition">我知道了</button>
+            </div>
+        </div>
+    </div>
+
     <div id="cart-bar" class="fixed bottom-6 left-4 right-4 max-w-xl mx-auto z-50 hidden animate__animated animate__fadeInUp">
         <button onclick="openPreview()" class="w-full bg-[#004d40] p-1.5 pl-6 pr-1.5 rounded-full flex justify-between items-center shadow-2xl active:scale-95 transition">
             <span class="text-white font-bold tracking-widest text-sm font-serif">查看預點明細</span>
