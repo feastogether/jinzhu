@@ -165,6 +165,7 @@
             <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📊</span><span class="nav-label">備料統計報表</span></button>
             <button id="btn-photos"     onclick="switchTab('photos')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📸</span><span class="nav-label">紀念照管理</span></button>
             <button id="btn-linenotify" onclick="switchTab('linenotify')" class="nav-btn nav-btn-tab"><span class="nav-emoji">💬</span><span class="nav-label">LINE 通知管理</span></button>
+            <button id="btn-announce"   onclick="switchTab('announce')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">📢</span><span class="nav-label">公告管理</span></button>
             <div class="border-t border-emerald-800 my-2"></div>
             <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
         </nav>
@@ -511,7 +512,19 @@
                 💡 新增對象前，請先讓對方加 Bot 為好友並傳一則訊息，然後到 Edge Function Logs 取得他的 User ID（格式：U 開頭 + 32 字元）
             </div>
             <div id="line-targets-list" class="space-y-3"></div>
+
+        <!-- 公告管理 -->
+        <section id="sec-announce" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">📢 公告管理</h2>
+                <button onclick="openAnnounceModal(false)" class="bg-p-green text-white px-6 py-2 rounded-xl font-bold shadow-lg">+ 新增公告</button>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 font-semibold">
+                💡 啟用中的公告會在顧客進入點餐頁面時自動彈出顯示
+            </div>
+            <div id="announce-list" class="space-y-4"></div>
         </section>
+
     </main>
 
     <!-- 彈窗：新增 LINE 通知對象 -->
@@ -691,6 +704,30 @@
         </div>
     </div>
 
+    <!-- 彈窗：新增/編輯公告 -->
+    <div id="announce-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl space-y-5">
+            <h3 class="text-xl font-bold text-p-green font-serif border-b pb-3">公告內容</h3>
+            <input type="hidden" id="ann-id">
+            <div>
+                <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">公告標題</label>
+                <input type="text" id="ann-title" class="w-full border-2 border-stone-200 rounded-xl p-3 font-bold outline-none focus:border-p-green" placeholder="例：母親節活動公告">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">公告內容</label>
+                <textarea id="ann-content" rows="5" class="w-full border-2 border-stone-200 rounded-xl p-3 outline-none focus:border-p-green text-sm" placeholder="輸入公告內容..."></textarea>
+            </div>
+            <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer">
+                <input type="checkbox" id="ann-active" checked class="accent-p-green w-4 h-4">
+                <span class="font-bold text-sm">立即啟用（顧客進入點餐頁即可看到）</span>
+            </label>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeAnnounceModal()" class="flex-1 py-3 border-2 border-stone-200 rounded-xl font-bold text-stone-500 hover:bg-stone-50">取消</button>
+                <button onclick="saveAnnouncement()" class="flex-1 py-3 bg-p-green text-white rounded-xl font-bold shadow-lg">儲存</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== JavaScript ===== -->
     <script>
 const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
@@ -718,6 +755,7 @@ async function switchTab(t) {
     if (t === 'report')     initReport();
     if (t === 'photos')     loadPhotos();
     if (t === 'linenotify') loadLineNotify();
+    if (t === 'announce')    loadAnnouncements();
 }
 
 function setQuickDate(val) {
@@ -1547,6 +1585,85 @@ function exportFullData(){
         } else {
             document.getElementById("login-screen").classList.add("hidden");
         }
+    }
+
+
+    // ── 公告管理 ──
+    async function loadAnnouncements() {
+        const { data, error } = await _s.from('announcements').select('*').order('created_at', { ascending: false });
+        const container = document.getElementById('announce-list');
+        if (error) { container.innerHTML = `<p class="text-red-400 text-sm font-bold">${error.message}</p>`; return; }
+        if (!data?.length) { container.innerHTML = '<div class="text-center py-12 text-stone-300 font-bold">尚無公告，點右上角新增</div>'; return; }
+        container.innerHTML = data.map(a => `
+            <div class="bg-white rounded-2xl border shadow-sm p-5 ${a.is_active ? 'border-emerald-200' : ''}">
+                <div class="flex justify-between items-start gap-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            ${a.is_active
+                                ? '<span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">✅ 啟用中</span>'
+                                : '<span class="text-[10px] font-bold bg-stone-100 text-stone-400 px-2 py-0.5 rounded-full">⏸ 停用</span>'}
+                            <span class="font-black text-p-green">${a.title}</span>
+                        </div>
+                        <p class="text-sm text-stone-500 whitespace-pre-line leading-relaxed">${a.content || ''}</p>
+                        <p class="text-[10px] text-stone-300 mt-2">${new Date(a.created_at).toLocaleString('zh-TW')}</p>
+                    </div>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button onclick="editAnnouncement(${a.id})" class="px-3 py-1.5 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200 transition">編輯</button>
+                        <button onclick="toggleAnnouncement(${a.id}, ${a.is_active})" class="px-3 py-1.5 ${a.is_active ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'} rounded-lg text-xs font-bold">${a.is_active ? '⏸ 停用' : '▶ 啟用'}</button>
+                        <button onclick="deleteAnnouncement(${a.id})" class="px-3 py-1.5 bg-red-50 text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 transition">刪除</button>
+                    </div>
+                </div>
+            </div>`).join('');
+    }
+
+    function openAnnounceModal(isEdit) {
+        if (!isEdit) {
+            document.getElementById('ann-id').value = '';
+            document.getElementById('ann-title').value = '';
+            document.getElementById('ann-content').value = '';
+            document.getElementById('ann-active').checked = true;
+        }
+        document.getElementById('announce-modal').classList.remove('hidden');
+    }
+
+    function closeAnnounceModal() { document.getElementById('announce-modal').classList.add('hidden'); }
+
+    async function editAnnouncement(id) {
+        const { data } = await _s.from('announcements').select('*').eq('id', id).single();
+        if (!data) return;
+        document.getElementById('ann-id').value = data.id;
+        document.getElementById('ann-title').value = data.title;
+        document.getElementById('ann-content').value = data.content || '';
+        document.getElementById('ann-active').checked = data.is_active;
+        openAnnounceModal(true);
+    }
+
+    async function saveAnnouncement() {
+        const id = document.getElementById('ann-id').value;
+        const payload = {
+            title: document.getElementById('ann-title').value.trim(),
+            content: document.getElementById('ann-content').value.trim(),
+            is_active: document.getElementById('ann-active').checked
+        };
+        if (!payload.title) return alert('請輸入公告標題');
+        if (id) {
+            await _s.from('announcements').update(payload).eq('id', id);
+        } else {
+            await _s.from('announcements').insert([payload]);
+        }
+        closeAnnounceModal();
+        loadAnnouncements();
+    }
+
+    async function toggleAnnouncement(id, current) {
+        await _s.from('announcements').update({ is_active: !current }).eq('id', id);
+        loadAnnouncements();
+    }
+
+    async function deleteAnnouncement(id) {
+        if (!confirm('確定刪除此公告？')) return;
+        await _s.from('announcements').delete().eq('id', id);
+        loadAnnouncements();
     }
 
     checkLogin();
