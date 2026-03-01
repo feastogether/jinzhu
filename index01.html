@@ -394,6 +394,22 @@
             document.getElementById('photo-download-btn').href = photo.photo_url;
             document.getElementById('photo-result-card').style.display = 'block';
         }
+
+        // ── 公告彈窗 ──
+        async function loadAnnouncement() {
+            const { data } = await _s.from('announcements').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1);
+            if (!data || data.length === 0) return;
+            const a = data[0];
+            document.getElementById('popup-title').innerText = a.title;
+            document.getElementById('popup-content').innerText = a.content || '';
+            document.getElementById('announce-popup').classList.remove('hidden');
+        }
+
+        function closeAnnouncePopup() {
+            document.getElementById('announce-popup').classList.add('hidden');
+        }
+
+        loadAnnouncement();
     </script>
 </body>
 </html>
