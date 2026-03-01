@@ -8,21 +8,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p-green: #004d40; --p-gold: #b89150; } 
+        :root { --p-green: #004d40; --p-gold: #b89150; }
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
         .font-serif { font-family: 'Noto Serif TC', serif; }
         .bg-p-green { background-color: var(--p-green); }
         .text-p-green { color: var(--p-green); }
         .sidebar-btn-active { background-color: var(--p-green); color: white !important; border-left: 4px solid var(--p-gold); }
         .img-contain, #admin-logo-img { object-fit: contain; background: white; image-rendering: -webkit-optimize-contrast; }
-        
-        /* 訂單完成後的反白樣式 */
         .order-card-completed { opacity: 0.5; filter: grayscale(0.8); background-color: #f1f5f9 !important; border-color: #cbd5e1 !important; }
-        
         #edit-cat-nav { display: flex; overflow-x: auto; white-space: nowrap; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: var(--p-gold) #f1f1f1; }
         #edit-cat-nav::-webkit-scrollbar { height: 8px; }
         #edit-cat-nav::-webkit-scrollbar-thumb { background: var(--p-gold); border-radius: 10px; }
-
         .flavor-selected { border-color: var(--p-gold) !important; background-color: var(--p-green) !important; color: white !important; }
         .opt-selected { border: 2.5px solid var(--p-gold) !important; background-color: #fdf6e9 !important; font-weight: bold; }
         .picker-item.active { border-color: var(--p-gold); background-color: #fffbeb; }
@@ -30,50 +26,223 @@
         .input-mini { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid #e2e8f0; width: 100%; outline: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .rpt-tab { flex:1; padding:9px 6px; border-radius:9px; font-size:12px; font-weight:700; border:none; background:transparent; color:#94a3b8; cursor:pointer; transition:all .15s; white-space:nowrap; }
+        .rpt-tab.on { background:white; color:#004d40; box-shadow:0 1px 6px rgba(0,0,0,.1); }
+        .rpt-preset-btn { padding:5px 12px; border-radius:999px; font-size:11px; font-weight:700; cursor:pointer; border:1px solid rgba(255,255,255,.2); color:rgba(255,255,255,.55); background:transparent; transition:all .15s; white-space:nowrap; }
+        .rpt-preset-btn:hover,.rpt-preset-btn.on { background:#b89150; border-color:#b89150; color:white; }
+        .rpt-f-input { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); color:white; border-radius:10px; padding:9px 12px; font-size:13px; font-weight:600; outline:none; transition:border .2s; font-family:'Noto Sans TC',sans-serif; }
+        .rpt-f-input:focus { border-color:#d4a85a; }
+        .rpt-f-input option { background:#1a2e2b; }
+        .rpt-spin { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:rspin .6s linear infinite; vertical-align:middle; }
+        @keyframes rspin { to { transform:rotate(360deg); } }
+
+        /* ── 登入畫面 ── */
+        #login-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #002e27 0%, #004d40 50%, #00695c 100%);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #login-screen.hidden { display: none; }
+        .login-card {
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 2rem;
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        }
+        .login-input {
+            width: 100%; padding: 14px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; color: white;
+            font-size: 15px; outline: none;
+            transition: border 0.2s;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .login-input::placeholder { color: rgba(255,255,255,0.35); }
+        .login-input:focus { border-color: #b89150; }
+        .login-btn {
+            width: 100%; padding: 15px;
+            background: #b89150; color: white;
+            border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 700;
+            cursor: pointer; transition: opacity 0.2s;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+        .login-btn:hover { opacity: 0.9; }
+        .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── 側欄摺疊 ── */
+        #sidebar { width: 240px; transition: width 0.25s ease; overflow: hidden; }
+        #sidebar.collapsed { width: 64px; }
+        #sidebar.collapsed .nav-label { display: none; }
+        #sidebar.collapsed .logo-full { display: none; }
+        #sidebar.collapsed .logo-icon { display: flex !important; }
+        #sidebar.collapsed #toggle-btn { justify-content: center; }
+        #sidebar.collapsed .nav-btn { justify-content: center; padding-left: 0; padding-right: 0; }
+        #sidebar.collapsed .sidebar-btn-active { border-left: none; border-bottom: 3px solid var(--p-gold); }
+        .logo-icon { display: none; }
+        .nav-btn { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 10px 12px; border-radius: 8px; transition: background 0.15s; color: white; }
+        .nav-btn:hover { background-color: rgba(255,255,255,0.1); }
+        .nav-emoji { font-size: 18px; flex-shrink: 0; }
+
+        #sidebar-logo {
+            max-height: 36px;
+            width: auto;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+            display: none;
+        }
+        #sidebar-logo.logo-white {
+            filter: none;
+        }
     </style>
 </head>
 <body class="min-h-screen flex text-slate-700">
 
-    <aside class="w-64 bg-emerald-950 text-white p-6 sticky top-0 h-screen shadow-2xl flex flex-col">
-        <h2 class="text-2xl font-bold mb-10 border-b border-emerald-700 pb-4 text-center tracking-widest font-serif">真珠 ADMIN</h2>
-        <nav class="space-y-2 flex-1">
-            <button id="btn-orders" onclick="switchTab('orders')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">📋 訂單監控</button>
-            <button id="btn-campaigns" onclick="switchTab('campaigns')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🎗️ 活動代號</button>
-            <button id="btn-categories" onclick="switchTab('categories')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🗂️ 分類管理</button>
-            <button id="btn-menu" onclick="switchTab('menu')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🍱 菜單編輯</button>
-            <button id="btn-flavors" onclick="switchTab('flavors')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">🌶️ 口味定義</button>
-            <button id="btn-settings" onclick="switchTab('settings')" class="w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2">⚙️ 系統設定</button>
-            <a href="monitor.html" target="_blank" class="block w-full text-left p-3 rounded-lg hover:bg-emerald-800 transition flex items-center gap-2 text-white no-underline">🖥️ 看板模式</a>
+
+    <!-- ===== 登入畫面 ===== -->
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="text-center mb-8">
+                <div class="font-serif font-black text-5xl text-amber-400 mb-2">珠</div>
+                <div class="font-serif font-bold text-xl text-white tracking-widest">真珠 Admin</div>
+                <div class="text-xs text-white/40 tracking-widest mt-1 uppercase">後台管理系統</div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-white/40 mb-2 uppercase tracking-widest">Email</label>
+                    <input type="email" id="login-email" class="login-input" placeholder="admin@example.com" onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-white/40 mb-2 uppercase tracking-widest">密碼</label>
+                    <input type="password" id="login-password" class="login-input" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+                </div>
+                <div id="login-error" class="hidden text-red-300 text-xs font-bold text-center py-2 bg-red-900/30 rounded-xl">帳號或密碼錯誤，請再試一次</div>
+                <button id="login-btn" class="login-btn mt-2" onclick="doLogin()">登入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 側欄導航 ===== -->
+    <aside id="sidebar" class="bg-emerald-950 text-white sticky top-0 h-screen shadow-2xl flex flex-col flex-shrink-0">
+
+        <div class="flex items-center justify-between px-4 py-4 border-b border-white/10">
+            <div class="logo-full flex items-center gap-3 overflow-hidden min-w-0 flex-1">
+                <img id="sidebar-logo" src="" alt="真珠"
+                     onerror="this.style.display='none'; document.getElementById('sidebar-logo-fallback').style.display='flex'">
+                <div id="sidebar-logo-fallback" class="flex items-center gap-2">
+                    <span class="font-serif font-black text-xl text-amber-400 leading-none">珠</span>
+                    <div>
+                        <div class="font-serif font-bold text-sm tracking-[0.15em] text-white leading-tight">真珠</div>
+                        <div class="text-[9px] tracking-[0.3em] text-white/40 uppercase">Admin</div>
+                    </div>
+                </div>
+            </div>
+            <div class="logo-icon items-center justify-center w-full">
+                <span class="font-serif font-black text-xl text-amber-400">珠</span>
+            </div>
+            <button id="toggle-btn" onclick="toggleSidebar()"
+                class="flex items-center justify-center w-7 h-7 rounded-lg transition flex-shrink-0 text-white/30 hover:text-amber-400 hover:bg-white/5"
+                title="收合側欄">
+                <svg id="toggle-icon" class="w-4 h-4 transition-transform duration-250" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 py-4 px-2 space-y-1 overflow-y-auto overflow-x-hidden">
+            <button id="btn-orders"     onclick="switchTab('orders')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📋</span><span class="nav-label">訂單監控</span></button>
+            <button id="btn-campaigns"  onclick="switchTab('campaigns')"  class="nav-btn nav-btn-tab"><span class="nav-emoji">🎗️</span><span class="nav-label">活動代號</span></button>
+            <button id="btn-categories" onclick="switchTab('categories')" class="nav-btn nav-btn-tab"><span class="nav-emoji">🗂️</span><span class="nav-label">分類管理</span></button>
+            <button id="btn-menu"       onclick="switchTab('menu')"       class="nav-btn nav-btn-tab"><span class="nav-emoji">🍱</span><span class="nav-label">菜單編輯</span></button>
+            <button id="btn-flavors"    onclick="switchTab('flavors')"    class="nav-btn nav-btn-tab"><span class="nav-emoji">🌶️</span><span class="nav-label">口味定義</span></button>
+            <button id="btn-settings"   onclick="switchTab('settings')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">⚙️</span><span class="nav-label">系統設定</span></button>
+            <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="nav-btn nav-btn-tab"><span class="nav-emoji">🔗</span><span class="nav-label">活動網址配置</span></button>
+            <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📊</span><span class="nav-label">備料統計報表</span></button>
+            <button id="btn-photos"     onclick="switchTab('photos')"     class="nav-btn nav-btn-tab"><span class="nav-emoji">📸</span><span class="nav-label">紀念照管理</span></button>
+            <button id="btn-linenotify" onclick="switchTab('linenotify')" class="nav-btn nav-btn-tab"><span class="nav-emoji">💬</span><span class="nav-label">LINE 通知管理</span></button>
+            <div class="border-t border-emerald-800 my-2"></div>
+            <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
         </nav>
     </aside>
 
+    <!-- ===== 主內容 ===== -->
     <main class="flex-1 p-8 overflow-y-auto">
+
+        <!-- 訂單監控 -->
         <section id="sec-orders" class="space-y-6">
-            <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">訂單監控</h2><button onclick="exportXls()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">📊 導出 Excel</button></div>
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">訂單監控</h2>
+                <button onclick="exportXls()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold shadow-lg">📊 導出 Excel</button>
+            </div>
             <div class="bg-white p-6 rounded-2xl shadow-sm border space-y-4 text-left">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div><label class="block text-xs font-bold text-stone-400 mb-1">快速日期</label><select id="filter-date-preset" onchange="setQuickDate(this.value)" class="w-full border p-2 rounded-lg text-sm"><option value="all">不限日期</option><option value="today">今日</option><option value="week">本週</option><option value="custom">自選日期</option></select></div>
-                    <div id="custom-date-box" class="hidden"><label class="block text-xs font-bold text-stone-400 mb-1">自選日期</label><input type="date" id="filter-date" class="w-full border p-2 rounded-lg text-sm"></div>
-                    <div><label class="block text-xs font-bold text-stone-400 mb-1">活動過濾</label><select id="filter-campaign" class="w-full border p-2 rounded-lg text-sm"><option value="all">全部活動</option></select></div>
-                    <div><label class="block text-xs font-bold text-stone-400 mb-1">處理狀態</label><select id="filter-status" class="w-full border p-2 rounded-lg text-sm"><option value="all">全部</option><option value="pending">未完成</option><option value="synced">已完成</option></select></div>
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">快速日期</label>
+                        <select id="filter-date-preset" onchange="setQuickDate(this.value)" class="w-full border p-2 rounded-lg text-sm">
+                            <option value="all">不限日期</option><option value="today">今日</option>
+                            <option value="week">本週</option><option value="custom">自選日期</option>
+                        </select>
+                    </div>
+                    <div id="custom-date-box" class="hidden">
+                        <label class="block text-xs font-bold text-stone-400 mb-1">自選日期</label>
+                        <input type="date" id="filter-date" class="w-full border p-2 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">活動過濾</label>
+                        <select id="filter-campaign" class="w-full border p-2 rounded-lg text-sm"><option value="all">全部活動</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-stone-400 mb-1">處理狀態</label>
+                        <select id="filter-status" class="w-full border p-2 rounded-lg text-sm">
+                            <option value="all">全部</option><option value="pending">未完成</option><option value="synced">已完成</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="flex gap-2"><input type="text" id="filter-search" class="flex-1 border p-2 rounded-lg text-sm" placeholder="搜尋顧客姓名或電話..."><button onclick="loadOrders()" class="bg-p-green text-white px-8 py-2 rounded-lg font-bold shadow-md">執行篩選</button><button onclick="resetFilters()" class="text-stone-400 text-xs">重置</button></div>
+                <div class="flex gap-2">
+                    <input type="text" id="filter-search" class="flex-1 border p-2 rounded-lg text-sm" placeholder="搜尋顧客姓名或電話...">
+                    <button onclick="loadOrders()" class="bg-p-green text-white px-8 py-2 rounded-lg font-bold shadow-md">執行篩選</button>
+                    <button onclick="resetFilters()" class="text-stone-400 text-xs">重置</button>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 pt-1 border-t border-stone-100">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="order-select-all" onchange="toggleOrderSelectAll(this.checked)" class="accent-red-400 w-4 h-4">
+                        <span class="text-xs font-bold text-stone-500">全選</span>
+                    </label>
+                    <span id="order-selected-count" class="text-xs font-bold text-red-500 hidden">已選 0 筆</span>
+                    <button id="order-batch-delete-btn" onclick="batchDeleteOrders()"
+                        class="hidden px-4 py-1.5 bg-red-50 text-red-500 rounded-lg text-xs font-bold hover:bg-red-100 transition border border-red-100">
+                        🗑 批次刪除
+                    </button>
+                </div>
             </div>
             <div id="order-list" class="grid grid-cols-1 xl:grid-cols-2 gap-6"></div>
         </section>
 
+        <!-- 活動代號管理 -->
         <section id="sec-campaigns" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-p-green font-serif">活動代號管理</h2>
             <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-md">
-                <div class="flex gap-2 mb-6"><input id="new-campaign" class="border flex-1 p-3 rounded-xl" placeholder="新代號 (如：父親節)"><button onclick="addCampaign()" class="bg-p-green text-white px-6 rounded-xl font-bold shadow-md">新增</button></div>
+                <div class="flex gap-2 mb-6">
+                    <input id="new-campaign" class="border flex-1 p-3 rounded-xl" placeholder="新代號 (如：父親節)">
+                    <button onclick="addCampaign()" class="bg-p-green text-white px-6 rounded-xl font-bold shadow-md">新增</button>
+                </div>
                 <div id="campaign-list" class="space-y-2"></div>
             </div>
         </section>
 
+        <!-- 分類管理 -->
         <section id="sec-categories" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-p-green font-serif">分類管理</h2>
             <div class="bg-white p-6 rounded-2xl shadow-sm border max-w-2xl">
-                <div class="flex gap-2 mb-6"><input id="new-cat" class="border flex-1 p-3 rounded-xl" placeholder="新分類名稱"><button onclick="addCat()" class="bg-p-green text-white px-6 rounded-xl font-bold shadow-md">新增</button></div>
+                <div class="flex gap-2 mb-6">
+                    <input id="new-cat" class="border flex-1 p-3 rounded-xl" placeholder="新分類名稱">
+                    <button onclick="addCat()" class="bg-p-green text-white px-6 rounded-xl font-bold shadow-md">新增</button>
+                </div>
                 <table class="w-full text-sm text-left">
                     <thead><tr class="text-stone-400 border-b"><th class="p-3">排序</th><th class="p-3">名稱</th><th class="p-3">狀態</th><th class="p-3">操作</th></tr></thead>
                     <tbody id="cat-list-table"></tbody>
@@ -81,8 +250,12 @@
             </div>
         </section>
 
+        <!-- 菜單編輯 -->
         <section id="sec-menu" class="hidden space-y-6 text-left">
-            <div class="flex justify-between items-center"><h2 class="text-3xl font-bold text-p-green font-serif">菜單編輯</h2><button onclick="openMenuModal(false)" class="bg-p-green text-white px-6 py-2 rounded-lg shadow-lg font-bold">+ 新增餐點</button></div>
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">菜單編輯</h2>
+                <button onclick="openMenuModal(false)" class="bg-p-green text-white px-6 py-2 rounded-lg shadow-lg font-bold">+ 新增餐點</button>
+            </div>
             <div class="bg-white p-4 rounded-2xl shadow-sm border flex gap-4">
                 <input type="text" id="menu-search" oninput="loadMenu()" class="flex-1 border p-2 rounded-lg" placeholder="搜尋菜名...">
                 <select id="menu-cat-filter" onchange="loadMenu()" class="border p-2 rounded-lg"></select>
@@ -90,25 +263,329 @@
             <div id="menu-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
         </section>
 
+        <!-- 口味定義 -->
         <section id="sec-flavors" class="hidden space-y-6">
-            <div class="flex justify-between items-center"><h2 class="text-2xl font-bold text-p-green font-serif">口味定義</h2><button onclick="addFlvGroup()" class="bg-amber-600 text-white px-6 py-2 rounded-xl font-bold shadow-sm">+ 新增選項組</button></div>
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-p-green font-serif">口味定義</h2>
+                <button onclick="addFlvGroup()" class="bg-amber-600 text-white px-6 py-2 rounded-xl font-bold shadow-sm">+ 新增選項組</button>
+            </div>
             <div id="flv-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
+        <!-- 系統設定 -->
         <section id="sec-settings" class="hidden space-y-6">
             <h2 class="text-2xl font-bold text-p-green font-serif">系統與 Logo 設定</h2>
-            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm max-w-xl">
-                <p class="text-xs text-stone-400 mb-4 uppercase font-bold">Logo 上傳 (推薦使用 SVG)</p>
-                <input type="file" id="logo-file" class="w-full border-2 border-dashed p-6 rounded-2xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
-                <div id="current-logo-preview" class="hidden mb-4 text-center"><img id="admin-logo-img" src="" class="max-h-20 mx-auto"></div>
-                <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg transition">確認更新 Logo</button>
+            <div class="bg-white p-8 rounded-[2.5rem] border shadow-sm max-w-xl space-y-6">
+                <div>
+                    <p class="text-xs text-stone-400 mb-4 uppercase font-bold">Logo 上傳 (推薦使用 SVG 或去背 PNG)</p>
+                    <input type="file" id="logo-file" class="w-full border-2 border-dashed p-6 rounded-2xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
+                    <div id="current-logo-preview" class="hidden mb-4 text-center bg-stone-100 p-4 rounded-2xl">
+                        <img id="admin-logo-img" src="" class="max-h-20 mx-auto">
+                    </div>
+                    <button onclick="uploadLogo()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg transition">確認更新 Logo</button>
+                </div>
+                <div class="border-t pt-6">
+                    <p class="text-xs text-stone-400 mb-3 uppercase font-bold">側欄 Logo 顯示模式</p>
+                    <div class="flex gap-3">
+                        <button onclick="setSidebarLogoMode('white')" class="flex-1 py-2 bg-emerald-900 text-white text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">轉白色 (深色 Logo)</button>
+                        <button onclick="setSidebarLogoMode('original')" class="flex-1 py-2 bg-stone-100 text-stone-600 text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">原始顏色 (白/淺色 Logo)</button>
+                    </div>
+                    <p class="text-[10px] text-stone-300 mt-2">若你的 Logo 本身是白色或淺色，選「原始顏色」；若是彩色/深色，選「轉白色」</p>
+                </div>
             </div>
+        </section>
+
+        <!-- 活動網址配置 -->
+        <section id="sec-eventurl" class="hidden space-y-6">
+            <h2 class="text-2xl font-bold text-p-green font-serif">活動專屬網址配置 <span class="text-base font-normal text-stone-400">(支援多選分類)</span></h2>
+            <div class="bg-white p-8 rounded-[2rem] shadow-sm border max-w-3xl space-y-8">
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">1. 選擇活動代號</label>
+                    <select id="sel-campaign" class="w-full border p-3 rounded-xl bg-stone-50 outline-none focus:ring-2"></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 mb-3 uppercase tracking-widest">2. 勾選欲顯示的分類 (可多選)</label>
+                    <div id="cat-checkbox-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                    <p class="text-[10px] text-stone-400 mt-3">* 僅會列出原本後台設為「隱藏」的分類</p>
+                </div>
+                <button onclick="bindEvent()" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition text-lg">確認綁定並產生活動連結</button>
+            </div>
+            <div class="max-w-3xl">
+                <h3 class="font-bold text-stone-400 text-sm mb-4 uppercase tracking-widest">目前運作中的活動</h3>
+                <div id="active-event-list" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- 備料統計報表 -->
+        <section id="sec-report" class="hidden space-y-4">
+
+            <div class="rounded-2xl overflow-hidden shadow-lg" style="background:linear-gradient(135deg,#004d40,#00695c)">
+                <div class="flex flex-wrap justify-between items-center gap-3 px-6 pt-5 pb-4 border-b border-white/10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-1 h-6 rounded-full" style="background:#b89150"></div>
+                        <h2 class="text-lg font-black text-white font-serif tracking-widest">備料統計中心</h2>
+                        <span id="report-period-display" class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(184,145,80,.2);color:#d4a85a">尚未查詢</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="reportPrint()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition" style="background:#fee2e2;color:#dc2626">🖨 列印 PDF</button>
+                        <button onclick="exportFullData()" class="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs transition" style="background:#dcfce7;color:#16a34a">📊 匯出 Excel</button>
+                    </div>
+                </div>
+
+                <div class="px-6 py-5">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">快速選擇</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button class="rpt-preset-btn" onclick="rptPreset('today')">今日</button>
+                                <button class="rpt-preset-btn" onclick="rptPreset('yesterday')">昨日</button>
+                                <button class="rpt-preset-btn" onclick="rptPreset('week')">本週</button>
+                                <button class="rpt-preset-btn" onclick="rptPreset('month')">本月</button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">開始日期</span>
+                            <input type="date" id="r-s-date" class="rpt-f-input w-full">
+                        </div>
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">結束日期</span>
+                            <input type="date" id="r-e-date" class="rpt-f-input w-full">
+                        </div>
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">開始時間</span>
+                            <input type="time" id="r-s-time" value="00:00" class="rpt-f-input w-full">
+                        </div>
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">結束時間</span>
+                            <input type="time" id="r-e-time" value="23:59" class="rpt-f-input w-full">
+                        </div>
+                        <div>
+                            <span class="block text-[9px] font-bold tracking-widest uppercase mb-2" style="color:rgba(255,255,255,.45)">活動代號</span>
+                            <select id="report-campaign" class="rpt-f-input w-full">
+                                <option value="all">全部來源</option>
+                                <option value="none">一般訂單</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="r-run-btn" onclick="fetchData()" class="mt-4 w-full py-3 rounded-xl font-bold text-sm tracking-widest shadow-lg transition" style="background:#b89150;color:white">
+                        <span id="r-run-lbl">▶ 執行查詢</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #004d40">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">訂單數</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-orders">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">筆訂單</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #f59e0b">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">大人</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-adult">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">位大人</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #f59e0b">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">小孩</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-kid">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">位小孩</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #fb923c">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">兒童</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-child">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">位兒童</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #3b82f6">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">總人數</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-people">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">位用餐</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #004d40">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">套餐組數</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-sets">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">組套餐</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #94a3b8">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">備料品項</div>
+                    <div class="text-2xl font-black text-p-green font-serif" id="kpi-items">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">種品項</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border shadow-sm" style="border-top:3px solid #f43f5e">
+                    <div class="text-[9px] font-bold text-stone-400 uppercase tracking-wider mb-1">預估營收</div>
+                    <div class="text-xl font-black text-p-green font-serif" id="kpi-rev">—</div>
+                    <div class="text-[10px] text-stone-400 mt-0.5">元（未含服務費）</div>
+                </div>
+            </div>
+
+            <div class="flex gap-1 bg-stone-100 rounded-xl p-1">
+                <button class="rpt-tab on" onclick="rptTab('prepare')">🍳 備料總表</button>
+                <button class="rpt-tab"    onclick="rptTab('setmenu')">🍱 套餐明細</button>
+                <button class="rpt-tab"    onclick="rptTab('orders')">📋 訂單流水帳</button>
+            </div>
+
+            <div id="rtab-prepare">
+                <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                    <div class="flex justify-between items-center px-5 py-4 bg-stone-800">
+                        <span class="font-bold font-serif text-white text-sm">🍳 全品項備料總量（含套餐拆解）</span>
+                        <span id="ingredient-total" class="bg-stone-600 text-white px-3 py-0.5 rounded-full text-xs font-bold">0 項</span>
+                    </div>
+                    <div class="overflow-y-auto" style="max-height:60vh">
+                        <table class="w-full text-left">
+                            <thead class="bg-stone-50 text-[9px] text-stone-400 font-bold uppercase tracking-wider">
+                                <tr>
+                                    <th class="px-5 py-3 w-10">#</th>
+                                    <th class="px-5 py-3">品名</th>
+                                    <th class="px-5 py-3 text-right w-28">備料數</th>
+                                    <th class="px-5 py-3 w-40">佔比</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dish-summary-body" class="divide-y divide-stone-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="rtab-setmenu" class="hidden">
+                <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                    <div class="flex justify-between items-center px-5 py-4 bg-p-green">
+                        <span class="font-bold font-serif text-white text-sm">🍱 套餐銷售明細</span>
+                        <span id="set-menu-total" class="bg-amber-500 text-white px-3 py-0.5 rounded-full text-xs font-bold">0 套</span>
+                    </div>
+                    <div id="set-menu-body" class="p-5 space-y-3"></div>
+                </div>
+            </div>
+
+            <div id="rtab-orders" class="hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="w-1 h-5 bg-amber-500 rounded-full"></div>
+                        <span class="font-bold font-serif text-p-green">訂單詳細流水帳</span>
+                    </div>
+                    <span id="order-count-tag" class="bg-p-green text-white px-3 py-0.5 rounded-full text-xs font-bold">0 筆</span>
+                </div>
+                <div id="order-detail-container" class="space-y-4"></div>
+            </div>
+
+        </section>
+
+        <!-- 紀念照管理 -->
+        <section id="sec-photos" class="hidden space-y-5">
+            <div class="flex flex-wrap justify-between items-center gap-3">
+                <h2 class="text-3xl font-bold text-p-green font-serif">紀念照管理</h2>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="autoDeleteOld()" class="px-4 py-2 border-2 border-red-200 text-red-400 rounded-xl font-bold text-sm hover:bg-red-50 transition">🗑 刪除 7 天前</button>
+                    <button onclick="openUploadModal()" class="bg-p-green text-white px-5 py-2 rounded-xl font-bold shadow-lg text-sm">📤 上傳新照片</button>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border space-y-3">
+                <div class="flex flex-wrap gap-3 items-center">
+                    <input type="text" id="photo-admin-search" oninput="filterPhotos()" placeholder="搜尋姓名、電話、訂單號…" class="flex-1 min-w-[180px] border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
+                    <input type="date" id="photo-filter-from" onchange="filterPhotos()" class="border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
+                    <span class="text-stone-300 font-bold text-xs">至</span>
+                    <input type="date" id="photo-filter-to" onchange="filterPhotos()" class="border-b-2 border-stone-200 p-2 outline-none bg-transparent font-bold text-sm focus:border-amber-400">
+                    <button onclick="clearPhotoFilters()" class="text-xs font-bold text-stone-400 hover:text-stone-600 whitespace-nowrap">清除篩選</button>
+                </div>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <input type="checkbox" id="photo-select-all" onchange="toggleSelectAll(this.checked)" class="accent-p-green w-4 h-4">
+                        <span class="text-xs font-bold text-stone-500">全選</span>
+                    </label>
+                    <span id="photo-selected-count" class="text-xs font-bold text-amber-600 hidden">已選 0 張</span>
+                    <button id="batch-delete-btn" onclick="batchDelete()" class="hidden px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-xs font-bold hover:bg-red-100 transition">🗑 批次刪除</button>
+                    <span class="ml-auto text-xs text-stone-400 font-bold" id="photo-count-tag">共 0 張</span>
+                </div>
+            </div>
+            <div id="photo-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+        </section>
+
+        <!-- LINE 通知管理 -->
+        <section id="sec-linenotify" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-3xl font-bold text-p-green font-serif">💬 LINE 通知管理</h2>
+                <div class="flex gap-2">
+                    <a href="line-bind.html" target="_blank" class="px-4 py-2 border-2 border-p-green text-p-green rounded-xl font-bold text-sm hover:bg-stone-50 transition">🔗 綁定頁面</a>
+                    <button onclick="openAddTargetModal()" class="bg-p-green text-white px-6 py-2 rounded-xl font-bold shadow-lg">＋ 手動新增</button>
+                </div>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 font-semibold">
+                💡 新增對象前，請先讓對方加 Bot 為好友並傳一則訊息，然後到 Edge Function Logs 取得他的 User ID（格式：U 開頭 + 32 字元）
+            </div>
+            <div id="line-targets-list" class="space-y-3"></div>
         </section>
     </main>
 
+    <!-- 彈窗：新增 LINE 通知對象 -->
+    <div id="line-target-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-5">
+            <h3 class="text-xl font-bold text-p-green font-serif border-b pb-3">新增通知對象</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">名稱（例：店長、外場一）</label>
+                    <input type="text" id="lt-name" class="w-full border-2 border-stone-200 rounded-xl p-3 font-bold outline-none focus:border-p-green" placeholder="王小明">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">LINE User ID</label>
+                    <input type="text" id="lt-uid" class="w-full border-2 border-stone-200 rounded-xl p-3 font-bold outline-none focus:border-p-green font-mono text-sm" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                    <p class="text-xs text-stone-400 mt-1">讓對方加 Bot 好友並傳訊息後，從 Edge Function Logs 取得</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">接收通知類型</label>
+                    <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer">
+                        <input type="checkbox" id="lt-notify-order" checked class="accent-p-green w-4 h-4">
+                        <span class="font-bold text-sm">🔔 新訂單通知</span>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 bg-stone-50 rounded-xl cursor-pointer">
+                        <input type="checkbox" id="lt-notify-photo" checked class="accent-p-green w-4 h-4">
+                        <span class="font-bold text-sm">📸 照片上傳通知</span>
+                    </label>
+                </div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeTargetModal()" class="flex-1 py-3 border-2 border-stone-200 rounded-xl font-bold text-stone-500 hover:bg-stone-50">取消</button>
+                <button onclick="saveLineTarget()" class="flex-1 py-3 bg-p-green text-white rounded-xl font-bold shadow-lg">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 彈窗：上傳照片 -->
+    <div id="upload-photo-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl space-y-5">
+            <h3 class="text-xl font-bold text-p-green font-serif border-b pb-3">上傳紀念照片</h3>
+            <div id="upload-drop-zone" class="border-2 border-dashed border-stone-200 rounded-2xl p-6 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition"
+                 onclick="document.getElementById('photo-file-input').click()"
+                 ondragover="event.preventDefault(); this.classList.add('border-amber-400','bg-amber-50')"
+                 ondragleave="this.classList.remove('border-amber-400','bg-amber-50')"
+                 ondrop="handlePhotoDrop(event)">
+                <div id="upload-preview" class="hidden mb-3">
+                    <img id="upload-preview-img" class="max-h-40 mx-auto rounded-xl shadow">
+                </div>
+                <div id="upload-placeholder">
+                    <p class="text-3xl mb-2">📷</p>
+                    <p class="text-sm font-bold text-stone-400">點擊或拖曳照片到此處</p>
+                    <p class="text-xs text-stone-300 mt-1">支援 JPG、PNG、WEBP</p>
+                </div>
+                <input type="file" id="photo-file-input" class="hidden" accept="image/*" onchange="previewUploadPhoto(this)">
+            </div>
+            <div class="space-y-3">
+                <div><label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">顧客姓名</label><input id="upload-name" type="text" placeholder="例：王小明" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300"></div>
+                <div><label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">電話號碼</label><input id="upload-phone" type="text" placeholder="例：0912345678" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300"></div>
+                <div><label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">訂單號碼</label><input id="upload-orderno" type="text" placeholder="選填：桌號、訂單編號…" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300"></div>
+                <div><label class="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">備註</label><input id="upload-note" type="text" placeholder="選填：活動名稱、特別說明…" class="w-full border p-3 rounded-xl bg-stone-50 text-sm outline-none focus:ring-2 focus:ring-amber-300"></div>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button onclick="closeUploadModal()" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-stone-400">取消</button>
+                <button onclick="doUploadPhoto()" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold shadow-lg"><span id="upload-btn-text">確認上傳</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 彈窗：修改訂單細項 -->
     <div id="order-edit-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[300] backdrop-blur-sm text-left">
         <div class="bg-white w-full max-w-6xl rounded-3xl overflow-hidden flex flex-col max-h-[95vh] shadow-2xl">
-            <div class="p-6 bg-p-green text-white flex justify-between items-center"><h3 class="text-xl font-bold font-serif">修改訂單內容</h3><button onclick="closeEditModal()" class="text-2xl">✕</button></div>
+            <div class="p-6 bg-p-green text-white flex justify-between items-center">
+                <h3 class="text-xl font-bold font-serif">修改訂單內容</h3>
+                <button onclick="closeEditModal()" class="text-2xl">✕</button>
+            </div>
             <div class="flex flex-1 overflow-hidden">
                 <div class="w-2/3 border-r p-4 bg-stone-50 flex flex-col overflow-hidden">
                     <div id="edit-cat-nav" class="mb-2 border-b"></div>
@@ -126,36 +603,65 @@
         </div>
     </div>
 
+    <!-- 彈窗：口味選擇 -->
     <div id="edit-flavor-popup" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[400] backdrop-blur-sm text-left">
         <div class="bg-white w-full max-w-md rounded-3xl p-6 flex flex-col max-h-[85vh] shadow-2xl">
             <h4 class="font-bold text-lg mb-4 text-p-green font-serif" id="edit-pop-title">口味與品項選擇</h4>
             <div id="edit-pop-content" class="space-y-6 overflow-y-auto flex-1 pr-2 no-scrollbar"></div>
-            <div class="flex gap-3 mt-6"><button onclick="closeEditPop()" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-stone-400">取消</button><button onclick="confirmEditPop()" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold shadow-lg">確認更新</button></div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeEditPop()" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-stone-400">取消</button>
+                <button onclick="confirmEditPop()" class="flex-[2] bg-p-green text-white py-3 rounded-xl font-bold shadow-lg">確認更新</button>
+            </div>
         </div>
     </div>
 
+    <!-- 彈窗：套餐分組 -->
     <div id="set-modal" class="fixed inset-0 bg-black/80 hidden flex items-center justify-center p-4 z-[200]">
-        <div class="bg-white w-full max-w-2xl rounded-3xl p-6 flex flex-col max-h-[90vh] shadow-2xl text-left">
-            <h3 class="font-bold text-xl mb-4 text-p-green border-b pb-2 font-serif text-center" id="set-modal-title">套餐分組內容設定</h3>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">分組名稱</label><input id="g-name" class="w-full border p-3 rounded-xl bg-stone-50"></div>
-                <div><label class="text-[10px] font-bold text-stone-400 block mb-1">必選數量</label><input id="g-limit" type="number" class="w-full border p-3 rounded-xl bg-stone-50 text-center"></div>
+        <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl text-left flex flex-col overflow-hidden" style="max-height:90vh">
+            <div class="flex justify-between items-center px-8 py-5 border-b bg-stone-50 flex-shrink-0">
+                <h3 class="font-bold text-xl text-p-green font-serif" id="set-modal-title">套餐分組內容設定</h3>
+                <button onclick="closeSetModal()" class="text-stone-300 hover:text-stone-500 text-2xl transition">✕</button>
             </div>
-            <div class="bg-stone-50 p-4 rounded-2xl border flex-1 flex flex-col overflow-hidden">
-                <div class="flex justify-between items-center mb-3"><p class="text-xs font-bold text-stone-500 uppercase">快速選取單品</p><input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="搜尋..." class="w-1/2 p-2 border rounded-full text-xs"></div>
-                <div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pr-2 custom-scrollbar"></div>
-                <div class="mt-4 pt-3 border-t flex justify-between items-center"><span id="picker-count" class="text-xs text-stone-400">已勾選 0 項</span><button onclick="addSelectedToPicks()" class="bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold">+ 加入暫存</button></div>
+            <div class="flex flex-1 overflow-hidden">
+                <div class="w-3/5 flex flex-col border-r overflow-hidden">
+                    <div class="px-6 py-5 border-b flex-shrink-0 bg-white">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">分組設定</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="text-[10px] font-bold text-stone-400 block mb-1">分組名稱</label><input id="g-name" class="w-full border p-3 rounded-xl bg-stone-50 text-sm" placeholder="例：主食、飲料"></div>
+                            <div><label class="text-[10px] font-bold text-stone-400 block mb-1">必選數量</label><input id="g-limit" type="number" min="1" class="w-full border p-3 rounded-xl bg-stone-50 text-center text-sm font-bold"></div>
+                        </div>
+                    </div>
+                    <div class="flex-1 flex flex-col overflow-hidden px-6 py-4">
+                        <div class="flex justify-between items-center mb-3 flex-shrink-0">
+                            <p class="text-xs font-bold text-stone-500 uppercase">快速選取品項</p>
+                            <input type="text" id="set-item-search" oninput="filterPickerItems()" placeholder="搜尋品項…" class="w-48 p-2 border rounded-full text-xs outline-none focus:border-amber-400">
+                        </div>
+                        <div id="item-picker-list" class="flex-1 overflow-y-auto grid grid-cols-3 gap-2 pr-1 custom-scrollbar"></div>
+                        <div class="mt-3 pt-3 border-t flex justify-between items-center flex-shrink-0">
+                            <span id="picker-count" class="text-xs text-stone-400 font-bold">已勾選 0 項</span>
+                            <button onclick="addSelectedToPicks()" class="bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-emerald-700 transition">＋ 加入暫存清單</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-2/5 flex flex-col overflow-hidden bg-stone-50">
+                    <div class="px-6 py-5 border-b flex-shrink-0">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">暫存清單</p>
+                        <div id="temp-pick-display" class="flex flex-wrap gap-2 min-h-[40px]"></div>
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="saveFullSet()" id="btn-save-group" class="flex-1 bg-p-green text-white py-3 rounded-xl font-bold shadow-md text-sm hover:opacity-90 transition">✓ 確認儲存分組</button>
+                        </div>
+                        <button onclick="resetSetForm()" id="btn-cancel-edit" class="hidden w-full text-xs text-stone-400 mt-2 underline text-center">取消編輯模式</button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto px-6 py-4 custom-scrollbar">
+                        <p class="text-[10px] font-bold text-stone-400 uppercase tracking-widest mb-3">已儲存的分組</p>
+                        <div id="saved-groups-view" class="space-y-3"></div>
+                    </div>
+                </div>
             </div>
-            <div class="mt-4">
-                <div id="temp-pick-display" class="flex flex-wrap gap-2 mb-4"></div>
-                <button onclick="saveFullSet()" id="btn-save-group" class="w-full bg-p-green text-white py-4 rounded-2xl font-bold shadow-lg">確認儲存</button>
-                <button onclick="resetSetForm()" id="btn-cancel-edit" class="hidden w-full text-xs text-stone-400 mt-2 underline text-center">取消編輯模式</button>
-            </div>
-            <div class="border-t pt-4 mt-4 overflow-y-auto max-h-40 custom-scrollbar"><div id="saved-groups-view" class="space-y-2"></div></div>
-            <button onclick="closeSetModal()" class="mt-4 text-xs text-stone-300 w-full text-center">關閉窗口</button>
         </div>
     </div>
 
+    <!-- 彈窗：餐點基本資料 -->
     <div id="menu-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-[100] text-left">
         <div class="bg-white w-full max-w-lg rounded-3xl p-8 flex flex-col max-h-[90vh] shadow-2xl">
             <h3 class="font-bold text-xl mb-6 text-p-green border-l-4 border-p-gold pl-3">餐點基本資料</h3>
@@ -163,227 +669,772 @@
             <div class="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
                 <input id="m-name" placeholder="餐點名稱" class="w-full border p-3 rounded-xl bg-stone-50 font-bold">
                 <textarea id="m-desc" placeholder="描述" class="w-full border p-3 rounded-xl bg-stone-50 h-20"></textarea>
-                <div class="grid grid-cols-2 gap-4"><input id="m-price" type="number" placeholder="價格" class="border p-3 rounded-xl bg-stone-50"><select id="m-cat" class="border p-3 rounded-xl bg-stone-50"></select></div>
-                <div class="bg-stone-100 p-4 rounded-2xl"><p class="text-[10px] font-bold text-stone-500 mb-2 uppercase">口味標籤設定</p><div id="flv-checks" class="grid grid-cols-2 gap-2"></div></div>
-                <div class="p-2 border-2 border-dashed rounded-xl"><input type="file" id="m-img" class="w-full text-xs"></div>
-                <label class="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl font-bold"><input type="checkbox" id="m-is-set" class="accent-p-green"> 這是「套餐組合」模式</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="m-price" type="number" placeholder="價格" class="border p-3 rounded-xl bg-stone-50">
+                    <select id="m-cat" class="border p-3 rounded-xl bg-stone-50"></select>
+                </div>
+                <div class="bg-stone-100 p-4 rounded-2xl">
+                    <p class="text-[10px] font-bold text-stone-500 mb-2 uppercase">口味標籤設定</p>
+                    <div id="flv-checks" class="grid grid-cols-2 gap-2"></div>
+                </div>
+                <div class="p-2 border-2 border-dashed rounded-xl">
+                    <input type="file" id="m-img" class="w-full text-xs">
+                </div>
+                <label class="flex items-center gap-3 p-4 bg-emerald-50 rounded-2xl font-bold">
+                    <input type="checkbox" id="m-is-set" class="accent-p-green"> 這是「套餐組合」模式
+                </label>
             </div>
-            <div class="flex gap-3 mt-8"><button onclick="closeMenuModal()" class="flex-1 bg-gray-100 py-3 rounded-xl text-stone-400 font-bold">取消</button><button onclick="saveItem()" class="flex-1 bg-p-green text-white py-3 rounded-xl font-bold shadow-md">儲存餐點</button></div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="closeMenuModal()" class="flex-1 bg-gray-100 py-3 rounded-xl text-stone-400 font-bold">取消</button>
+                <button onclick="saveItem()" class="flex-1 bg-p-green text-white py-3 rounded-xl font-bold shadow-md">儲存餐點</button>
+            </div>
         </div>
     </div>
 
+    <!-- ===== JavaScript ===== -->
     <script>
-        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
-        const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        let allMenuItems = [], allCategories = [], curEditOrder = null, editCart = [], curEditItem = null, curEditPopSels = { flavors: {}, groups: {} };
-        let reEditIndex = -1, curPicks = [], curItem = null, currentEditingGroupId = null, allCampaigns = [];
+const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        async function switchTab(t) {
-            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
-            document.querySelectorAll('nav button').forEach(b => b.classList.remove('sidebar-btn-active'));
-            document.getElementById(`sec-${t}`).classList.remove('hidden');
-            document.getElementById(`btn-${t}`).classList.add('sidebar-btn-active');
-            if(t==='orders') { await loadCampaignOptions(); loadOrders(); }
-            if(t==='campaigns') loadCampaigns();
-            if(t==='categories') loadCats();
-            if(t==='menu') { await loadCats(); loadMenu(); }
-            if(t==='flavors') loadFlvs();
-            if(t==='settings') loadSettings();
-        }
+let allMenuItems  = [];
+let allCategories = [];
+let allCampaigns  = [];
+let curEditOrder  = null;
+let editCart      = [];
 
-        // --- 1. 訂單監控與時區處理 ---
-        function setQuickDate(val) { document.getElementById('custom-date-box').classList.toggle('hidden', val !== 'custom'); }
-        async function loadCampaignOptions() {
-            const { data } = await _s.from('campaign_settings').select('*');
-            allCampaigns = data || [];
-            document.getElementById('filter-campaign').innerHTML = '<option value="all">全部活動</option>' + allCampaigns.map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join('');
-        }
-        async function loadOrders() {
-            const search = document.getElementById('filter-search').value;
-            const status = document.getElementById('filter-status').value;
-            const preset = document.getElementById('filter-date-preset').value;
-            const campaign = document.getElementById('filter-campaign').value;
-            let query = _s.from('orders').select('*').order('created_at', {ascending:false});
-            if(search) query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
-            if(status !== 'all') query = query.eq('status', status);
-            if(campaign !== 'all') query = query.eq('campaign_code', campaign);
-            if(preset === 'today') { const d = new Date().toISOString().split('T')[0]; query = query.gte('created_at', `${d}T00:00:00`).lte('created_at', `${d}T23:59:59`); }
-            else if(preset === 'week') { const lastWeek = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString(); query = query.gte('created_at', lastWeek); }
-            else if(preset === 'custom') { const d = document.getElementById('filter-date').value; if(d) query = query.gte('created_at', `${d}T00:00:00`).lte('created_at', `${d}T23:59:59`); }
-            const { data } = await query; window.ordersRef = data || [];
-            document.getElementById('order-list').innerHTML = (data || []).map(o => {
-                let bTime = "";
-                if(o.booking_date) {
-                    const d = new Date(o.booking_date);
-                    const Y = d.getFullYear(), M = String(d.getMonth()+1).padStart(2,'0'), D = String(d.getDate()).padStart(2,'0');
-                    const H = String(d.getHours()).padStart(2,'0'), min = String(d.getMinutes()).padStart(2,'0');
-                    bTime = `${Y}-${M}-${D}T${H}:${min}`;
-                }
-                return `<div class="bg-white p-6 rounded-3xl shadow-sm border transition ${o.status==='synced'?'order-card-completed':'border-emerald-200'}">
-                    <div class="flex justify-between font-bold text-xl mb-2"><span>${o.customer_name}</span><span class="text-p-gold">$${o.total_price}</span></div>
-                    <div class="text-[10px] text-stone-400 mb-4 tracking-widest">下單於: ${new Date(o.created_at).toLocaleString()} | ${o.phone}</div>
-                    <div class="grid grid-cols-2 gap-2 mb-4 bg-stone-50 p-3 rounded-xl">
-                        <div class="col-span-2"><label class="text-[9px] font-bold text-stone-400">訂位日期與時間 Booking Time</label><input type="datetime-local" value="${bTime}" onchange="updateOrderData('${o.id}', 'booking_date', this.value)" class="input-mini"></div>
-                        <div><label class="text-[9px] font-bold text-stone-400">桌號 Table</label><input type="text" value="${o.table_no||''}" onchange="updateOrderData('${o.id}', 'table_no', this.value)" class="input-mini" placeholder="無"></div>
-                        <div><label class="text-[9px] font-bold text-stone-400">活動 Campaign</label><select onchange="updateOrderData('${o.id}', 'campaign_code', this.value)" class="input-mini"><option value="">無</option>${allCampaigns.map(c => `<option value="${c.code_name}" ${o.campaign_code===c.code_name?'selected':''}>${c.code_name}</option>`).join('')}</select></div>
-                        <div class="col-span-2 flex gap-1 mt-1"><input type="number" value="${o.adult_count||0}" onchange="updateOrderData('${o.id}','adult_count',this.value)" class="input-mini text-center" title="大人"><input type="number" value="${o.kid_count||0}" onchange="updateOrderData('${o.id}','kid_count',this.value)" class="input-mini text-center" title="小孩"><input type="number" value="${o.toddler_count||0}" onchange="updateOrderData('${o.id}','toddler_count',this.value)" class="input-mini text-center" title="幼兒"></div>
-                    </div>
-                    <div class="space-y-1 mb-6 text-sm text-stone-500 border-l-2 border-stone-200 pl-4">${o.order_content.map(i => `• ${i.name}`).join('<br>')}</div>
-                    <div class="flex gap-2"><button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-xs shadow-sm">修改細項</button><button onclick="toggleSync('${o.id}', '${o.status}')" class="flex-[1.5] ${o.status==='synced'?'bg-slate-400':'bg-emerald-600'} text-white py-3 rounded-xl text-xs font-bold shadow-md transition">${o.status==='synced'?'✓ 已完成':'未完成 (點選點收)'}</button></div>
-                    <button onclick="delOrder('${o.id}')" class="w-full mt-3 py-2 text-red-300 text-[10px] font-bold border border-red-50 rounded-lg hover:bg-red-50">永久刪除</button>
-                </div>`;
-            }).join('');
-        }
-        async function updateOrderData(id, field, val) { const obj = {}; if(field==='booking_date'&&val) { obj[field]=new Date(val).toISOString(); } else { obj[field]=val||null; } await _s.from('orders').update(obj).eq('id', id); }
-        async function toggleSync(id, cur) { await _s.from('orders').update({ status: cur==='synced'?'pending':'synced' }).eq('id', id); loadOrders(); }
-        async function delOrder(id) { if(confirm('確定刪除？')) { await _s.from('orders').delete().eq('id', id); loadOrders(); } }
+async function switchTab(t) {
+    document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.nav-btn-tab').forEach(b => b.classList.remove('sidebar-btn-active'));
+    document.getElementById(`sec-${t}`).classList.remove('hidden');
+    document.getElementById(`btn-${t}`).classList.add('sidebar-btn-active');
+    if (t === 'orders')     { await loadCampaignOptions(); loadOrders(); }
+    if (t === 'campaigns')  loadCampaigns();
+    if (t === 'categories') loadCats();
+    if (t === 'menu')       { await loadCats(); loadMenu(); }
+    if (t === 'flavors')    loadFlvs();
+    if (t === 'settings')   loadSettings();
+    if (t === 'eventurl')   initEventUrl();
+    if (t === 'report')     initReport();
+    if (t === 'photos')     loadPhotos();
+    if (t === 'linenotify') loadLineNotify();
+}
 
-        // --- 2. 修改細項核心 (解析回填) ---
-        async function openEditOrder(id) {
-            curEditOrder = window.ordersRef.find(o => o.id === id);
-            editCart = JSON.parse(JSON.stringify(curEditOrder.order_content)); 
-            document.getElementById('order-edit-modal').classList.remove('hidden');
-            const { data: items } = await _s.from('menu_items').select('*, categories(name), item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))').eq('is_hidden', false);
-            allMenuItems = items || [];
-            const { data: cats } = await _s.from('categories').select('*').order('sort_order');
-            allCategories = cats || [];
-            document.getElementById('edit-cat-nav').innerHTML = (cats||[]).map(c => `<button onclick="renderEditMenu('${c.id}')" class="px-5 py-2 bg-white border border-stone-200 rounded-full text-xs font-bold mr-2 hover:border-p-green transition">${c.name}</button>`).join('');
-            if(cats.length) renderEditMenu(cats[0].id); 
-            refreshEditCart();
+function setQuickDate(val) {
+    document.getElementById('custom-date-box').classList.toggle('hidden', val !== 'custom');
+}
+
+async function loadCampaignOptions() {
+    const { data } = await _s.from('campaign_settings').select('*');
+    allCampaigns = data || [];
+    document.getElementById('filter-campaign').innerHTML =
+        '<option value="all">全部活動</option>' +
+        allCampaigns.map(c => `<option value="${c.code_name}">${c.code_name}</option>`).join('');
+}
+
+async function loadOrders() {
+    selectedOrderIds.clear();
+    updateOrderBatchUI();
+    const search   = document.getElementById('filter-search').value;
+    const status   = document.getElementById('filter-status').value;
+    const preset   = document.getElementById('filter-date-preset').value;
+    const campaign = document.getElementById('filter-campaign').value;
+
+    let query = _s.from('orders').select('*').order('created_at', { ascending: false });
+    if (search)            query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
+    if (status !== 'all')  query = query.eq('status', status);
+    if (campaign !== 'all') query = query.eq('campaign_code', campaign);
+    if (preset === 'today') {
+        const d = new Date().toISOString().split('T')[0];
+        query = query.gte('created_at', `${d}T00:00:00`).lte('created_at', `${d}T23:59:59`);
+    } else if (preset === 'week') {
+        const lastWeek = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString();
+        query = query.gte('created_at', lastWeek);
+    } else if (preset === 'custom') {
+        const d = document.getElementById('filter-date').value;
+        if (d) query = query.gte('created_at', `${d}T00:00:00`).lte('created_at', `${d}T23:59:59`);
+    }
+
+    const { data } = await query;
+    window.ordersRef = data || [];
+
+    document.getElementById('order-list').innerHTML = (data || []).map(o => {
+        let bTime = '';
+        if (o.booking_date) {
+            const d = new Date(o.booking_date);
+            bTime = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
         }
-        function refreshEditCart() {
-            document.getElementById('edit-cart-list').innerHTML = editCart.map((i, idx) => `<div class="flex flex-col bg-stone-50 p-3 rounded-xl border mb-2 relative"><div onclick="openEditPop(null, ${idx})" class="cursor-pointer pr-8"><span class="font-bold text-xs text-p-green underline decoration-p-gold">${i.name}</span><div class="text-[9px] text-stone-400 mt-1">$${i.price} (點選修改)</div></div><button onclick="editCart.splice(${idx},1);refreshEditCart();" class="absolute top-2 right-2 text-red-300 font-bold px-2">✕</button></div>`).join('');
-            document.getElementById('edit-total-price').innerText = `$${editCart.reduce((sum, item) => sum + Number(item.price), 0)}`;
-        }
-        function openEditPop(itemId, index = -1) {
-            reEditIndex = index; let prevNames = [], prevFlvs = [];
-            if (index > -1) {
-                const raw = editCart[index].name; const baseName = raw.split(" [")[0].split(" (")[0];
-                curEditItem = allMenuItems.find(i => i.name === baseName);
-                const gM = raw.match(/\((.*?)\)/); if (gM) prevNames = gM[1].split("、").map(n => n.split(" [")[0]);
-                const fM = raw.match(/\[(.*?)\]/); if (fM) prevFlvs = fM[1].split("/");
-            } else { curEditItem = allMenuItems.find(i => i.id === itemId); }
-            if (!curEditItem) return;
-            curEditPopSels = { flavors: {}, groups: {} };
-            const container = document.getElementById('edit-pop-content'); container.innerHTML = "";
-            if (curEditItem.item_flavor_relation?.length > 0) {
-                container.innerHTML += curEditItem.item_flavor_relation.map(r => `<div><p class="text-[10px] text-stone-400 mb-2 uppercase font-bold">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o => {
-                    const isM = prevFlvs.includes(o.option_name); if(isM) curEditPopSels.flavors[r.flavor_groups.id] = o.option_name;
-                    return `<div onclick="setEditPopFlv(this, '${r.flavor_groups.id}', '${o.option_name}')" class="px-4 py-1.5 border rounded-full text-xs cursor-pointer transition ${isM?'flavor-selected':'bg-stone-50'}">${o.option_name}</div>`
-                }).join('')}</div></div>`).join('');
+        return `
+        <div id="order-card-${o.id}" class="bg-white p-6 rounded-3xl shadow-sm border transition ${o.status === 'synced' ? 'order-card-completed' : 'border-emerald-200'} ${selectedOrderIds.has(o.id) ? 'ring-2 ring-red-300' : ''}">
+            <div class="flex items-start gap-3 mb-2">
+                <input type="checkbox" ${selectedOrderIds.has(o.id) ? 'checked' : ''}
+                    onchange="toggleOrderSelect('${o.id}', this.checked)"
+                    class="accent-red-400 w-5 h-5 mt-1 flex-shrink-0 cursor-pointer">
+                <div class="flex justify-between items-start font-bold text-xl flex-1 min-w-0">
+                    <span class="truncate">${o.customer_name}</span>
+                    <span class="text-p-gold ml-2 flex-shrink-0">$${o.total_price}</span>
+                </div>
+            </div>
+            <div class="text-[10px] text-stone-400 mb-4 tracking-widest">下單於: ${new Date(o.created_at).toLocaleString()} | ${o.phone}</div>
+            <div class="grid grid-cols-2 gap-2 mb-4 bg-stone-50 p-3 rounded-xl">
+                <div>
+                    <label class="text-[9px] font-bold text-stone-400">訂位日期 Date</label>
+                    <input type="date" id="bdate-${o.id}" value="${bTime.split('T')[0]||''}"
+                        onchange="updateBookingDateTime('${o.id}')" class="input-mini">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-stone-400">訂位時間 Time</label>
+                    <select id="btime-${o.id}" onchange="updateBookingDateTime('${o.id}')" class="input-mini">
+                        <option value="">-- 選擇時間 --</option>
+                        ${Array.from({length:24},(_,h)=>[0,15,30,45].map(m=>{const hh=String(h).padStart(2,'0'),mm=String(m).padStart(2,'0'),val=`${hh}:${mm}`,curTime=bTime?bTime.split('T')[1]?.slice(0,5):'';return`<option value="${val}"${curTime===val?' selected':''}>${val}</option>`;}).join('')).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-stone-400">桌號 Table</label>
+                    <input type="text" value="${o.table_no||''}" onchange="updateOrderData('${o.id}','table_no',this.value)" class="input-mini" placeholder="無">
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-stone-400">活動 Campaign</label>
+                    <select onchange="updateOrderData('${o.id}','campaign_code',this.value)" class="input-mini">
+                        <option value="">無</option>
+                        ${allCampaigns.map(c=>`<option value="${c.code_name}"${o.campaign_code===c.code_name?' selected':''}>${c.code_name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="col-span-2 grid grid-cols-3 gap-1 mt-1">
+                    <div><label class="text-[9px] font-bold text-stone-400 block text-center mb-1">大人 Adult</label><input type="number" min="0" value="${o.adult_count||0}" onchange="updateOrderData('${o.id}','adult_count',this.value)" class="input-mini text-center w-full"></div>
+                    <div><label class="text-[9px] font-bold text-stone-400 block text-center mb-1">小孩 Kid</label><input type="number" min="0" value="${o.kid_count||0}" onchange="updateOrderData('${o.id}','kid_count',this.value)" class="input-mini text-center w-full"></div>
+                    <div><label class="text-[9px] font-bold text-stone-400 block text-center mb-1">兒童 Child</label><input type="number" min="0" value="${o.child_count||0}" onchange="updateOrderData('${o.id}','child_count',this.value)" class="input-mini text-center w-full"></div>
+                </div>
+            </div>
+            <div class="space-y-1 mb-6 text-sm text-stone-500 border-l-2 border-stone-200 pl-4">${o.order_content.map(i=>`• ${i.name}`).join('<br>')}</div>
+            <div class="flex gap-2">
+                <button onclick="openEditOrder('${o.id}')" class="flex-1 bg-stone-100 py-3 rounded-xl font-bold text-xs shadow-sm">修改細項</button>
+                <button onclick="toggleSync('${o.id}','${o.status}')" class="flex-[1.5] ${o.status==='synced'?'bg-slate-400':'bg-emerald-600'} text-white py-3 rounded-xl text-xs font-bold shadow-md transition">${o.status==='synced'?'✓ 已完成':'未完成 (點選點收)'}</button>
+            </div>
+            <button onclick="delOrder('${o.id}')" class="w-full mt-3 py-2 text-red-300 text-[10px] font-bold border border-red-50 rounded-lg hover:bg-red-50">永久刪除</button>
+        </div>`;
+    }).join('');
+}
+
+async function updateOrderData(id, field, val) {
+    const obj = {};
+    if (field === 'booking_date' && val) obj[field] = new Date(val).toISOString();
+    else obj[field] = val || null;
+    await _s.from('orders').update(obj).eq('id', id);
+}
+
+async function updateBookingDateTime(id) {
+    const dateEl = document.getElementById(`bdate-${id}`);
+    const timeEl = document.getElementById(`btime-${id}`);
+    if (!dateEl || !timeEl) return;
+    const date = dateEl.value, time = timeEl.value;
+    if (!date || !time) return;
+    await _s.from('orders').update({ booking_date: new Date(`${date}T${time}:00`).toISOString() }).eq('id', id);
+}
+
+async function toggleSync(id, cur) {
+    await _s.from('orders').update({ status: cur === 'synced' ? 'pending' : 'synced' }).eq('id', id);
+    loadOrders();
+}
+
+let selectedOrderIds = new Set();
+
+function toggleOrderSelect(id, checked) {
+    if (checked) selectedOrderIds.add(id); else selectedOrderIds.delete(id);
+    updateOrderBatchUI();
+    const card = document.getElementById(`order-card-${id}`);
+    if (card) { if (checked) card.classList.add('ring-2','ring-red-300'); else card.classList.remove('ring-2','ring-red-300'); }
+}
+
+function toggleOrderSelectAll(checked) {
+    const ids = (window.ordersRef||[]).map(o=>o.id);
+    if (checked) ids.forEach(id=>selectedOrderIds.add(id)); else selectedOrderIds.clear();
+    updateOrderBatchUI();
+    ids.forEach(id=>{
+        const card=document.getElementById(`order-card-${id}`);
+        const cb=card?.querySelector('input[type=checkbox]');
+        if(cb)cb.checked=checked;
+        if(card){if(checked)card.classList.add('ring-2','ring-red-300');else card.classList.remove('ring-2','ring-red-300');}
+    });
+}
+
+function updateOrderBatchUI() {
+    const count=selectedOrderIds.size;
+    const countEl=document.getElementById('order-selected-count');
+    const btn=document.getElementById('order-batch-delete-btn');
+    const sa=document.getElementById('order-select-all');
+    if(count>0){countEl.classList.remove('hidden');countEl.innerText=`已選 ${count} 筆`;btn.classList.remove('hidden');}
+    else{countEl.classList.add('hidden');btn.classList.add('hidden');if(sa)sa.checked=false;}
+}
+
+async function batchDeleteOrders() {
+    if(!selectedOrderIds.size)return;
+    if(!confirm(`確定永久刪除選取的 ${selectedOrderIds.size} 筆訂單？此操作無法復原`))return;
+    await _s.from('orders').delete().in('id',Array.from(selectedOrderIds));
+    selectedOrderIds.clear();updateOrderBatchUI();loadOrders();
+}
+
+async function delOrder(id) {
+    if(confirm('確定刪除？')){await _s.from('orders').delete().eq('id',id);selectedOrderIds.delete(id);updateOrderBatchUI();loadOrders();}
+}
+
+function resetFilters() {
+    document.getElementById('filter-search').value='';
+    document.getElementById('filter-date-preset').value='all';
+    document.getElementById('filter-status').value='all';
+    document.getElementById('filter-campaign').value='all';
+    loadOrders();
+}
+
+function exportXls() {
+    const exp=(window.ordersRef||[]).map(o=>({'姓名':o.customer_name,'電話':o.phone,'總額':o.total_price,'桌號':o.table_no,'活動':o.campaign_code,'訂位時間':o.booking_date}));
+    const ws=XLSX.utils.json_to_sheet(exp);const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'報表');XLSX.writeFile(wb,'真珠訂單報表.xlsx');
+}
+
+let curEditItem=null,curEditPopSels={flavors:{},groups:{}},reEditIndex=-1;
+
+async function openEditOrder(id) {
+    curEditOrder=window.ordersRef.find(o=>o.id===id);
+    editCart=JSON.parse(JSON.stringify(curEditOrder.order_content));
+    document.getElementById('order-edit-modal').classList.remove('hidden');
+    const{data:items}=await _s.from('menu_items').select('*, categories(name), item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))))').eq('is_hidden',false);
+    allMenuItems=items||[];
+    const{data:cats}=await _s.from('categories').select('*').order('sort_order');
+    allCategories=cats||[];
+    document.getElementById('edit-cat-nav').innerHTML=(cats||[]).map(c=>`<button onclick="renderEditMenu('${c.id}')" class="px-5 py-2 bg-white border border-stone-200 rounded-full text-xs font-bold mr-2 hover:border-p-green transition">${c.name}</button>`).join('');
+    if(cats.length)renderEditMenu(cats[0].id);
+    refreshEditCart();
+}
+
+function refreshEditCart() {
+    document.getElementById('edit-cart-list').innerHTML=editCart.map((i,idx)=>`<div class="flex flex-col bg-stone-50 p-3 rounded-xl border mb-2 relative"><div onclick="openEditPop(null,${idx})" class="cursor-pointer pr-8"><span class="font-bold text-xs text-p-green underline decoration-p-gold">${i.name}</span><div class="text-[9px] text-stone-400 mt-1">$${i.price} (點選修改)</div></div><button onclick="editCart.splice(${idx},1);refreshEditCart();" class="absolute top-2 right-2 text-red-300 font-bold px-2">✕</button></div>`).join('');
+    document.getElementById('edit-total-price').innerText=`$${editCart.reduce((sum,item)=>sum+Number(item.price),0)}`;
+}
+
+function openEditPop(itemId,index=-1) {
+    reEditIndex=index;let prevNames=[],prevFlvs=[];
+    if(index>-1){const raw=editCart[index].name;const baseName=raw.split(' [')[0].split(' (')[0];curEditItem=allMenuItems.find(i=>i.name===baseName);const gM=raw.match(/\((.*?)\)/);if(gM)prevNames=gM[1].split('、').map(n=>n.split(' [')[0]);const fM=raw.match(/\[(.*?)\]/);if(fM)prevFlvs=fM[1].split('/');}
+    else{curEditItem=allMenuItems.find(i=>i.id===itemId);}
+    if(!curEditItem)return;
+    curEditPopSels={flavors:{},groups:{}};
+    const container=document.getElementById('edit-pop-content');container.innerHTML='';
+    if(curEditItem.item_flavor_relation?.length>0){container.innerHTML+=curEditItem.item_flavor_relation.map(r=>`<div><p class="text-[10px] text-stone-400 mb-2 uppercase font-bold">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o=>{const isM=prevFlvs.includes(o.option_name);if(isM)curEditPopSels.flavors[r.flavor_groups.id]=o.option_name;return`<div onclick="setEditPopFlv(this,'${r.flavor_groups.id}','${o.option_name}')" class="px-4 py-1.5 border rounded-full text-xs cursor-pointer transition ${isM?'flavor-selected':'bg-stone-50'}">${o.option_name}</div>`;}).join('')}</div></div>`).join('');}
+    if(curEditItem.is_set_menu&&curEditItem.set_menu_groups){container.innerHTML+=curEditItem.set_menu_groups.map(g=>{curEditPopSels.groups[g.id]=[];return`<div><p class="text-[10px] text-p-green font-bold mb-2 uppercase">${g.group_name}</p><div class="grid grid-cols-2 gap-2">${g.set_menu_contents.map(c=>{const isM=prevNames.includes(c.menu_items.name);if(isM)curEditPopSels.groups[g.id].push({name:c.menu_items.name});return`<div onclick="setEditPopGroup(this,'${g.id}','${c.menu_items.name}',${g.selection_limit})" class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold ${isM?'opt-selected':'bg-stone-50'}">${c.menu_items.name}</div>`;}).join('')}</div></div>`;}).join('');}
+    document.getElementById('edit-pop-title').innerText=curEditItem.name;
+    document.getElementById('edit-flavor-popup').classList.remove('hidden');
+}
+
+function setEditPopFlv(el,gid,name){Array.from(el.parentElement.children).forEach(c=>{c.classList.remove('flavor-selected');c.classList.add('bg-stone-50');});el.classList.add('flavor-selected');el.classList.remove('bg-stone-50');curEditPopSels.flavors[gid]=name;}
+function setEditPopGroup(el,gid,name,limit){const sibs=Array.from(el.parentElement.children);if(limit===1){sibs.forEach(s=>s.classList.remove('opt-selected'));el.classList.add('opt-selected');curEditPopSels.groups[gid]=[{name}];}else{let s=curEditPopSels.groups[gid];if(s.some(x=>x.name===name)){s=s.filter(x=>x.name!==name);el.classList.remove('opt-selected');}else if(s.length<limit){s.push({name});el.classList.add('opt-selected');}curEditPopSels.groups[gid]=s;}}
+
+function confirmEditPop(){
+    const fn=Object.values(curEditPopSels.flavors).join('/');
+    const gn=Object.values(curEditPopSels.groups).flat().map(x=>x.name).join('、');
+    const finalName=`${curEditItem.name}${fn?` [${fn}]`:''}${gn?` (${gn})`:''}`;
+    if(reEditIndex>-1)editCart[reEditIndex]={name:finalName,price:Number(curEditItem.price)};
+    else editCart.push({name:finalName,price:Number(curEditItem.price)});
+    closeEditPop();refreshEditCart();
+}
+
+async function saveOrderChange(){
+    const total=editCart.reduce((sum,item)=>sum+Number(item.price),0);
+    await _s.from('orders').update({order_content:editCart,total_price:total}).eq('id',curEditOrder.id);
+    alert('更新成功');closeEditModal();loadOrders();
+}
+
+function renderEditMenu(cid){
+    document.getElementById('edit-menu-grid').innerHTML=allMenuItems.filter(i=>i.category_id===cid).map(i=>`<div onclick="openEditPop('${i.id}')" class="bg-white p-3 rounded-xl border border-stone-100 cursor-pointer shadow-sm"><div class="font-bold text-xs line-clamp-2">${i.name}</div><div class="text-p-gold font-bold text-xs mt-2">$${i.price}</div></div>`).join('');
+}
+
+async function loadCampaigns(){const{data}=await _s.from('campaign_settings').select('*').order('created_at',{ascending:false});document.getElementById('campaign-list').innerHTML=(data||[]).map(c=>`<div class="flex justify-between items-center p-3 bg-stone-50 rounded-xl border font-bold text-sm shadow-sm"><span class="text-p-green">${c.code_name}</span><button onclick="delCampaign(${c.id})" class="text-red-400 px-2 font-bold">✕</button></div>`).join('');}
+async function addCampaign(){const n=document.getElementById('new-campaign').value.trim();if(n)await _s.from('campaign_settings').insert([{code_name:n}]);document.getElementById('new-campaign').value='';loadCampaigns();}
+async function delCampaign(id){await _s.from('campaign_settings').delete().eq('id',id);loadCampaigns();}
+
+async function loadCats(){
+    const{data}=await _s.from('categories').select('*').order('sort_order');
+    allCategories=data||[];
+    document.getElementById('cat-list-table').innerHTML=data.map(c=>`<tr class="border-b hover:bg-stone-50 transition text-sm text-left"><td class="p-4"><input type="number" value="${c.sort_order||0}" onchange="updateCatSort('${c.id}',this.value)" class="w-12 border rounded text-xs p-1 text-center"></td><td class="p-4 font-bold text-p-green">${c.name}</td><td class="p-4"><input type="checkbox" ${c.is_visible?'checked':''} onchange="updateCatVis('${c.id}',this.checked)"></td><td class="p-4"><button onclick="delCat('${c.id}')" class="text-red-400 font-bold">刪除</button></td></tr>`).join('');
+    document.getElementById('m-cat').innerHTML=(data||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    document.getElementById('menu-cat-filter').innerHTML='<option value="all">所有分類</option>'+(data||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+}
+async function updateCatVis(id,b){await _s.from('categories').update({is_visible:b}).eq('id',id);loadCats();}
+async function updateCatSort(id,v){await _s.from('categories').update({sort_order:parseInt(v)}).eq('id',id);loadCats();}
+async function addCat(){const n=document.getElementById('new-cat').value.trim();if(n)await _s.from('categories').insert([{name:n,sort_order:99,is_visible:true}]);loadCats();}
+async function delCat(id){await _s.from('categories').delete().eq('id',id);loadCats();}
+
+async function loadFlvs(){const{data}=await _s.from('flavor_groups').select('*, flavor_options(*)');document.getElementById('flv-grid').innerHTML=(data||[]).map(g=>`<div class="bg-white p-5 rounded-2xl border flex justify-between shadow-sm"><b>🌶️ ${g.name}</b><button onclick="delFlv('${g.id}')" class="text-red-400 font-bold px-2 text-xl font-serif">✕</button></div>`).join('');}
+async function addFlvGroup(){const n=prompt('組名');const o=prompt('選項 (逗號隔開)');if(n&&o){const{data:g}=await _s.from('flavor_groups').insert([{name:n}]).select();if(g)await _s.from('flavor_options').insert(o.split(',').map(nm=>({group_id:g[0].id,option_name:nm.trim()})));loadFlvs();}}
+async function delFlv(id){await _s.from('flavor_groups').delete().eq('id',id);loadFlvs();}
+
+async function loadSettings(){const{data}=await _s.from('store_settings').select('*').eq('id',1).single();if(data?.logo_url){document.getElementById('current-logo-preview').classList.remove('hidden');document.getElementById('admin-logo-img').src=`${data.logo_url}?t=${Date.now()}`;}}
+async function uploadLogo(){const f=document.getElementById('logo-file').files[0];if(!f)return alert('請選檔案');const ext=f.name.split('.').pop().toLowerCase();const path=`logo_${Date.now()}.${ext}`;const type=ext==='svg'?'image/svg+xml':f.type;const{error}=await _s.storage.from('assets').upload(path,f,{contentType:type,cacheControl:'3600',upsert:true});if(!error){const{data}=_s.storage.from('assets').getPublicUrl(path);await _s.from('store_settings').update({logo_url:data.publicUrl}).eq('id',1);alert('成功');loadSettings();loadSidebarLogo();}}
+
+function closeEditModal(){document.getElementById('order-edit-modal').classList.add('hidden');}
+function closeEditPop(){document.getElementById('edit-flavor-popup').classList.add('hidden');}
+
+let curItem=null,curPicks=[],pickerSelectedItems=[],currentEditingGroupId=null;
+
+async function loadMenu(){
+    const search=document.getElementById('menu-search').value.toLowerCase();
+    const catF=document.getElementById('menu-cat-filter').value;
+    const{data}=await _s.from('menu_items').select('*, categories(name)').order('created_at',{ascending:false});
+    document.getElementById('menu-grid').innerHTML=(data||[]).filter(i=>i.name.toLowerCase().includes(search)&&(catF==='all'||i.category_id===catF)).map(i=>`<div class="bg-white rounded-3xl border p-4 shadow-sm flex flex-col h-full"><div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden"><img src="${i.image_url||''}" class="max-h-full img-contain"></div><div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="flex gap-2 mt-auto pt-4"><button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-xs font-bold hover:bg-stone-200 shadow-sm">編輯</button>${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold shadow-sm">⚙️ 套餐</button>`:''}<button onclick="delItem('${i.id}')" class="px-2 text-red-200">✕</button></div></div>`).join('');
+}
+
+async function openMenuModal(isEdit){
+    document.getElementById('menu-modal').classList.remove('hidden');
+    if(!isEdit){document.getElementById('m-id').value='';document.getElementById('m-name').value='';document.getElementById('m-price').value='';document.getElementById('m-desc').value='';document.getElementById('m-is-set').checked=false;}
+    if(!document.getElementById('m-cat').options.length){const{data:cats}=await _s.from('categories').select('*').order('sort_order');document.getElementById('m-cat').innerHTML=(cats||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');}
+    const{data:flvs}=await _s.from('flavor_groups').select('*');
+    document.getElementById('flv-checks').innerHTML=(flvs||[]).map(f=>`<label class="flex items-center gap-1 text-[11px]"><input type="checkbox" class="flv-chk accent-p-green" value="${f.id}"> ${f.name}</label>`).join('');
+}
+
+async function editItem(id){
+    const{data:i}=await _s.from('menu_items').select('*, item_flavor_relation(*)').eq('id',id).single();
+    document.getElementById('m-id').value=i.id;document.getElementById('m-name').value=i.name;document.getElementById('m-price').value=i.price;document.getElementById('m-desc').value=i.description||'';document.getElementById('m-is-set').checked=i.is_set_menu;
+    await openMenuModal(true);
+    setTimeout(()=>{const catSel=document.getElementById('m-cat');if(catSel&&i.category_id)catSel.value=i.category_id;i.item_flavor_relation.forEach(r=>{const c=document.querySelector(`.flv-chk[value="${r.flavor_group_id}"]`);if(c)c.checked=true;});},300);
+}
+
+async function saveItem(){
+    const id=document.getElementById('m-id').value;const file=document.getElementById('m-img').files[0];let url='';
+    if(file){const path=`items/${Date.now()}.png`;await _s.storage.from('assets').upload(path,file);const{data}=_s.storage.from('assets').getPublicUrl(path);url=data.publicUrl;}
+    const payload={name:document.getElementById('m-name').value,price:document.getElementById('m-price').value,description:document.getElementById('m-desc').value,category_id:document.getElementById('m-cat').value,is_set_menu:document.getElementById('m-is-set').checked};
+    if(url)payload.image_url=url;
+    const{data:saved}=id?await _s.from('menu_items').update(payload).eq('id',id).select():await _s.from('menu_items').insert([payload]).select();
+    if(saved){await _s.from('item_flavor_relation').delete().eq('item_id',saved[0].id);const rels=Array.from(document.querySelectorAll('.flv-chk:checked')).map(c=>({item_id:saved[0].id,flavor_group_id:c.value}));if(rels.length)await _s.from('item_flavor_relation').insert(rels);closeMenuModal();loadMenu();}
+}
+
+async function delItem(id){if(confirm('確定刪除此餐點？')){await _s.from('menu_items').delete().eq('id',id);loadMenu();}}
+function closeMenuModal(){document.getElementById('menu-modal').classList.add('hidden');}
+
+async function openSetModal(id){curItem=id;resetSetForm();document.getElementById('set-modal').classList.remove('hidden');const{data}=await _s.from('menu_items').select('*, categories(name)').eq('is_set_menu',false).order('name');window.allPickerItems=data||[];renderPickerList(data);loadSavedSets();}
+function closeSetModal(){document.getElementById('set-modal').classList.add('hidden');}
+
+function renderPickerList(items){
+    const container=document.getElementById('item-picker-list');
+    const grouped=items.reduce((acc,i)=>{const cat=i.categories?.name||'未分類';if(!acc[cat])acc[cat]=[];acc[cat].push(i);return acc;},{});
+    container.innerHTML=Object.keys(grouped).map(cat=>`<div class="col-span-2 mt-2 font-black text-[9px] text-stone-300 border-b uppercase">${cat}</div>`+grouped[cat].map(i=>`<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}','${i.name}')" class="picker-item flex justify-between p-3 border rounded-xl bg-white cursor-pointer shadow-sm text-xs font-bold"><span>${i.name}</span><div class="check-mark hidden font-bold text-p-gold">✔</div></div>`).join('')).join('');
+}
+
+function filterPickerItems(){const kw=document.getElementById('set-item-search').value.toLowerCase();renderPickerList(window.allPickerItems.filter(i=>i.name.toLowerCase().includes(kw)));pickerSelectedItems.forEach(s=>{const el=document.getElementById(`picker-${s.id}`);if(el)el.classList.add('active');});}
+function togglePickerSelect(id,name){const el=document.getElementById(`picker-${id}`);const idx=pickerSelectedItems.findIndex(x=>x.id===id);if(idx>-1){pickerSelectedItems.splice(idx,1);el?.classList.remove('active');}else{pickerSelectedItems.push({id,name});el?.classList.add('active');}updatePickerStats();}
+function updatePickerStats(){document.getElementById('picker-count').innerText=`已選 ${pickerSelectedItems.length} 項`;}
+
+function addSelectedToPicks(){pickerSelectedItems.forEach(s=>{if(!curPicks.some(p=>p.id===s.id))curPicks.push(s);});pickerSelectedItems=[];renderTempPicks();document.querySelectorAll('.picker-item').forEach(el=>el.classList.remove('active'));updatePickerStats();}
+function renderTempPicks(){document.getElementById('temp-pick-display').innerHTML=curPicks.map((p,idx)=>`<div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2">${p.name}<span onclick="curPicks.splice(${idx},1);renderTempPicks();" class="cursor-pointer opacity-40 font-bold">✕</span></div>`).join('');}
+
+async function editSetGroup(groupId){currentEditingGroupId=groupId;const{data:g}=await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('id',groupId).single();if(g){document.getElementById('g-name').value=g.group_name;document.getElementById('g-limit').value=g.selection_limit;document.getElementById('set-modal-title').innerText='編輯分組';document.getElementById('btn-save-group').innerText='儲存更新';document.getElementById('btn-cancel-edit').classList.remove('hidden');curPicks=g.set_menu_contents.map(c=>({id:c.menu_items.id,name:c.menu_items.name}));renderTempPicks();}}
+function resetSetForm(){currentEditingGroupId=null;document.getElementById('g-name').value='';document.getElementById('g-limit').value=1;document.getElementById('temp-pick-display').innerHTML='';document.getElementById('set-modal-title').innerText='套餐分組設定';document.getElementById('btn-save-group').innerText='確認儲存並建立分組';document.getElementById('btn-cancel-edit').classList.add('hidden');curPicks=[];pickerSelectedItems=[];updatePickerStats();}
+
+async function saveFullSet(){
+    const n=document.getElementById('g-name').value;const l=document.getElementById('g-limit').value;
+    if(!n||!curPicks.length)return alert('輸入內容');
+    let gid=currentEditingGroupId;
+    if(gid){await _s.from('set_menu_groups').update({group_name:n,selection_limit:l}).eq('id',gid);await _s.from('set_menu_contents').delete().eq('group_id',gid);}
+    else{const{data:g}=await _s.from('set_menu_groups').insert([{parent_set_id:curItem,group_name:n,selection_limit:l}]).select();if(g)gid=g[0].id;}
+    if(gid){await _s.from('set_menu_contents').insert(curPicks.map(p=>({group_id:gid,item_id:p.id})));resetSetForm();loadSavedSets();}
+}
+
+async function loadSavedSets(){
+    const{data}=await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('parent_set_id',curItem);
+    document.getElementById('saved-groups-view').innerHTML=(data||[]).map(g=>`<div class="p-3 bg-stone-50 border rounded-xl flex justify-between items-center shadow-inner"><div class="flex-1 text-left text-xs"><b class="text-p-green">${g.group_name} (限 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 line-clamp-1">${g.set_menu_contents.map(c=>c.menu_items?.name).join('、')}</p></div><div class="flex gap-2"><button onclick="editSetGroup('${g.id}')" class="text-p-gold border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">編輯</button><button onclick="delSetGroup('${g.id}')" class="text-red-400 border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">刪除</button></div></div>`).join('');
+}
+
+async function delSetGroup(id){if(confirm('刪除？')){await _s.from('set_menu_groups').delete().eq('id',id);loadSavedSets();}}
+
+async function initEventUrl(){
+    const{data:camps}=await _s.from('campaign_settings').select('*');
+    document.getElementById('sel-campaign').innerHTML=(camps||[]).map(c=>`<option value="${c.code_name}">${c.code_name}</option>`).join('');
+    const{data:cats}=await _s.from('categories').select('*').eq('is_visible',false);
+    document.getElementById('cat-checkbox-list').innerHTML=(cats||[]).map(c=>`<div class="relative"><input type="checkbox" id="ecat-${c.id}" value="${c.id}" class="ecat-checkbox hidden"><label for="ecat-${c.id}" class="block border-2 p-3 rounded-xl cursor-pointer text-sm font-bold text-stone-500 transition hover:bg-stone-50">${c.name}</label></div>`).join('');
+    document.querySelectorAll('.ecat-checkbox').forEach(cb=>{cb.addEventListener('change',function(){const lbl=document.querySelector(`label[for="${this.id}"]`);if(this.checked){lbl.style.borderColor='#b89150';lbl.style.backgroundColor='#fffbeb';}else{lbl.style.borderColor='';lbl.style.backgroundColor='';}});});
+    loadActiveEvents();
+}
+
+async function loadActiveEvents(){
+    const{data}=await _s.from('categories').select('*').not('campaign_code','is',null);
+    const groups=(data||[]).reduce((acc,cur)=>{if(!acc[cur.campaign_code])acc[cur.campaign_code]=[];acc[cur.campaign_code].push(cur.name);return acc;},{});
+    document.getElementById('active-event-list').innerHTML=Object.keys(groups).map(code=>`<div class="bg-white p-5 rounded-2xl border flex justify-between items-center shadow-sm"><div><span class="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase">${code}</span><p class="text-xs text-stone-400 mt-2 font-medium">包含分類：${groups[code].join('、')}</p></div><div class="flex gap-4"><button onclick="copyEventLink('${code}')" class="text-blue-600 text-sm font-bold underline">複製連結</button><button onclick="unbindCampaign('${code}')" class="text-red-300 text-sm font-bold">解除全部</button></div></div>`).join('')||'<p class="text-stone-300 text-sm text-center py-6">目前無運作中的活動</p>';
+}
+
+async function bindEvent(){
+    const camp=document.getElementById('sel-campaign').value;
+    const checked=Array.from(document.querySelectorAll('.ecat-checkbox:checked')).map(el=>el.value);
+    if(!camp||checked.length===0)return alert('請選擇活動代號並至少勾選一個分類');
+    const{data:existing}=await _s.from('categories').select('id, name').eq('campaign_code',camp);
+    const hasExisting=existing&&existing.length>0;
+    let mode='add';
+    if(hasExisting){const existNames=existing.map(c=>c.name).join('、');const choice=confirm(`活動「${camp}」目前已綁定：${existNames}\n\n確定 → 在現有基礎上「新增」勾選的分類\n取消 → 「重新設定」（清除舊有，只保留本次勾選）`);mode=choice?'add':'replace';}
+    if(mode==='replace')await _s.from('categories').update({campaign_code:null}).eq('campaign_code',camp);
+    const{error}=await _s.from('categories').update({campaign_code:camp}).in('id',checked);
+    if(!error){alert(mode==='replace'?'重新設定成功！':'新增綁定成功！');loadActiveEvents();document.querySelectorAll('.ecat-checkbox').forEach(el=>{el.checked=false;const lbl=document.querySelector(`label[for="${el.id}"]`);if(lbl){lbl.style.borderColor='';lbl.style.backgroundColor='';}});}
+}
+
+async function unbindCampaign(code){if(confirm(`確定解除 ${code} 的所有分類綁定嗎？`)){await _s.from('categories').update({campaign_code:null}).eq('campaign_code',code);loadActiveEvents();}}
+function copyEventLink(code){const base='https://jinzhu.netlify.app/';const url=`${base}event.html?code=${encodeURIComponent(code)}`;const tmp=document.createElement('input');tmp.value=url;document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);alert('網址已複製！\n'+url);}
+
+// ── 備料統計報表 ──
+async function initReport(){
+    rptPreset('today');
+    const{data}=await _s.from('campaign_settings').select('*');
+    const sel=document.getElementById('report-campaign');
+    while(sel.options.length>2)sel.remove(2);
+    if(data){data.forEach(c=>{const opt=document.createElement('option');opt.value=opt.innerText=c.code_name;sel.appendChild(opt);});}
+    fetchData();
+}
+
+function rptPreset(type){
+    document.querySelectorAll('.rpt-preset-btn').forEach(b=>b.classList.remove('on'));
+    const b=document.querySelector(`.rpt-preset-btn[onclick="rptPreset('${type}')"]`);if(b)b.classList.add('on');
+    const now=new Date(),today=now.toISOString().split('T')[0];
+    const sd=document.getElementById('r-s-date'),ed=document.getElementById('r-e-date');
+    if(type==='today'){sd.value=ed.value=today;}
+    else if(type==='yesterday'){const y=new Date(now);y.setDate(y.getDate()-1);sd.value=ed.value=y.toISOString().split('T')[0];}
+    else if(type==='week'){const mon=new Date(now);mon.setDate(now.getDate()-((now.getDay()+6)%7));sd.value=mon.toISOString().split('T')[0];ed.value=today;}
+    else if(type==='month'){sd.value=new Date(now.getFullYear(),now.getMonth(),1).toISOString().split('T')[0];ed.value=new Date(now.getFullYear(),now.getMonth()+1,0).toISOString().split('T')[0];}
+}
+
+async function fetchData(){
+    const sd=document.getElementById('r-s-date').value,ed=document.getElementById('r-e-date').value;
+    const st=document.getElementById('r-s-time').value||'00:00',et=document.getElementById('r-e-time').value||'23:59';
+    const cam=document.getElementById('report-campaign').value;
+    if(!sd||!ed)return alert('請選擇日期區間');
+    const btn=document.getElementById('r-run-btn'),lbl=document.getElementById('r-run-lbl');
+    btn.disabled=true;lbl.innerHTML='<span class="rpt-spin"></span>';
+    let q=_s.from('orders').select('*').gte('created_at',`${sd}T${st}:00`).lte('created_at',`${ed}T${et}:59`).order('created_at',{ascending:true});
+    if(cam==='none')q=q.is('campaign_code',null);else if(cam!=='all')q=q.eq('campaign_code',cam);
+    const{data:orders,error}=await q;
+    btn.disabled=false;lbl.innerText='▶ 執行查詢';
+    if(error){alert('查詢失敗：'+error.message);return;}
+    const camLabel=cam==='all'?'全部':cam==='none'?'一般訂單':cam;
+    document.getElementById('report-period-display').innerText=`${sd} ${st} ～ ${ed} ${et}　｜　${camLabel}`;
+    renderReports(orders||[]);
+}
+
+function renderReports(orders){
+    const dishCount={},setMenuCount={};
+    let totalAdult=0,totalKid=0,totalChild=0,totalRev=0;
+    orders.forEach(o=>{
+        totalAdult+=(o.adult_count||0);totalKid+=(o.kid_count||0);totalChild+=(o.child_count||0);totalRev+=(o.total_price||0);
+        (o.order_content||[]).forEach(item=>{
+            const qtyM=item.name.match(/ x(\d+)/);
+            const qty=qtyM?parseInt(qtyM[1]):1;
+            // ✅ BUG 1 FIX: 完整保留品名（含加購說明），用 indexOf 找第一個「 (」
+            // 避免 (加購)金補四神排骨湯 被 match(/\((.*?)\)/) 誤截斷
+            let cleanName = item.name.replace(/\s*\[.*?\]/g, '').replace(/ x\d+/g, '').trim();
+            const parenIdx = cleanName.indexOf(' (');
+            const inner    = parenIdx > -1 ? cleanName.slice(parenIdx + 2, -1) : null;
+            const isSet    = inner && inner.includes('、');
+            if (isSet) {
+                const brand = cleanName.slice(0, parenIdx).trim();
+                setMenuCount[brand] = (setMenuCount[brand] || 0) + qty;
+                inner.split('、').forEach(sub => {
+                    const s = sub.replace(/\s*\[.*?\]/g, '').trim();
+                    if (s) dishCount[s] = (dishCount[s] || 0) + qty;
+                });
+            } else {
+                dishCount[cleanName] = (dishCount[cleanName] || 0) + qty;
             }
-            if (curEditItem.is_set_menu && curEditItem.set_menu_groups) {
-                container.innerHTML += curEditItem.set_menu_groups.map(g => {
-                    curEditPopSels.groups[g.id] = [];
-                    return `<div><p class="text-[10px] text-p-green font-bold mb-2 uppercase">${g.group_name}</p><div class="grid grid-cols-2 gap-2">${g.set_menu_contents.map(c => {
-                        const isM = prevNames.includes(c.menu_items.name); if(isM) curEditPopSels.groups[g.id].push({ name: c.menu_items.name });
-                        return `<div onclick="setEditPopGroup(this, '${g.id}', '${c.menu_items.name}', ${g.selection_limit})" class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold ${isM?'opt-selected':'bg-stone-50'}">${c.menu_items.name}</div>`
-                    }).join('')}</div></div>`;
-                }).join('');
+        });
+    });
+
+    const sorted=Object.entries(dishCount).sort((a,b)=>b[1]-a[1]);
+    const totalSets=Object.values(setMenuCount).reduce((a,b)=>a+b,0);
+    const maxQty=sorted[0]?.[1]||1;
+
+    document.getElementById('kpi-orders').innerText=orders.length;
+    document.getElementById('kpi-adult').innerText=totalAdult;
+    document.getElementById('kpi-kid').innerText=totalKid;
+    document.getElementById('kpi-child').innerText=totalChild;
+    document.getElementById('kpi-people').innerText=totalAdult+totalKid+totalChild;
+    document.getElementById('kpi-sets').innerText=totalSets;
+    document.getElementById('kpi-items').innerText=sorted.length;
+    document.getElementById('kpi-rev').innerText='$'+totalRev.toLocaleString();
+    document.getElementById('ingredient-total').innerText=`${sorted.length} 項`;
+    document.getElementById('set-menu-total').innerText=`${totalSets} 套`;
+    document.getElementById('order-count-tag').innerText=`${orders.length} 筆`;
+
+    document.getElementById('dish-summary-body').innerHTML=sorted.length===0
+        ?`<tr><td colspan="4" class="text-center py-10 text-stone-300 font-bold text-sm">查無資料</td></tr>`
+        :sorted.map(([name,count],i)=>`<tr class="hover:bg-stone-50 transition"><td class="px-5 py-3 text-xs font-bold text-stone-300">${i+1}</td><td class="px-5 py-3 font-bold text-stone-700">${name}</td><td class="px-5 py-3 text-right"><span class="font-serif font-black text-xl text-p-green">${count}</span><span class="text-xs text-stone-300 ml-1">份</span></td><td class="px-5 py-3"><div style="background:#f1f5f9;border-radius:999px;height:5px;overflow:hidden"><div style="background:#b89150;height:100%;width:${Math.round(count/maxQty*100)}%;border-radius:999px;transition:width .4s"></div></div></td></tr>`).join('');
+
+    document.getElementById('set-menu-body').innerHTML=Object.keys(setMenuCount).length===0
+        ?`<p class="text-center py-8 text-stone-300 font-bold text-sm">查無套餐訂單</p>`
+        :Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`<div class="flex justify-between items-center p-4 bg-stone-50 rounded-2xl border" style="border-color:rgba(184,145,80,.15)"><div><div class="font-bold text-p-green">${name}</div><div class="text-xs text-stone-400 mt-0.5">套餐組合</div></div><div class="flex items-baseline gap-1"><span class="font-serif font-black text-2xl text-amber-600">${count}</span><span class="text-xs text-stone-300 font-bold">組</span></div></div>`).join('');
+
+    document.getElementById('order-detail-container').innerHTML=orders.length===0
+        ?`<div class="text-center py-16 text-stone-300 font-bold">查無訂單資料</div>`
+        :orders.map((o,idx)=>`<div class="bg-white rounded-2xl border shadow-sm overflow-hidden"><div class="flex justify-between items-start p-4" style="background:linear-gradient(135deg,#004d40,#00695c)"><div><div class="text-xs font-bold" style="color:rgba(255,255,255,.4)"># ${String(idx+1).padStart(3,'0')}</div><div class="text-lg font-black text-white font-serif">${o.customer_name||'—'}</div><div class="text-xs font-bold" style="color:#d4a85a">${o.phone||'—'}</div></div><div class="text-right"><div class="text-xs font-bold" style="color:rgba(255,255,255,.4)">${new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>${o.campaign_code?`<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(184,145,80,.3);color:#d4a85a">${o.campaign_code}</span>`:''}</div></div><div class="flex flex-wrap gap-2 px-4 py-3 border-b border-stone-50">${o.table_no?`<span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">桌號 <span class="text-p-green">${o.table_no}</span></span>`:''}<span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">大人 <span class="text-p-green">${o.adult_count||0}</span> 位</span><span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">小孩 <span class="text-p-green">${o.kid_count||0}</span> 位</span><span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">兒童 <span class="text-p-green">${o.child_count||0}</span> 位</span><span class="bg-stone-50 rounded-lg px-3 py-1 text-xs font-bold text-stone-500">合計 <span class="text-amber-600">$${o.total_price||0}</span></span></div><div class="px-4 py-2">${(o.order_content||[]).map(item=>`<div class="flex justify-between py-2 border-b border-stone-50 last:border-0 text-xs"><span class="text-stone-600 font-medium">• ${item.name}</span><span class="font-bold text-amber-600 ml-3 whitespace-nowrap">$${item.price}</span></div>`).join('')}</div>${o.note?`<div class="mx-4 mb-3 px-3 py-2 text-xs font-bold text-p-green rounded-lg" style="background:#f0fdf4;border-left:3px solid #004d40">📝 ${o.note}</div>`:''}</div>`).join('');
+
+    window.lastData={dishCount,setMenuCount,sorted,orders,totalAdult,totalKid,totalChild,totalRev,totalSets};
+}
+
+function rptTab(name){
+    ['prepare','setmenu','orders'].forEach(t=>document.getElementById(`rtab-${t}`).classList.toggle('hidden',t!==name));
+    document.querySelectorAll('.rpt-tab').forEach((b,i)=>b.classList.toggle('on',['prepare','setmenu','orders'][i]===name));
+}
+
+function reportPrint(){
+    ['prepare','setmenu','orders'].forEach(t=>document.getElementById(`rtab-${t}`).classList.remove('hidden'));
+    window.print();setTimeout(()=>rptTab('prepare'),500);
+}
+
+function exportFullData(){
+    if(!window.lastData)return alert('請先查詢數據');
+    const{orders,dishCount,setMenuCount,sorted,totalAdult,totalKid,totalChild,totalRev,totalSets}=window.lastData;
+    const wb=XLSX.utils.book_new();
+
+    // ══ 分頁1：逐桌明細（套餐子菜各自一列）══
+    const tableRows=[];
+    const sorted_orders=[...orders].sort((a,b)=>{
+        const ta=a.table_no||'zzz',tb=b.table_no||'zzz';
+        return ta.localeCompare(tb,'zh-TW',{numeric:true});
+    });
+
+    sorted_orders.forEach(o=>{
+        const items=o.order_content||[];
+        const timeStr=new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+        // ✅ BUG 2 FIX: 套餐子菜各自一列，完整保留 (加購)xxx 品名
+        const displayRows=[];
+        items.forEach(item=>{
+            const clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            const pIdx=clean.indexOf(' (');
+            const inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
+            const isSet=inner&&inner.includes('、');
+            if(isSet){
+                inner.split('、').forEach((sub,si)=>{
+                    const s=sub.replace(/\s*\[.*?\]/g,'').trim();
+                    if(s)displayRows.push({dish:s,price:si===0?item.price:''});
+                });
+            }else{
+                displayRows.push({dish:clean,price:item.price});
             }
-            document.getElementById('edit-pop-title').innerText = curEditItem.name; document.getElementById('edit-flavor-popup').classList.remove('hidden');
-        }
-        function setEditPopFlv(el, gid, name) { Array.from(el.parentElement.children).forEach(c => { c.classList.remove('flavor-selected'); c.classList.add('bg-stone-50'); }); el.classList.add('flavor-selected'); el.classList.remove('bg-stone-50'); curEditPopSels.flavors[gid] = name; }
-        function setEditPopGroup(el, gid, name, limit) {
-            const sibs = Array.from(el.parentElement.children);
-            if(limit === 1) { sibs.forEach(s => s.classList.remove('opt-selected')); el.classList.add('opt-selected'); curEditPopSels.groups[gid] = [{ name }]; }
-            else { 
-                let s = curEditPopSels.groups[gid]; if(s.some(x => x.name === name)) { s = s.filter(x => x.name !== name); el.classList.remove('opt-selected'); }
-                else if(s.length < limit) { s.push({ name }); el.classList.add('opt-selected'); } curEditPopSels.groups[gid] = s;
-            }
-        }
-        function confirmEditPop() {
-            const fn = Object.values(curEditPopSels.flavors).join('/'); const gn = Object.values(curEditPopSels.groups).flat().map(x => x.name).join('、');
-            const finalName = `${curEditItem.name}${fn ? ` [${fn}]` : ""}${gn ? ` (${gn})` : ""}`;
-            if (reEditIndex > -1) { editCart[reEditIndex] = { name: finalName, price: Number(curEditItem.price) }; }
-            else { editCart.push({ name: finalName, price: Number(curEditItem.price) }); }
-            closeEditPop(); refreshEditCart();
-        }
-        async function saveOrderChange() { const total = editCart.reduce((sum, item) => sum + Number(item.price), 0); await _s.from('orders').update({ order_content: editCart, total_price: total }).eq('id', curEditOrder.id); alert("更新成功"); closeEditModal(); loadOrders(); }
-        function renderEditMenu(cid) { document.getElementById('edit-menu-grid').innerHTML = allMenuItems.filter(i => i.category_id === cid).map(i => `<div onclick="openEditPop('${i.id}')" class="bg-white p-3 rounded-xl border border-stone-100 cursor-pointer shadow-sm"><div class="font-bold text-xs line-clamp-2">${i.name}</div><div class="text-p-gold font-bold text-xs mt-2">$${i.price}</div></div>`).join(''); }
+        });
+        displayRows.forEach((row,i)=>{
+            tableRows.push({
+                '桌號':i===0?(o.table_no||'—'):'',
+                '姓名':i===0?(o.customer_name||'—'):'',
+                '手機':i===0?(o.phone||'—'):'',
+                '大人':i===0?(o.adult_count||0):'',
+                '小孩':i===0?(o.kid_count||0):'',
+                '兒童':i===0?(o.child_count||0):'',
+                '活動':i===0?(o.campaign_code||'—'):'',
+                '餐點':row.dish,
+                '金額':row.price,
+                '訂單合計':i===0?(o.total_price||0):'',
+                '時間':i===0?timeStr:'',
+                '備註':i===0?(o.note||''):'',
+            });
+        });
+        tableRows.push({'桌號':'','姓名':'','手機':'','大人':'','小孩':'','兒童':'','活動':'','餐點':'','金額':'','訂單合計':'','時間':'','備註':''});
+    });
 
-        // --- 3. 活動代號管理 ---
-        async function loadCampaigns() { const { data } = await _s.from('campaign_settings').select('*').order('created_at', {ascending: false}); document.getElementById('campaign-list').innerHTML = (data || []).map(c => `<div class="flex justify-between items-center p-3 bg-stone-50 rounded-xl border font-bold text-sm shadow-sm"><span class="text-p-green">${c.code_name}</span><button onclick="delCampaign(${c.id})" class="text-red-400 px-2 font-bold">✕</button></div>`).join(''); }
-        async function addCampaign() { const n = document.getElementById('new-campaign').value.trim(); if(n) await _s.from('campaign_settings').insert([{ code_name: n }]); document.getElementById('new-campaign').value=""; loadCampaigns(); }
-        async function delCampaign(id) { await _s.from('campaign_settings').delete().eq('id', id); loadCampaigns(); }
+    const wsTable=XLSX.utils.json_to_sheet(tableRows);
+    wsTable['!cols']=[{wch:8},{wch:12},{wch:14},{wch:6},{wch:6},{wch:6},{wch:10},{wch:30},{wch:8},{wch:10},{wch:16},{wch:20}];
+    XLSX.utils.book_append_sheet(wb,wsTable,'🪑 逐桌明細');
 
-        // --- 4. 分類管理 ---
-        async function loadCats() {
-            const { data } = await _s.from('categories').select('*').order('sort_order'); allCategories = data || [];
-            document.getElementById('cat-list-table').innerHTML = data.map(c => `<tr class="border-b hover:bg-stone-50 transition text-sm text-left"><td class="p-4"><input type="number" value="${c.sort_order||0}" onchange="updateCatSort('${c.id}',this.value)" class="w-12 border rounded text-xs p-1 text-center"></td><td class="p-4 font-bold text-p-green">${c.name}</td><td class="p-4"><input type="checkbox" ${c.is_visible?'checked':''} onchange="updateCatVis('${c.id}',this.checked)"></td><td class="p-4"><button onclick="delCat('${c.id}')" class="text-red-400 font-bold">刪除</button></td></tr>`).join('');
-            document.getElementById('m-cat').innerHTML = (data||[]).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            document.getElementById('menu-cat-filter').innerHTML = '<option value="all">所有分類</option>' + (data||[]).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
-        async function updateCatVis(id, b) { await _s.from('categories').update({ is_visible: b }).eq('id', id); loadCats(); }
-        async function updateCatSort(id, v) { await _s.from('categories').update({ sort_order: parseInt(v) }).eq('id', id); loadCats(); }
-        async function addCat() { const n = document.getElementById('new-cat').value.trim(); if(n) await _s.from('categories').insert([{ name: n, sort_order: 99, is_visible: true }]); loadCats(); }
-        async function delCat(id) { await _s.from('categories').delete().eq('id', id); loadCats(); }
+    // ══ 分頁2：摘要 ══
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([
+        {項目:'訂單數',數值:orders.length},{項目:'大人人數',數值:totalAdult},
+        {項目:'小孩人數',數值:totalKid},{項目:'兒童人數',數值:totalChild},
+        {項目:'總人數',數值:totalAdult+totalKid+totalChild},{項目:'套餐組數',數值:totalSets},
+        {項目:'備料品項數',數值:sorted.length},{項目:'預估營收',數值:totalRev},
+    ]),'📊 摘要');
 
-        // --- 5. 菜單管理核心 ---
-        async function loadMenu() {
-            const search = document.getElementById('menu-search').value.toLowerCase(); const catF = document.getElementById('menu-cat-filter').value;
-            const { data } = await _s.from('menu_items').select('*, categories(name)').order('created_at', {ascending:false});
-            document.getElementById('menu-grid').innerHTML = (data || []).filter(i => i.name.toLowerCase().includes(search) && (catF==='all'||i.category_id===catF)).map(i => `<div class="bg-white rounded-3xl border p-4 shadow-sm flex flex-col h-full"><div class="h-32 bg-stone-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden"><img src="${i.image_url||''}" class="max-h-full img-contain"></div><div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span class="text-p-gold">$${i.price}</span></div><div class="flex gap-2 mt-auto pt-4"><button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-stone-100 text-xs font-bold hover:bg-stone-200 shadow-sm">編輯</button>${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold shadow-sm">⚙️ 套餐</button>`:''}<button onclick="delItem('${i.id}')" class="px-2 text-red-200">✕</button></div></div>`).join('');
-        }
-        async function openMenuModal(isEdit) { document.getElementById('menu-modal').classList.remove('hidden'); if(!isEdit) { document.getElementById('m-id').value = ""; document.getElementById('m-name').value = ""; document.getElementById('m-price').value = ""; document.getElementById('m-desc').value = ""; document.getElementById('m-is-set').checked = false; } const { data: flvs } = await _s.from('flavor_groups').select('*'); document.getElementById('flv-checks').innerHTML = (flvs || []).map(f => `<label class="flex items-center gap-1 text-[11px]"><input type="checkbox" class="flv-chk accent-p-green" value="${f.id}"> ${f.name}</label>`).join(''); }
-        async function editItem(id) { const { data: i } = await _s.from('menu_items').select('*, item_flavor_relation(*)').eq('id', id).single(); document.getElementById('m-id').value = i.id; document.getElementById('m-name').value = i.name; document.getElementById('m-price').value = i.price; document.getElementById('m-desc').value = i.description || ''; document.getElementById('m-is-set').checked = i.is_set_menu; await openMenuModal(true); setTimeout(() => { i.item_flavor_relation.forEach(r => { const c = document.querySelector(`.flv-chk[value="${r.flavor_group_id}"]`); if(c) c.checked=true; }); }, 500); }
-        async function saveItem() {
-            const id = document.getElementById('m-id').value; const file = document.getElementById('m-img').files[0]; let url = "";
-            if(file) { const path = `items/${Date.now()}.png`; await _s.storage.from('assets').upload(path, file); const { data } = _s.storage.from('assets').getPublicUrl(path); url = data.publicUrl; }
-            const p = { name: document.getElementById('m-name').value, price: document.getElementById('m-price').value, description: document.getElementById('m-desc').value, category_id: document.getElementById('m-cat').value, is_set_menu: document.getElementById('m-is-set').checked }; if(url) p.image_url = url;
-            const { data: saved } = id ? await _s.from('menu_items').update(p).eq('id', id).select() : await _s.from('menu_items').insert([p]).select();
-            if (saved) { await _s.from('item_flavor_relation').delete().eq('item_id', saved[0].id); const rels = Array.from(document.querySelectorAll('.flv-chk:checked')).map(c => ({ item_id: saved[0].id, flavor_group_id: c.value })); if (rels.length) await _s.from('item_flavor_relation').insert(rels); closeMenuModal(); loadMenu(); }
-        }
+    // ══ 分頁3：備料總表 ══
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sorted.map(([name,count],i)=>({排名:i+1,品名:name,備料數量:count}))),'🍳 備料總表');
 
-        // --- 6. 套餐管理 ---
-        async function openSetModal(id) { curItem = id; resetSetForm(); document.getElementById('set-modal').classList.remove('hidden'); const { data } = await _s.from('menu_items').select('*, categories(name)').eq('is_set_menu', false).order('name'); window.allPickerItems = data || []; renderPickerList(data); loadSavedSets(); }
-        function renderPickerList(items) {
-            const container = document.getElementById('item-picker-list'); const grouped = items.reduce((acc, i) => { const cat = i.categories?.name || '未分類'; if (!acc[cat]) acc[cat] = []; acc[cat].push(i); return acc; }, {});
-            container.innerHTML = Object.keys(grouped).map(cat => `<div class="col-span-2 mt-2 font-black text-[9px] text-stone-300 border-b uppercase">${cat}</div>` + grouped[cat].map(i => `<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}', '${i.name}')" class="picker-item flex justify-between p-3 border rounded-xl bg-white cursor-pointer shadow-sm text-xs font-bold"><span>${i.name}</span><div class="check-mark hidden font-bold text-p-gold">✔</div></div>`).join('')).join('');
-        }
-        function filterPickerItems() { const kw = document.getElementById('set-item-search').value.toLowerCase(); renderPickerList(window.allPickerItems.filter(i => i.name.toLowerCase().includes(kw))); pickerSelectedItems.forEach(s => { const el = document.getElementById(`picker-${s.id}`); if(el) el.classList.add('active'); }); }
-        function togglePickerSelect(id, name) { const el = document.getElementById(`picker-${id}`); const idx = pickerSelectedItems.findIndex(x => x.id === id); if(idx > -1) { pickerSelectedItems.splice(idx, 1); el?.classList.remove('active'); } else { pickerSelectedItems.push({ id, name }); el?.classList.add('active'); } updatePickerStats(); }
-        function updatePickerStats() { document.getElementById('picker-count').innerText = `已選 ${pickerSelectedItems.length} 項`; }
-        function addSelectedToPicks() { pickerSelectedItems.forEach(s => { if(!curPicks.some(p => p.id === s.id)) curPicks.push(s); }); pickerSelectedItems = []; renderTempPicks(); document.querySelectorAll('.picker-item').forEach(el => el.classList.remove('active')); updatePickerStats(); }
-        function renderTempPicks() { document.getElementById('temp-pick-display').innerHTML = curPicks.map((p, idx) => `<div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2">${p.name} <span onclick="curPicks.splice(${idx},1);renderTempPicks();" class="cursor-pointer opacity-40 font-bold">✕</span></div>`).join(''); }
-        async function editSetGroup(groupId) {
-            currentEditingGroupId = groupId; const { data: g } = await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('id', groupId).single();
-            if(g) { document.getElementById('g-name').value = g.group_name; document.getElementById('g-limit').value = g.selection_limit; document.getElementById('set-modal-title').innerText = "編輯分組"; document.getElementById('btn-save-group').innerText = "儲存更新"; document.getElementById('btn-cancel-edit').classList.remove('hidden'); curPicks = g.set_menu_contents.map(c => ({ id: c.menu_items.id, name: c.menu_items.name })); renderTempPicks(); }
-        }
-        function resetSetForm() { currentEditingGroupId = null; document.getElementById('g-name').value = ""; document.getElementById('g-limit').value = 1; document.getElementById('temp-pick-display').innerHTML = ""; document.getElementById('set-modal-title').innerText = "套餐分組設定"; document.getElementById('btn-save-group').innerText = "確認儲存並建立分組"; document.getElementById('btn-cancel-edit').classList.add('hidden'); curPicks = []; pickerSelectedItems = []; updatePickerStats(); }
-        async function saveFullSet() { 
-            const n = document.getElementById('g-name').value; const l = document.getElementById('g-limit').value; if(!n || !curPicks.length) return alert("輸入內容");
-            let gid = currentEditingGroupId; if (gid) { await _s.from('set_menu_groups').update({ group_name: n, selection_limit: l }).eq('id', gid); await _s.from('set_menu_contents').delete().eq('group_id', gid); } 
-            else { const { data: g } = await _s.from('set_menu_groups').insert([{ parent_set_id: curItem, group_name: n, selection_limit: l }]).select(); if(g) gid = g[0].id; }
-            if(gid) { await _s.from('set_menu_contents').insert(curPicks.map(p => ({ group_id: gid, item_id: p.id }))); resetSetForm(); loadSavedSets(); } 
-        }
-        async function loadSavedSets() { 
-            const { data } = await _s.from('set_menu_groups').select('*, set_menu_contents(menu_items(*))').eq('parent_set_id', curItem); 
-            document.getElementById('saved-groups-view').innerHTML = (data || []).map(g => `<div class="p-3 bg-stone-50 border rounded-xl flex justify-between items-center shadow-inner group"><div class="flex-1 text-left text-xs"><b class="text-p-green">${g.group_name} (限 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 line-clamp-1">${g.set_menu_contents.map(c => c.menu_items?.name).join('、')}</p></div><div class="flex gap-2"><button onclick="editSetGroup('${g.id}')" class="text-p-gold border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">編輯</button><button onclick="delSetGroup('${g.id}')" class="text-red-400 border rounded px-1 font-bold shadow-sm hover:bg-white text-xs">刪除</button></div></div>`).join(''); 
-        }
-        async function delSetGroup(id) { if(confirm('刪除？')) { await _s.from('set_menu_groups').delete().eq('id', id); loadSavedSets(); } }
+    // ══ 分頁4：套餐明細 ══
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({套餐名稱:name,銷售組數:count}))),'🍱 套餐明細');
 
-        // --- 7. 口味定義、Logo 與輔助 ---
-        async function loadFlvs() { const { data } = await _s.from('flavor_groups').select('*, flavor_options(*)'); document.getElementById('flv-grid').innerHTML = (data || []).map(g => `<div class="bg-white p-5 rounded-2xl border flex justify-between shadow-sm"><b>🌶️ ${g.name}</b><button onclick="delFlv('${g.id}')" class="text-red-400 font-bold px-2 text-xl font-serif">✕</button></div>`).join(''); }
-        async function addFlvGroup() { const n = prompt("組名"); const o = prompt("選項(逗號隔開)"); if(n && o) { const { data: g } = await _s.from('flavor_groups').insert([{ name: n }]).select(); if(g) await _s.from('flavor_options').insert(o.split(',').map(nm => ({ group_id: g[0].id, option_name: nm.trim() }))); loadFlvs(); } }
-        async function delFlv(id) { await _s.from('flavor_groups').delete().eq('id', id); loadFlvs(); }
-        async function loadSettings() { const { data } = await _s.from('store_settings').select('*').eq('id', 1).single(); if(data?.logo_url) { document.getElementById('current-logo-preview').classList.remove('hidden'); document.getElementById('admin-logo-img').src = `${data.logo_url}?t=${Date.now()}`; } }
-        async function uploadLogo() {
-            const f = document.getElementById('logo-file').files[0]; if(!f) return alert("請選檔案");
-            const ext = f.name.split('.').pop().toLowerCase(); const path = `logo_${Date.now()}.${ext}`; const type = ext === 'svg' ? 'image/svg+xml' : f.type;
-            const { error } = await _s.storage.from('assets').upload(path, f, { contentType: type, cacheControl: '3600', upsert: true });
-            if(!error) { const { data } = _s.storage.from('assets').getPublicUrl(path); await _s.from('store_settings').update({ logo_url: data.publicUrl }).eq('id', 1); alert("成功"); loadSettings(); }
-        }
-        function closeMenuModal() { document.getElementById('menu-modal').classList.add('hidden'); }
-        function closeSetModal() { document.getElementById('set-modal').classList.add('hidden'); }
-        function closeEditModal() { document.getElementById('order-edit-modal').classList.add('hidden'); }
-        function closeEditPop() { document.getElementById('edit-flavor-popup').classList.add('hidden'); }
-        function resetFilters() { document.getElementById('filter-search').value=''; document.getElementById('filter-date-preset').value='all'; document.getElementById('filter-status').value='all'; document.getElementById('filter-campaign').value='all'; loadOrders(); }
-        function exportXls() { const exp = window.ordersRef.map(o => ({ '姓名': o.customer_name, '電話': o.phone, '總額': o.total_price, '桌號': o.table_no, '活動': o.campaign_code, '訂位時間': o.booking_date })); const ws = XLSX.utils.json_to_sheet(exp); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "報表"); XLSX.writeFile(wb, "真珠訂單報表.xlsx"); }
+    // ══ 分頁5：訂單流水帳 ══
+    const rows=[];
+    orders.forEach((o,idx)=>{(o.order_content||[]).forEach((item,li)=>{rows.push({序號:li===0?idx+1:'',時間:li===0?new Date(o.created_at).toLocaleString('zh-TW'):'',姓名:li===0?(o.customer_name||''):'',電話:li===0?(o.phone||''):'',桌號:li===0?(o.table_no||''):'',大人:li===0?(o.adult_count||0):'',小孩:li===0?(o.kid_count||0):'',兒童:li===0?(o.child_count||0):'',活動代號:li===0?(o.campaign_code||'一般'):'',品項名稱:item.name,品項金額:item.price,訂單合計:li===0?(o.total_price||0):'',備註:li===0?(o.note||''):''});});});
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'📋 訂單流水帳');
 
-        switchTab('orders');
+    XLSX.writeFile(wb,`真珠備料統計_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.xlsx`);
+}
     </script>
+
+    <script>
+        switchTab('orders');
+
+        function toggleSidebar(){
+            const sb=document.getElementById('sidebar'),icon=document.getElementById('toggle-icon');
+            sb.classList.toggle('collapsed');
+            icon.style.transform=sb.classList.contains('collapsed')?'rotate(180deg)':'rotate(0deg)';
+        }
+
+        function setSidebarLogoMode(mode){
+            const img=document.getElementById('sidebar-logo');
+            img.style.filter=mode==='white'?'brightness(0) invert(1)':'none';
+            localStorage.setItem('logoMode',mode);
+        }
+
+        async function loadSidebarLogo(){
+            const{data}=await _s.from('store_settings').select('logo_url').eq('id',1).single();
+            const img=document.getElementById('sidebar-logo'),fallback=document.getElementById('sidebar-logo-fallback');
+            if(data?.logo_url){img.src=`${data.logo_url}?t=${Date.now()}`;img.style.display='block';fallback.style.display='none';const mode=localStorage.getItem('logoMode')||'white';img.style.filter=mode==='white'?'brightness(0) invert(1)':'none';}
+            else{img.style.display='none';fallback.style.display='flex';}
+        }
+        loadSidebarLogo();
+    </script>
+
+    <script>
+    // ── LINE 通知管理 ──
+    async function loadLineNotify(){
+        const{data,error}=await _s.from('line_notify_targets').select('*').order('created_at',{ascending:true});
+        const container=document.getElementById('line-targets-list');
+        if(error){container.innerHTML=`<p class="text-red-400 text-sm font-bold p-4">${error.message}</p>`;return;}
+        if(!data?.length){container.innerHTML=`<div class="text-center py-12 text-stone-300 font-bold">尚無通知對象，點右上角新增</div>`;return;}
+        container.innerHTML=data.map(t=>`<div class="bg-white rounded-2xl border shadow-sm p-5"><div class="flex flex-wrap items-start gap-4"><div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1"><span class="font-black text-p-green text-base">${t.name}</span>${t.is_active?`<span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">✅ 啟用</span>`:`<span class="text-[10px] font-bold bg-stone-100 text-stone-400 px-2 py-0.5 rounded-full">⏸ 停用</span>`}</div><div class="font-mono text-xs text-stone-400 mb-2 truncate">${t.user_id}</div><div class="flex gap-2 flex-wrap"><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" ${t.notify_order?'checked':''} onchange="updateTarget('${t.id}','notify_order',this.checked)" class="accent-p-green"><span class="text-xs font-bold text-stone-600">🔔 訂單通知</span></label><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" ${t.notify_photo?'checked':''} onchange="updateTarget('${t.id}','notify_photo',this.checked)" class="accent-p-green"><span class="text-xs font-bold text-stone-600">📸 照片通知</span></label></div></div><div class="flex gap-2 flex-shrink-0"><button onclick="testSendLine('${t.user_id}','${t.name}')" class="px-3 py-1.5 bg-stone-100 rounded-lg text-xs font-bold hover:bg-stone-200 transition">📤 測試</button><button onclick="toggleTarget('${t.id}',${t.is_active})" class="px-3 py-1.5 ${t.is_active?'bg-amber-50 text-amber-600':'bg-green-50 text-green-600'} rounded-lg text-xs font-bold">${t.is_active?'⏸ 停用':'▶ 啟用'}</button><button onclick="deleteTarget('${t.id}','${t.name}')" class="px-3 py-1.5 bg-red-50 text-red-400 rounded-lg text-xs font-bold hover:bg-red-100 transition">刪除</button></div></div></div>`).join('');
+    }
+
+    function openAddTargetModal(){document.getElementById('lt-name').value='';document.getElementById('lt-uid').value='';document.getElementById('lt-notify-order').checked=true;document.getElementById('lt-notify-photo').checked=true;document.getElementById('line-target-modal').classList.remove('hidden');}
+    function closeTargetModal(){document.getElementById('line-target-modal').classList.add('hidden');}
+
+    async function saveLineTarget(){
+        const name=document.getElementById('lt-name').value.trim(),uid=document.getElementById('lt-uid').value.trim();
+        const order=document.getElementById('lt-notify-order').checked,photo=document.getElementById('lt-notify-photo').checked;
+        if(!name||!uid)return alert('請填寫名稱和 User ID');
+        if(!uid.startsWith('U')||uid.length<10)return alert('User ID 格式錯誤，應以 U 開頭');
+        const{error}=await _s.from('line_notify_targets').insert({name,user_id:uid,notify_order:order,notify_photo:photo,is_active:true});
+        if(error)return alert('儲存失敗：'+error.message);
+        closeTargetModal();loadLineNotify();alert(`✅ 已新增「${name}」`);
+    }
+
+    async function updateTarget(id,field,value){await _s.from('line_notify_targets').update({[field]:value}).eq('id',id);}
+    async function toggleTarget(id,current){await _s.from('line_notify_targets').update({is_active:!current}).eq('id',id);loadLineNotify();}
+    async function deleteTarget(id,name){if(!confirm(`確定刪除「${name}」的通知設定嗎？`))return;await _s.from('line_notify_targets').delete().eq('id',id);loadLineNotify();}
+    async function testSendLine(userId,name){alert(`📤 測試功能需透過 Edge Function 執行\n\n請到 Supabase → Edge Functions → notify-new-order\n手動觸發或從點餐頁下一筆測試訂單`);}
+    </script>
+
+    <script>
+    // ── 紀念照管理 ──
+    let allPhotos=[],selectedIds=new Set(),uploadFile=null;
+
+    async function loadPhotos(){selectedIds.clear();updateBatchUI();const{data}=await _s.from('customer_photos').select('*').order('created_at',{ascending:false});allPhotos=data||[];filterPhotos();}
+
+    function filterPhotos(){
+        const kw=(document.getElementById('photo-admin-search').value||'').toLowerCase();
+        const from=document.getElementById('photo-filter-from').value,to=document.getElementById('photo-filter-to').value;
+        const filtered=allPhotos.filter(p=>{
+            const matchKw=!kw||(p.customer_name||'').toLowerCase().includes(kw)||(p.phone||'').toLowerCase().includes(kw)||(p.order_no||'').toLowerCase().includes(kw)||(p.note||'').toLowerCase().includes(kw);
+            const date=p.created_at?.split('T')[0];
+            return matchKw&&(!from||date>=from)&&(!to||date<=to);
+        });
+        renderPhotoGrid(filtered);
+    }
+
+    function clearPhotoFilters(){document.getElementById('photo-admin-search').value='';document.getElementById('photo-filter-from').value='';document.getElementById('photo-filter-to').value='';filterPhotos();}
+
+    function renderPhotoGrid(photos){
+        document.getElementById('photo-count-tag').innerText=`共 ${photos.length} 張`;
+        const grid=document.getElementById('photo-grid');
+        if(photos.length===0){grid.innerHTML=`<div class="col-span-full py-20 text-center text-stone-300 font-bold">尚無照片資料</div>`;return;}
+        const daysAgo=dateStr=>{const diff=Date.now()-new Date(dateStr).getTime();const d=Math.floor(diff/86400000);return d===0?'今天':`${d} 天前`;};
+        grid.innerHTML=photos.map(p=>{
+            const isSelected=selectedIds.has(p.id),isOld=(Date.now()-new Date(p.created_at).getTime())>7*86400000;
+            return `<div class="bg-white rounded-2xl border shadow-sm overflow-hidden group relative ${isSelected?'ring-2 ring-amber-400':''} ${isOld?'opacity-70':''}"><div class="absolute top-2 left-2 z-10"><input type="checkbox" ${isSelected?'checked':''} onchange="toggleSelect('${p.id}',this.checked)" class="accent-amber-500 w-5 h-5 cursor-pointer shadow"></div>${isOld?`<div class="absolute top-2 right-2 z-10 bg-red-400 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">逾期</div>`:''}<div class="aspect-square overflow-hidden bg-stone-100 cursor-pointer" onclick="previewPhoto('${p.photo_url}')"><img src="${p.photo_url}" alt="${p.customer_name||''}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"></div><div class="p-3"><p class="font-bold text-xs text-p-green truncate">${p.customer_name||'未命名'}</p><p class="text-[10px] text-stone-400 truncate">${p.phone||'—'}</p>${p.order_no?`<p class="text-[10px] text-blue-400 truncate mt-0.5">單號：${p.order_no}</p>`:''} ${p.note?`<p class="text-[10px] text-amber-600 truncate mt-0.5">${p.note}</p>`:''}<p class="text-[9px] text-stone-300 mt-1">${daysAgo(p.created_at)}</p></div><div class="flex border-t"><a href="${p.photo_url}" target="_blank" class="flex-1 text-center py-2 text-xs font-bold text-blue-500 hover:bg-blue-50 transition">預覽</a><button onclick="deletePhoto('${p.id}','${p.storage_path||''}')" class="flex-1 py-2 text-xs font-bold text-red-300 hover:bg-red-50 transition border-l">刪除</button></div></div>`;
+        }).join('');
+    }
+
+    function toggleSelect(id,checked){if(checked)selectedIds.add(id);else selectedIds.delete(id);updateBatchUI();}
+
+    function toggleSelectAll(checked){
+        const kw=(document.getElementById('photo-admin-search').value||'').toLowerCase();
+        const from=document.getElementById('photo-filter-from').value,to=document.getElementById('photo-filter-to').value;
+        const filtered=allPhotos.filter(p=>{const matchKw=!kw||(p.customer_name||'').toLowerCase().includes(kw)||(p.phone||'').toLowerCase().includes(kw)||(p.order_no||'').toLowerCase().includes(kw)||(p.note||'').toLowerCase().includes(kw);const date=p.created_at?.split('T')[0];return matchKw&&(!from||date>=from)&&(!to||date<=to);});
+        if(checked)filtered.forEach(p=>selectedIds.add(p.id));else filtered.forEach(p=>selectedIds.delete(p.id));
+        updateBatchUI();filterPhotos();
+    }
+
+    function updateBatchUI(){
+        const count=selectedIds.size,countEl=document.getElementById('photo-selected-count'),btn=document.getElementById('batch-delete-btn');
+        if(count>0){countEl.classList.remove('hidden');countEl.innerText=`已選 ${count} 張`;btn.classList.remove('hidden');}
+        else{countEl.classList.add('hidden');btn.classList.add('hidden');document.getElementById('photo-select-all').checked=false;}
+    }
+
+    async function batchDelete(){
+        if(!selectedIds.size)return;if(!confirm(`確定刪除選取的 ${selectedIds.size} 張照片？此操作無法復原`))return;
+        const ids=Array.from(selectedIds),targets=allPhotos.filter(p=>ids.includes(p.id)),paths=targets.map(p=>p.storage_path).filter(Boolean);
+        if(paths.length)await _s.storage.from('assets').remove(paths);
+        await _s.from('customer_photos').delete().in('id',ids);selectedIds.clear();loadPhotos();
+    }
+
+    async function autoDeleteOld(){
+        const cutoff=new Date(Date.now()-7*86400000).toISOString();
+        const oldPhotos=allPhotos.filter(p=>p.created_at<cutoff);
+        if(!oldPhotos.length)return alert('沒有超過 7 天的照片');
+        if(!confirm(`將刪除 ${oldPhotos.length} 張 7 天前的照片，確定嗎？`))return;
+        const paths=oldPhotos.map(p=>p.storage_path).filter(Boolean),ids=oldPhotos.map(p=>p.id);
+        if(paths.length)await _s.storage.from('assets').remove(paths);
+        await _s.from('customer_photos').delete().in('id',ids);loadPhotos();alert(`✅ 已刪除 ${oldPhotos.length} 張舊照片`);
+    }
+
+    function previewPhoto(url){const overlay=document.createElement('div');overlay.className='fixed inset-0 bg-black/80 flex items-center justify-center z-[999] cursor-pointer p-4';overlay.innerHTML=`<img src="${url}" class="max-w-full max-h-full rounded-2xl shadow-2xl object-contain">`;overlay.onclick=()=>document.body.removeChild(overlay);document.body.appendChild(overlay);}
+
+    function openUploadModal(){uploadFile=null;document.getElementById('upload-preview').classList.add('hidden');document.getElementById('upload-placeholder').classList.remove('hidden');document.getElementById('upload-name').value='';document.getElementById('upload-phone').value='';document.getElementById('upload-orderno').value='';document.getElementById('upload-note').value='';document.getElementById('upload-btn-text').innerText='確認上傳';document.getElementById('upload-photo-modal').classList.remove('hidden');}
+    function closeUploadModal(){document.getElementById('upload-photo-modal').classList.add('hidden');}
+
+    function previewUploadPhoto(input){const file=input.files[0];if(!file)return;uploadFile=file;const reader=new FileReader();reader.onload=e=>{document.getElementById('upload-preview-img').src=e.target.result;document.getElementById('upload-preview').classList.remove('hidden');document.getElementById('upload-placeholder').classList.add('hidden');};reader.readAsDataURL(file);}
+
+    function handlePhotoDrop(event){event.preventDefault();document.getElementById('upload-drop-zone').classList.remove('border-amber-400','bg-amber-50');const file=event.dataTransfer.files[0];if(!file||!file.type.startsWith('image/'))return alert('請拖入圖片檔案');uploadFile=file;const reader=new FileReader();reader.onload=e=>{document.getElementById('upload-preview-img').src=e.target.result;document.getElementById('upload-preview').classList.remove('hidden');document.getElementById('upload-placeholder').classList.add('hidden');};reader.readAsDataURL(file);}
+
+    async function doUploadPhoto(){
+        if(!uploadFile)return alert('請先選擇照片');
+        const name=document.getElementById('upload-name').value.trim(),phone=document.getElementById('upload-phone').value.trim();
+        const btn=document.getElementById('upload-btn-text');btn.innerText='上傳中…';
+        const ext=uploadFile.name.split('.').pop().toLowerCase(),path=`photos/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const{error:upErr}=await _s.storage.from('assets').upload(path,uploadFile,{contentType:uploadFile.type,cacheControl:'3600',upsert:false});
+        if(upErr){alert('上傳失敗：'+upErr.message);btn.innerText='確認上傳';return;}
+        const{data:urlData}=_s.storage.from('assets').getPublicUrl(path);
+        const{error:dbErr}=await _s.from('customer_photos').insert([{customer_name:name||null,phone:phone||null,note:document.getElementById('upload-note').value.trim()||null,order_no:document.getElementById('upload-orderno').value.trim()||null,photo_url:urlData.publicUrl}]);
+        if(dbErr){alert('資料儲存失敗：'+dbErr.message);btn.innerText='確認上傳';return;}
+        btn.innerText='✓ 完成！';setTimeout(()=>{closeUploadModal();loadPhotos();},800);
+    }
+
+    async function deletePhoto(id,storagePath){
+        if(!confirm('確定刪除這張照片？此操作無法復原'))return;
+        if(storagePath)await _s.storage.from('assets').remove([storagePath]);
+        await _s.from('customer_photos').delete().eq('id',id);loadPhotos();
+    }
+    </script>
+
+    <!-- ===== 登入邏輯 ===== -->
+    <script>
+    async function checkLogin() {
+        const { data: { session } } = await _s.auth.getSession();
+        if (!session) {
+            document.getElementById("login-screen").classList.remove("hidden");
+        } else {
+            document.getElementById("login-screen").classList.add("hidden");
+        }
+    }
+
+    async function doLogin() {
+        const email    = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value;
+        const btn      = document.getElementById("login-btn");
+        const errEl    = document.getElementById("login-error");
+        if (!email || !password) return;
+        btn.disabled = true;
+        btn.innerText = "登入中…";
+        errEl.classList.add("hidden");
+        const { error } = await _s.auth.signInWithPassword({ email, password });
+        if (error) {
+            errEl.classList.remove("hidden");
+            btn.disabled = false;
+            btn.innerText = "登入";
+        } else {
+            document.getElementById("login-screen").classList.add("hidden");
+        }
+    }
+
+    checkLogin();
+    </script>
+
 </body>
 </html>
