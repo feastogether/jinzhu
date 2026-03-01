@@ -1073,7 +1073,7 @@ async function bindEvent(){
 }
 
 async function unbindCampaign(code){if(confirm(`確定解除 ${code} 的所有分類綁定嗎？`)){await _s.from('categories').update({campaign_code:null}).eq('campaign_code',code);loadActiveEvents();}}
-function copyEventLink(code){const base=window.location.href.substring(0,window.location.href.lastIndexOf('/')+1);const url=`${base}event.html?code=${encodeURIComponent(code)}`;const tmp=document.createElement('input');tmp.value=url;document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);alert('網址已複製！\n'+url);}
+function copyEventLink(code){const base='https://jinzhu.netlify.app/';const url=`${base}event.html?code=${encodeURIComponent(code)}`;const tmp=document.createElement('input');tmp.value=url;document.body.appendChild(tmp);tmp.select();document.execCommand('copy');document.body.removeChild(tmp);alert('網址已複製！\n'+url);}
 
 // ── 備料統計報表 ──
 async function initReport(){
