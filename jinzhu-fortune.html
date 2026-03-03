@@ -17,78 +17,41 @@
 html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);background:var(--cream);}
 .page{position:fixed;top:0;left:0;width:100%;height:100%;display:none;overflow:hidden;}
 .page.active{display:block;}
-
-/* PRELOADER */
 #preloader{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:9999;transition:opacity .8s;}
 .pre-logo{animation:breath 1.8s ease-in-out infinite;}
 @keyframes breath{0%,100%{transform:scale(1);opacity:.85;}50%{transform:scale(1.07);opacity:1;}}
 .pre-text{margin-top:14px;font-family:var(--font-s);font-size:.8rem;color:var(--green-mid);letter-spacing:.5em;}
-
-/* OVERLAY */
 .overlay{position:fixed;inset:0;background:var(--cream);z-index:5000;pointer-events:none;opacity:0;transition:opacity .3s;}
 .overlay.in{opacity:1;pointer-events:all;}
-
-/* SOUND */
 #soundBtn{position:fixed;top:14px;right:14px;width:36px;height:36px;background:rgba(255,255,255,.88);border:1px solid #c8e6e0;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:300;font-size:1rem;}
-
-/* ── 花磚背景 ── */
-.tile-bg{
-  position:absolute;inset:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='none'/%3E%3Crect x='1' y='1' width='78' height='78' fill='none' stroke='%232d6b5e' stroke-width='.7' opacity='.14'/%3E%3Cline x1='40' y1='1' x2='40' y2='79' stroke='%232d6b5e' stroke-width='.5' opacity='.1'/%3E%3Cline x1='1' y1='40' x2='79' y2='40' stroke='%232d6b5e' stroke-width='.5' opacity='.1'/%3E%3Cline x1='1' y1='1' x2='79' y2='79' stroke='%232d6b5e' stroke-width='.35' opacity='.08'/%3E%3Cline x1='79' y1='1' x2='1' y2='79' stroke='%232d6b5e' stroke-width='.35' opacity='.08'/%3E%3Cpolygon points='40,22 52,32 58,40 52,48 40,58 28,48 22,40 28,32' fill='none' stroke='%232d6b5e' stroke-width='.7' opacity='.12'/%3E%3Crect x='34' y='34' width='12' height='12' fill='none' stroke='%23c0ab7c' stroke-width='.7' opacity='.18' transform='rotate(45 40 40)'/%3E%3Ccircle cx='1' cy='1' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3Ccircle cx='79' cy='1' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3Ccircle cx='1' cy='79' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3Ccircle cx='79' cy='79' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3C/svg%3E");
-  background-size:80px 80px;
-}
-
-/* 彩色磚條 */
+.tile-bg{position:absolute;inset:0;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='none'/%3E%3Crect x='1' y='1' width='78' height='78' fill='none' stroke='%232d6b5e' stroke-width='.7' opacity='.14'/%3E%3Cline x1='40' y1='1' x2='40' y2='79' stroke='%232d6b5e' stroke-width='.5' opacity='.1'/%3E%3Cline x1='1' y1='40' x2='79' y2='40' stroke='%232d6b5e' stroke-width='.5' opacity='.1'/%3E%3Cline x1='1' y1='1' x2='79' y2='79' stroke='%232d6b5e' stroke-width='.35' opacity='.08'/%3E%3Cline x1='79' y1='1' x2='1' y2='79' stroke='%232d6b5e' stroke-width='.35' opacity='.08'/%3E%3Cpolygon points='40,22 52,32 58,40 52,48 40,58 28,48 22,40 28,32' fill='none' stroke='%232d6b5e' stroke-width='.7' opacity='.12'/%3E%3Crect x='34' y='34' width='12' height='12' fill='none' stroke='%23c0ab7c' stroke-width='.7' opacity='.18' transform='rotate(45 40 40)'/%3E%3Ccircle cx='1' cy='1' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3Ccircle cx='79' cy='1' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3Ccircle cx='1' cy='79' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3Ccircle cx='79' cy='79' r='4' fill='none' stroke='%23d90050' stroke-width='.5' opacity='.1'/%3E%3C/svg%3E");background-size:80px 80px;}
 .tile-bar{position:absolute;left:0;right:0;height:9px;}
 .tile-bar.top{top:0;background:repeating-linear-gradient(90deg,var(--green) 0 20px,var(--gold) 20px 40px,var(--red) 40px 60px,var(--green) 60px 80px);opacity:.82;}
 .tile-bar.bottom{bottom:0;background:repeating-linear-gradient(90deg,var(--red) 0 20px,var(--green) 20px 40px,var(--gold) 40px 60px,var(--red) 60px 80px);opacity:.82;}
-
-/* ── COVER ── */
 #pageCover{background:linear-gradient(160deg,var(--cream) 0%,var(--warm) 100%);}
 .cover-inner{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-
-/* 花磚側柱 */
 .pillar{position:absolute;top:0;bottom:0;width:min(11vw,46px);}
 .pillar.left{left:0;}
 .pillar.right{right:0;}
-
-/* 主視覺圓盤 */
 .disk-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-54%);width:min(78vw,330px);height:min(78vw,330px);animation:floatDisk 6s ease-in-out infinite;}
 @keyframes floatDisk{0%,100%{transform:translate(-50%,-54%);}50%{transform:translate(-50%,-58%);}}
-
-/* 標題 */
 .cover-header{position:absolute;top:5%;left:0;right:0;display:flex;flex-direction:column;align-items:center;z-index:10;}
 .cover-logo{width:min(52vw,210px);height:auto;}
 .cover-div{display:flex;align-items:center;gap:10px;margin-top:12px;}
 .cover-div span{height:1px;width:30px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
 .cover-div em{font-style:normal;color:var(--gold);font-size:.72rem;letter-spacing:.3em;}
-
-/* 按鈕 */
 .btn-enter-wrap{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);z-index:10;cursor:pointer;}
-.btn-enter{
-  background:var(--green);color:var(--cream);
-  font-family:var(--font-s);font-size:clamp(.95rem,4.2vw,1.15rem);
-  font-weight:600;letter-spacing:.4em;padding:14px 44px;
-  border-radius:4px;border:none;
-  box-shadow:0 4px 0 #001a15,0 6px 18px rgba(0,53,44,.25);
-  transition:all .15s;white-space:nowrap;position:relative;overflow:hidden;
-}
+.btn-enter{background:var(--green);color:var(--cream);font-family:var(--font-s);font-size:clamp(.95rem,4.2vw,1.15rem);font-weight:600;letter-spacing:.4em;padding:14px 44px;border-radius:4px;border:none;box-shadow:0 4px 0 #001a15,0 6px 18px rgba(0,53,44,.25);transition:all .15s;white-space:nowrap;position:relative;overflow:hidden;}
 .btn-enter::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:repeating-linear-gradient(90deg,var(--gold) 0 8px,transparent 8px 16px);}
 .btn-enter-wrap:active .btn-enter{transform:translateY(3px);box-shadow:0 1px 0 #001a15;}
-
-/* 粒子 */
 .petal{position:absolute;pointer-events:none;animation:drift linear infinite;z-index:3;}
 @keyframes drift{0%{transform:translateY(-20px) rotate(0);opacity:0;}5%{opacity:.55;}95%{opacity:.1;}100%{transform:translateY(108vh) rotate(540deg);opacity:0;}}
-
-/* 陀螺儀 */
 .perm-dlg{position:fixed;inset:0;background:rgba(0,53,44,.5);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:1000;}
 .perm-dlg.show{display:flex;}
 .perm-box{background:var(--cream);border-radius:8px;border-top:4px solid var(--red);padding:28px 26px;max-width:290px;text-align:center;box-shadow:0 16px 50px rgba(0,0,0,.2);}
 .perm-box h3{font-family:var(--font-s);color:var(--text);font-size:1.05rem;margin-bottom:8px;}
 .perm-box p{color:var(--text2);font-size:.86rem;line-height:1.8;margin-bottom:18px;}
 .perm-box button{background:var(--green);color:var(--cream);font-family:var(--font-s);font-size:.95rem;font-weight:600;letter-spacing:.2em;padding:10px 28px;border-radius:4px;border:none;cursor:pointer;}
-
-/* ── GAME ── */
 #pageGame{background:var(--warm);}
 .game-wrap{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;}
 .game-top{position:absolute;top:5%;left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:4px;}
@@ -100,59 +63,24 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
 .shake-tip em{font-style:normal;color:var(--green-mid);font-weight:700;}
 .shake-can{width:min(38vw,152px);height:min(48vw,192px);cursor:pointer;}
 .shake-can.shaking{animation:canShake 2s cubic-bezier(.36,.07,.19,.97);}
-@keyframes canShake{
-  0%{transform:rotate(0);}5%{transform:rotate(-20deg) translateX(-5px);}10%{transform:rotate(20deg) translateX(5px);}
-  15%{transform:rotate(-24deg) translateX(-7px);}20%{transform:rotate(24deg) translateX(7px);}
-  30%{transform:rotate(18deg) translateX(5px);}40%{transform:rotate(22deg) translateX(6px);}
-  55%{transform:rotate(10deg) translateX(3px);}70%{transform:rotate(-5deg) translateX(-1px);}
-  85%{transform:rotate(3deg);}100%{transform:rotate(0);}
-}
+@keyframes canShake{0%{transform:rotate(0);}5%{transform:rotate(-20deg) translateX(-5px);}10%{transform:rotate(20deg) translateX(5px);}15%{transform:rotate(-24deg) translateX(-7px);}20%{transform:rotate(24deg) translateX(7px);}30%{transform:rotate(18deg) translateX(5px);}40%{transform:rotate(22deg) translateX(6px);}55%{transform:rotate(10deg) translateX(3px);}70%{transform:rotate(-5deg) translateX(-1px);}85%{transform:rotate(3deg);}100%{transform:rotate(0);}}
 .tap-hint{text-align:center;margin-top:14px;font-size:clamp(.72rem,2.8vw,.86rem);color:var(--text3);letter-spacing:.2em;animation:blink 2.5s ease-in-out infinite;}
 @keyframes blink{0%,100%{opacity:.3;}50%{opacity:.85;}}
-
-/* 籤竹飛出 */
 #stickOverlay{position:fixed;inset:0;pointer-events:none;z-index:4500;overflow:hidden;display:none;}
 #stickOverlay.active{display:block;}
-.flying-stick{
-  position:absolute;bottom:42%;
-  font-family:var(--font-s);font-weight:900;
-  writing-mode:vertical-rl;
-  background:linear-gradient(180deg,#fffdf5,#f5e8c0);
-  border-top:3px solid var(--red);border-left:1.5px solid var(--gold);
-  border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);
-  border-radius:3px;padding:10px 7px 14px;
-  box-shadow:3px 3px 12px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7);
-  letter-spacing:.18em;line-height:1.9;color:var(--text);
-  font-size:clamp(15px,4.2vw,22px);opacity:0;
-  animation:stickFly var(--dur,1.1s) cubic-bezier(.22,.61,.36,1) var(--delay,0s) forwards;
-}
-@keyframes stickFly{
-  0%{opacity:0;transform:translateY(20px) rotate(var(--r0)) scale(.3);}
-  12%{opacity:1;transform:translateY(var(--y1)) rotate(var(--r1)) scale(1.08);}
-  55%{opacity:1;transform:translateY(var(--y2)) rotate(var(--r2)) scale(1);}
-  85%{opacity:.9;transform:translateY(var(--y3)) rotate(var(--r3)) scale(.98);}
-  100%{opacity:0;transform:translateY(var(--y3)) rotate(var(--r3)) scale(.95);}
-}
-
-/* ── RESULT ── */
+.flying-stick{position:absolute;bottom:42%;font-family:var(--font-s);font-weight:900;writing-mode:vertical-rl;background:linear-gradient(180deg,#fffdf5,#f5e8c0);border-top:3px solid var(--red);border-left:1.5px solid var(--gold);border-right:1.5px solid var(--gold);border-bottom:1.5px solid var(--gold);border-radius:3px;padding:10px 7px 14px;box-shadow:3px 3px 12px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7);letter-spacing:.18em;line-height:1.9;color:var(--text);font-size:clamp(15px,4.2vw,22px);opacity:0;animation:stickFly var(--dur,1.1s) cubic-bezier(.22,.61,.36,1) var(--delay,0s) forwards;}
+@keyframes stickFly{0%{opacity:0;transform:translateY(20px) rotate(var(--r0)) scale(.3);}12%{opacity:1;transform:translateY(var(--y1)) rotate(var(--r1)) scale(1.08);}55%{opacity:1;transform:translateY(var(--y2)) rotate(var(--r2)) scale(1);}85%{opacity:.9;transform:translateY(var(--y3)) rotate(var(--r3)) scale(.98);}100%{opacity:0;transform:translateY(var(--y3)) rotate(var(--r3)) scale(.95);}}
 #pageResult{background:var(--cream);overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .result-wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;padding:22px 18px 44px;}
 .r-logo-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
 .r-logo{width:min(34vw,136px);height:auto;}
 .r-logo-sep{width:1px;height:32px;background:#c8e6e0;}
 .r-logo-label{font-family:var(--font-n);font-size:.66rem;color:var(--text3);letter-spacing:.4em;line-height:1.8;}
-
-/* 花磚分隔條 */
-.tile-div{width:100%;max-width:380px;height:14px;margin:10px 0;border-radius:3px;opacity:.75;
-  background:repeating-linear-gradient(90deg,var(--green) 0 10px,var(--gold) 10px 20px,var(--red) 20px 30px,var(--green) 30px 40px);}
-.tile-div-thin{width:100%;max-width:380px;height:7px;margin:8px 0;border-radius:2px;opacity:.5;
-  background:repeating-linear-gradient(90deg,var(--gold) 0 8px,var(--green) 8px 16px,var(--gold) 16px 24px);}
-
+.tile-div{width:100%;max-width:380px;height:14px;margin:10px 0;border-radius:3px;opacity:.75;background:repeating-linear-gradient(90deg,var(--green) 0 10px,var(--gold) 10px 20px,var(--red) 20px 30px,var(--green) 30px 40px);}
+.tile-div-thin{width:100%;max-width:380px;height:7px;margin:8px 0;border-radius:2px;opacity:.5;background:repeating-linear-gradient(90deg,var(--gold) 0 8px,var(--green) 8px 16px,var(--gold) 16px 24px);}
 .r-title{text-align:center;margin-bottom:12px;}
 .r-title h2{font-family:var(--font-s);font-size:clamp(1.3rem,5.5vw,2rem);color:var(--text);font-weight:900;letter-spacing:.25em;}
 .r-title p{font-size:.7rem;color:var(--text3);letter-spacing:.4em;margin-top:4px;}
-
-/* 籤卡 */
 .f-card{width:100%;max-width:380px;background:var(--cream);border:1.5px solid #c8e6e0;border-radius:6px;overflow:hidden;box-shadow:0 8px 36px rgba(0,53,44,.1);}
 .card-tile-band{height:10px;background:repeating-linear-gradient(90deg,var(--green) 0 16px,var(--cream) 16px 18px,var(--red) 18px 34px,var(--cream) 34px 36px,var(--gold) 36px 52px,var(--cream) 52px 54px);}
 .card-hd{padding:20px 22px 14px;text-align:center;background:linear-gradient(180deg,rgba(192,171,124,.08) 0%,transparent 100%);border-bottom:1px solid #c8e6e0;}
@@ -162,7 +90,7 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
 .badge-great{background:var(--green);color:var(--cream);}
 .badge-good{background:#5a9e6a;color:var(--cream);}
 .badge-ok{background:var(--gold);color:var(--text);}
-.badge-bad{background:#8a8a8a;color:var(--cream);}
+.badge-special{background:var(--red);color:var(--cream);}
 .card-poem{padding:18px 22px;border-bottom:1px solid rgba(0,53,44,.1);text-align:center;background:rgba(192,171,124,.05);}
 .poem-line{font-family:var(--font-s);font-size:clamp(.95rem,3.8vw,1.08rem);color:var(--text);line-height:2.4;letter-spacing:.2em;opacity:0;transform:translateY(16px);animation:lineUp .45s ease forwards;}
 @keyframes lineUp{to{opacity:1;transform:translateY(0);}}
@@ -172,7 +100,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
 .sect:last-child{border-bottom:none;}
 .sect-tag{flex:0 0 auto;background:var(--green);color:var(--cream);font-size:.7rem;font-weight:600;padding:3px 10px;border-radius:2px;letter-spacing:.1em;margin-right:10px;margin-top:3px;white-space:nowrap;}
 .sect-body{color:var(--text2);font-size:clamp(.8rem,3vw,.9rem);line-height:1.9;letter-spacing:.04em;}
-
 .r-btns{display:flex;gap:12px;margin-top:18px;width:100%;max-width:380px;}
 .rbtn{flex:1;padding:13px 10px;border-radius:4px;font-family:var(--font-s);font-size:clamp(.82rem,3.3vw,.96rem);font-weight:600;letter-spacing:.2em;cursor:pointer;transition:all .15s;border:none;}
 .rbtn:active{transform:translateY(2px);}
@@ -180,8 +107,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
 .rbtn-fill{background:var(--green);color:var(--cream);box-shadow:0 3px 0 #001a15;}
 .rbtn-fill:active{box-shadow:0 1px 0 #001a15;}
 .brand-ft{margin-top:18px;text-align:center;color:var(--text3);font-size:.68rem;letter-spacing:.3em;}
-
-/* ── PANEL ── */
 #hTrigger{position:fixed;bottom:0;right:0;width:50px;height:50px;z-index:9990;}
 #panel{position:fixed;bottom:-100%;left:0;right:0;max-height:84%;background:var(--cream);border-top:4px solid var(--green);border-radius:16px 16px 0 0;z-index:9995;overflow-y:auto;-webkit-overflow-scrolling:touch;transition:bottom .4s cubic-bezier(.34,1.2,.64,1);padding-bottom:30px;box-shadow:0 -8px 40px rgba(0,53,44,.15);}
 #panel.open{bottom:0;}
@@ -205,24 +130,18 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
 </style>
 </head>
 <body>
-
-<!-- 預載 -->
 <div id="preloader">
   <img class="pre-logo" src="https://pydlnqriztpzgxbjuohm.supabase.co/storage/v1/object/public/assets/logo_1771308542401.svg?t=1772192672525" alt="真珠 JIN-ZHU" style="width:160px;height:auto;">
   <div class="pre-text">正在為您祈福 · 請稍候</div>
 </div>
-
 <div class="overlay" id="overlay"></div>
 <button id="soundBtn">🔊</button>
 <div id="stickOverlay"></div>
 
-<!-- ══════════ COVER ══════════ -->
 <div class="page active" id="pageCover">
   <div class="tile-bg"></div>
   <div class="tile-bar top"></div>
   <div class="tile-bar bottom"></div>
-
-  <!-- 左側柱 -->
   <div class="pillar left">
     <svg width="100%" height="100%" viewBox="0 0 46 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs><pattern id="plL" x="0" y="0" width="46" height="92" patternUnits="userSpaceOnUse">
@@ -240,7 +159,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <rect width="46" height="800" fill="url(#plL)"/>
     </svg>
   </div>
-  <!-- 右側柱 -->
   <div class="pillar right">
     <svg width="100%" height="100%" viewBox="0 0 46 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs><pattern id="plR" x="0" y="0" width="46" height="92" patternUnits="userSpaceOnUse">
@@ -258,18 +176,14 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <rect width="46" height="800" fill="url(#plR)"/>
     </svg>
   </div>
-
-  <!-- 主圓盤 -->
   <div class="disk-wrap" id="lDisk">
     <svg viewBox="0 0 330 330" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
       <circle cx="165" cy="165" r="160" fill="rgba(245,237,224,.88)" stroke="#c0ab7c" stroke-width="2"/>
       <circle cx="165" cy="165" r="152" fill="none" stroke="#2d6b5e" stroke-width=".8" stroke-dasharray="5 6" opacity=".38"/>
-      <!-- 放射線 -->
       <line x1="165" y1="5" x2="165" y2="325" stroke="#2d6b5e" stroke-width=".7" opacity=".15"/>
       <line x1="5" y1="165" x2="325" y2="165" stroke="#2d6b5e" stroke-width=".7" opacity=".15"/>
       <line x1="51" y1="51" x2="279" y2="279" stroke="#2d6b5e" stroke-width=".7" opacity=".15"/>
       <line x1="279" y1="51" x2="51" y2="279" stroke="#2d6b5e" stroke-width=".7" opacity=".15"/>
-      <!-- 四正方吉字 -->
       <circle cx="165" cy="38" r="18" fill="#fdf8f0" stroke="#2d6b5e" stroke-width="1.5"/>
       <text x="165" y="44" text-anchor="middle" font-size="14" fill="#00352c" font-family="serif" font-weight="bold">福</text>
       <circle cx="165" cy="292" r="18" fill="#fdf8f0" stroke="#d90050" stroke-width="1.5"/>
@@ -278,7 +192,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <text x="38" y="171" text-anchor="middle" font-size="14" fill="#00352c" font-family="serif" font-weight="bold">壽</text>
       <circle cx="292" cy="165" r="18" fill="#fdf8f0" stroke="#d90050" stroke-width="1.5"/>
       <text x="292" y="171" text-anchor="middle" font-size="14" fill="#d90050" font-family="serif" font-weight="bold">喜</text>
-      <!-- 四角小圓 -->
       <circle cx="82" cy="82" r="14" fill="#fdf8f0" stroke="#c0ab7c" stroke-width="1.2"/>
       <text x="82" y="87" text-anchor="middle" font-size="11" fill="#c0ab7c" font-family="serif" font-weight="bold">財</text>
       <circle cx="248" cy="82" r="14" fill="#fdf8f0" stroke="#c0ab7c" stroke-width="1.2"/>
@@ -287,14 +200,10 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <text x="82" y="253" text-anchor="middle" font-size="11" fill="#c0ab7c" font-family="serif" font-weight="bold">吉</text>
       <circle cx="248" cy="248" r="14" fill="#fdf8f0" stroke="#c0ab7c" stroke-width="1.2"/>
       <text x="248" y="253" text-anchor="middle" font-size="11" fill="#c0ab7c" font-family="serif" font-weight="bold">祥</text>
-      <!-- 中圈 -->
       <circle cx="165" cy="165" r="120" fill="none" stroke="#c0ab7c" stroke-width="1.2" opacity=".45"/>
       <polygon points="165,69 209,117 209,213 165,261 121,213 121,117" fill="rgba(192,171,124,.1)" stroke="#c0ab7c" stroke-width="1.2" opacity=".55"/>
-      <!-- 內圈 -->
       <circle cx="165" cy="165" r="60" fill="rgba(253,248,240,.95)" stroke="#2d6b5e" stroke-width="2"/>
-      <!-- 內六角 -->
       <polygon points="165,120 195,142 195,188 165,210 135,188 135,142" fill="none" stroke="#d90050" stroke-width="1.5" opacity=".7"/>
-      <!-- 中心籤筒 -->
       <rect x="149" y="142" width="32" height="44" rx="4" fill="#2d6b5e" opacity=".85"/>
       <rect x="147" y="137" width="36" height="12" rx="6" fill="#4a8c7f"/>
       <ellipse cx="165" cy="137" rx="18" ry="6" fill="#4a8c7f"/>
@@ -304,8 +213,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <text x="165" y="153" text-anchor="middle" font-size="7" fill="rgba(255,248,220,.82)" font-family="sans-serif">真珠</text>
     </svg>
   </div>
-
-  <!-- 地板帶 -->
   <div style="position:absolute;bottom:0;left:0;width:100%;" id="lBase">
     <svg viewBox="0 0 400 90" width="100%" height="auto" preserveAspectRatio="xMidYMax meet" xmlns="http://www.w3.org/2000/svg">
       <defs><pattern id="floor" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
@@ -316,34 +223,15 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       </pattern></defs>
       <rect x="0" y="42" width="400" height="48" fill="url(#floor)"/>
       <rect x="0" y="38" width="400" height="4" fill="#c0ab7c" opacity=".55"/>
-      <!-- 彩磚條 -->
-      <rect x="0" y="34" width="400" height="4" fill="url(#tilePillar)" opacity=".6"/>
-      <!-- 牆面小磚 -->
-      <rect x="15" y="8" width="28" height="24" rx="2" fill="none" stroke="#2d6b5e" stroke-width=".8" opacity=".28"/>
-      <rect x="55" y="8" width="28" height="24" rx="2" fill="none" stroke="#d90050" stroke-width=".8" opacity=".22"/>
-      <rect x="95" y="8" width="28" height="24" rx="2" fill="none" stroke="#c0ab7c" stroke-width=".8" opacity=".28"/>
-      <rect x="135" y="8" width="28" height="24" rx="2" fill="none" stroke="#2d6b5e" stroke-width=".8" opacity=".28"/>
-      <rect x="175" y="8" width="28" height="24" rx="2" fill="none" stroke="#d90050" stroke-width=".8" opacity=".22"/>
-      <rect x="215" y="8" width="28" height="24" rx="2" fill="none" stroke="#c0ab7c" stroke-width=".8" opacity=".28"/>
-      <rect x="255" y="8" width="28" height="24" rx="2" fill="none" stroke="#2d6b5e" stroke-width=".8" opacity=".28"/>
-      <rect x="295" y="8" width="28" height="24" rx="2" fill="none" stroke="#d90050" stroke-width=".8" opacity=".22"/>
-      <rect x="335" y="8" width="28" height="24" rx="2" fill="none" stroke="#c0ab7c" stroke-width=".8" opacity=".28"/>
-      <rect x="375" y="8" width="24" height="24" rx="2" fill="none" stroke="#2d6b5e" stroke-width=".8" opacity=".28"/>
     </svg>
   </div>
-
-  <!-- 封面 logo + 標題 -->
   <div class="cover-header">
     <img class="cover-logo" src="https://pydlnqriztpzgxbjuohm.supabase.co/storage/v1/object/public/assets/logo_1771308542401.svg?t=1772192672525" alt="真珠 JIN-ZHU">
-    <div class="cover-div">
-      <span></span><em id="coverSubtitle">求好運 · 問天機</em><span></span>
-    </div>
+    <div class="cover-div"><span></span><em id="coverSubtitle">求好運 · 問天機</em><span></span></div>
   </div>
-
   <div class="btn-enter-wrap" onclick="goToGame()">
     <button class="btn-enter" id="btnEnterText">搖一搖求籤</button>
   </div>
-
   <div class="perm-dlg" id="permDialog">
     <div class="perm-box">
       <h3>需要陀螺儀權限</h3>
@@ -353,7 +241,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
   </div>
 </div>
 
-<!-- ══════════ GAME ══════════ -->
 <div class="page" id="pageGame">
   <div class="tile-bg"></div>
   <div class="tile-bar top"></div>
@@ -363,11 +250,9 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <img class="game-logo" src="https://pydlnqriztpzgxbjuohm.supabase.co/storage/v1/object/public/assets/logo_1771308542401.svg?t=1772192672525" alt="真珠 JIN-ZHU">
       <div class="game-title" id="gameTitle">✦ 真珠好運籤 ✦</div>
     </div>
-
     <div class="shake-tip" id="shakeTip">
       <p><em id="shakeTipText">默念心中願望</em><br>搖晃手機 或 點擊籤筒</p>
     </div>
-
     <div class="shake-can" id="shakeCan" onclick="doShake()">
       <svg viewBox="0 0 152 192" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
         <defs>
@@ -389,19 +274,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
         <rect x="42" y="80" width="68" height="104" rx="6" fill="url(#cg1)"/>
         <rect x="40" y="74" width="72" height="14" rx="7" fill="url(#cg2)"/>
         <ellipse cx="76" cy="74" rx="36" ry="7" fill="url(#cg2)"/>
-        <!-- 花磚裝飾 -->
         <rect x="50" y="92" width="14" height="14" rx="1" fill="none" stroke="rgba(192,171,124,.5)" stroke-width="1"/>
         <line x1="50" y1="99" x2="64" y2="99" stroke="rgba(192,171,124,.4)" stroke-width=".7"/>
         <line x1="57" y1="92" x2="57" y2="106" stroke="rgba(192,171,124,.4)" stroke-width=".7"/>
         <rect x="88" y="92" width="14" height="14" rx="1" fill="none" stroke="rgba(217,0,80,.45)" stroke-width="1"/>
         <line x1="88" y1="99" x2="102" y2="99" stroke="rgba(217,0,80,.35)" stroke-width=".7"/>
         <line x1="95" y1="92" x2="95" y2="106" stroke="rgba(217,0,80,.35)" stroke-width=".7"/>
-        <rect x="50" y="148" width="14" height="14" rx="1" fill="none" stroke="rgba(217,0,80,.4)" stroke-width="1"/>
-        <line x1="50" y1="155" x2="64" y2="155" stroke="rgba(217,0,80,.3)" stroke-width=".7"/>
-        <line x1="57" y1="148" x2="57" y2="162" stroke="rgba(217,0,80,.3)" stroke-width=".7"/>
-        <rect x="88" y="148" width="14" height="14" rx="1" fill="none" stroke="rgba(192,171,124,.45)" stroke-width="1"/>
-        <line x1="88" y1="155" x2="102" y2="155" stroke="rgba(192,171,124,.35)" stroke-width=".7"/>
-        <line x1="95" y1="148" x2="95" y2="162" stroke="rgba(192,171,124,.35)" stroke-width=".7"/>
         <rect x="42" y="126" width="68" height="1.5" fill="rgba(192,171,124,.5)"/>
         <text x="76" y="117" text-anchor="middle" font-size="13" fill="rgba(192,171,124,.9)" font-family="serif" font-weight="bold" letter-spacing="2">求</text>
         <text x="76" y="143" text-anchor="middle" font-size="13" fill="rgba(192,171,124,.9)" font-family="serif" font-weight="bold" letter-spacing="2">籤</text>
@@ -412,7 +290,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
   </div>
 </div>
 
-<!-- ══════════ RESULT ══════════ -->
 <div class="page" id="pageResult">
   <div class="tile-bar top" style="position:fixed;z-index:10;"></div>
   <div class="result-wrap" style="padding-top:20px;">
@@ -421,14 +298,12 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <div class="r-logo-sep"></div>
       <div class="r-logo-label">台灣佳味<br>好運籤詩</div>
     </div>
-
     <div class="tile-div"></div>
     <div class="r-title">
       <h2 id="resultTitle">真珠好運籤</h2>
       <p>JIN · ZHU · FORTUNE</p>
     </div>
     <div class="tile-div-thin"></div>
-
     <div class="f-card">
       <div class="card-tile-band"></div>
       <div class="card-hd">
@@ -438,7 +313,6 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
       <div class="card-poem" id="cardPoem"></div>
       <div class="card-sects" id="cardSects"></div>
     </div>
-
     <div class="tile-div-thin"></div>
     <div class="r-btns">
       <button class="rbtn rbtn-out" onclick="goToCover()">再求一籤</button>
@@ -473,20 +347,66 @@ html,body{width:100%;height:100%;overflow:hidden;font-family:var(--font-n);backg
 var fortunes=[
   {num:"第一籤",level:"great",badge:"大吉",
    poem:["好運連連春意濃","佳餚美味日日豐","真珠台味迎福至","萬事如意喜氣盈"],
-   sections:[{label:"總論",text:"此籤大吉，好運滿溢，諸事順遂，財源廣進。"},{label:"事業",text:"貴人相助，事業蒸蒸日上，升遷可期。"},{label:"愛情",text:"感情甜蜜美滿，珍惜眼前緣分。"},{label:"財運",text:"財運亨通，投資有利，把握機會。"},{label:"飲食",text:"適合設宴慶祝，真珠台菜共享佳餚。"}]},
+   sections:[{label:"總論",text:"此籤大吉，好運滿溢，諸事順遂，財源廣進，前途一片光明。"},{label:"事業",text:"貴人相助，事業蒸蒸日上，升遷可期，宜把握良機積極行動。"},{label:"愛情",text:"感情甜蜜美滿，緣分深厚，珍惜眼前人，共譜幸福樂章。"},{label:"財運",text:"財運亨通，投資有利，正財偏財皆旺，把握機會大膽前行。"},{label:"飲食",text:"適合設宴慶祝，與親友共享真珠台菜，圍桌同樂最添喜氣。"}]},
   {num:"第二籤",level:"great",badge:"上吉",
    poem:["山珍海味入口甘","家人共聚話笑談","四季平安福壽長","來年更勝往年間"],
-   sections:[{label:"總論",text:"家庭和樂，親情溫暖，與所愛之人共度好時光。"},{label:"事業",text:"穩定成長，步步為營，忠誠待事必有回報。"},{label:"愛情",text:"家庭和睦，婚姻美滿。"},{label:"財運",text:"穩中有增，適合保守投資。"},{label:"飲食",text:"適合與家人圍桌共食，圓桌台菜最為吉利。"}]},
+   sections:[{label:"總論",text:"家庭和樂，親情溫暖，諸事亨通，與所愛之人共度美好時光。"},{label:"事業",text:"穩定成長，步步為營，忠誠待事必有回報，同事關係融洽。"},{label:"愛情",text:"家庭和睦，婚姻美滿，感情穩固如山，相互扶持共度人生。"},{label:"財運",text:"穩中有增，適合保守投資，積少成多，財富自然積累豐厚。"},{label:"飲食",text:"適合與家人圍桌共食，真珠圓桌台菜最為溫馨吉利。"}]},
   {num:"第三籤",level:"good",badge:"中吉",
    poem:["靜水流深自有源","守得雲開月更圓","萬事謀定而後動","春暖花開在眼前"],
-   sections:[{label:"總論",text:"時機漸熟，靜心等待，不宜操之過急。"},{label:"事業",text:"宜穩紮穩打，計劃周全後再出手。"},{label:"愛情",text:"感情需要耐心灌溉，給彼此多一些時間。"},{label:"財運",text:"財運平穩上揚，謹慎規劃。"},{label:"飲食",text:"清淡養身，台菜清蒸料理最合時宜。"}]},
+   sections:[{label:"總論",text:"時機漸熟，靜心等待，不宜操之過急，謀定而後動必有佳果。"},{label:"事業",text:"宜穩紮穩打，計劃周全後再出手，潛力正在累積，前景可期。"},{label:"愛情",text:"感情需要耐心灌溉，給彼此多一些時間與空間，自然水到渠成。"},{label:"財運",text:"財運平穩上揚，謹慎規劃，避免衝動消費，儲蓄為優先策略。"},{label:"飲食",text:"清淡養身，真珠清蒸台菜最合時宜，滋補養生又美味可口。"}]},
   {num:"第四籤",level:"great",badge:"福祿",
    poem:["鴻福齊天喜事多","佳人共坐話家常","珠玉滿堂添喜色","平安是福勝黃金"],
-   sections:[{label:"總論",text:"福祿雙全，家業興旺，喜事連連。"},{label:"事業",text:"合作事業大吉，雙贏局面可期。"},{label:"愛情",text:"情緣深厚，可積極進行婚嫁。"},{label:"財運",text:"財源廣進，有望拓展事業版圖。"},{label:"飲食",text:"適合設宴款待，真珠台菜最合此吉慶氛圍。"}]},
+   sections:[{label:"總論",text:"福祿雙全，家業興旺，喜事連連，貴人不斷，好運如潮水般湧來。"},{label:"事業",text:"合作事業大吉，雙贏局面可期，宜廣結善緣，擴展人脈版圖。"},{label:"愛情",text:"情緣深厚，緣分天定，可積極進行婚嫁，幸福美滿指日可待。"},{label:"財運",text:"財源廣進，有望拓展事業版圖，投資眼光準確，收穫豐碩。"},{label:"飲食",text:"適合設宴款待賓客，真珠台菜盛宴最合此吉慶氛圍，賓主盡歡。"}]},
   {num:"第五籤",level:"ok",badge:"平安",
    poem:["平平安安是最真","柴米油鹽有餘存","知足常樂心自在","一粥一飯皆是恩"],
-   sections:[{label:"總論",text:"平安無事即是福，知足常樂，踏實生活。"},{label:"事業",text:"現況穩定，踏實進步。"},{label:"愛情",text:"感情平順，互相體諒，平淡見真情。"},{label:"財運",text:"收支平衡，量入為出，儲蓄為上。"},{label:"飲食",text:"簡單家常台菜最能溫暖人心。"}]}
+   sections:[{label:"總論",text:"平安無事即是福，知足常樂，踏實生活，幸福就在日常之中。"},{label:"事業",text:"現況穩定，踏實進步，不必急於求成，持之以恆自有收穫。"},{label:"愛情",text:"感情平順，互相體諒，平淡見真情，珍惜眼前人最為重要。"},{label:"財運",text:"收支平衡，量入為出，儲蓄為上，理財有道自然生活無憂。"},{label:"飲食",text:"簡單家常台菜最能溫暖人心，真珠料理讓您感受家的溫情。"}]},
+  {num:"第六籤",level:"great",badge:"大吉",
+   poem:["金玉滿堂春色好","貴人相助運程高","展翅高飛鵬程遠","笑看人生萬事好"],
+   sections:[{label:"總論",text:"此籤大吉中之大吉，萬事順遂，貴人頻至，好運連連不斷。"},{label:"事業",text:"宜積極開創，魄力十足，貴人相助之下事業必能突飛猛進。"},{label:"愛情",text:"感情路上春風得意，姻緣美滿，桃花盛開，佳偶天成。"},{label:"財運",text:"財運大旺，正偏財齊來，投資理財皆宜，財富滾滾而來。"},{label:"飲食",text:"宜享用豐盛美食，真珠特色台菜大餐，犒賞努力的自己。"}]},
+  {num:"第七籤",level:"good",badge:"吉祥",
+   poem:["梅花香自苦寒來","千金難買好時機","努力耕耘終有成","春回大地萬象新"],
+   sections:[{label:"總論",text:"努力必有回報，時機正在醞釀，堅持下去前途無可限量。"},{label:"事業",text:"辛勤付出終見成果，即將迎來收穫期，繼續堅持不懈努力。"},{label:"愛情",text:"用心經營感情，誠意打動人心，真誠相待必得佳人芳心。"},{label:"財運",text:"財運漸入佳境，持續努力積累，厚積薄發財富自然豐盈。"},{label:"飲食",text:"辛勤之後犒賞自己，真珠精緻台菜讓身心得到最好的滋養。"}]},
+  {num:"第八籤",level:"great",badge:"鴻運",
+   poem:["鴻運當頭喜事臨","萬紫千紅春色深","乘風破浪展宏圖","一帆風順到如今"],
+   sections:[{label:"總論",text:"鴻運當頭，喜事臨門，乘勝追擊，凡事皆能順利達成心願。"},{label:"事業",text:"宏圖大展，乘風破浪，此時出手最為有利，成功近在眼前。"},{label:"愛情",text:"喜事將臨，感情修成正果，共築愛巢，幸福美滿如意稱心。"},{label:"財運",text:"財如春水滾滾來，投資獲利豐厚，宜積極把握賺錢好機會。"},{label:"飲食",text:"以真珠特色宴席慶祝鴻運，美食共享喜悅，更添幸福滋味。"}]},
+  {num:"第九籤",level:"ok",badge:"順心",
+   poem:["順水行舟不費力","天時地利人和齊","步步踏穩向前行","好景常在心中記"],
+   sections:[{label:"總論",text:"天時地利人和俱備，順勢而為，事半功倍，凡事皆能順心如意。"},{label:"事業",text:"環境有利，宜順勢發展，不必強求，自然有好機遇降臨。"},{label:"愛情",text:"感情順水行舟，自然發展最美，不強求、不執著，緣分自來。"},{label:"財運",text:"財運平順，維持現狀穩健增長，按部就班理財最為穩妥。"},{label:"飲食",text:"平日享用真珠家常台味，順心愉快，平淡中見真滋味。"}]},
+  {num:"第十籤",level:"great",badge:"福星",
+   poem:["福星高照耀前程","喜氣洋洋滿庭春","貴人指路心開朗","財源茂盛達三江"],
+   sections:[{label:"總論",text:"福星高照，前程似錦，貴人指路，諸事亨通，大吉大利之象。"},{label:"事業",text:"有貴人指引，事業方向明確，按此方向努力，前途無限光明。"},{label:"愛情",text:"喜氣洋洋，感情甜蜜如蜜，婚姻美滿，家庭幸福圓滿。"},{label:"財運",text:"財源廣進如三江之水，正財旺盛，偏財亦有，收益超乎預期。"},{label:"飲食",text:"以真珠豐盛台菜迎接福星，食補養生，為好運加持添色。"}]},
+  {num:"第十一籤",level:"good",badge:"吉利",
+   poem:["吉星閃耀照前途","利事亨通財自來","人逢喜事精神爽","歲歲年年皆如意"],
+   sections:[{label:"總論",text:"吉星高照，利事亨通，逢凶化吉，遇難呈祥，好運自然來。"},{label:"事業",text:"事業正逢上升期，宜積極進取，遇到困難也能逢凶化吉。"},{label:"愛情",text:"感情佳偶天成，歲歲年年喜氣相伴，婚姻幸福長久美滿。"},{label:"財運",text:"財運自然湧現，不必過於強求，順其自然財富自然積聚。"},{label:"飲食",text:"真珠吉利台菜，每一道料理都蘊含廚師的用心與誠意。"}]},
+  {num:"第十二籤",level:"great",badge:"大吉祥",
+   poem:["日出東方紅萬里","春風化雨潤心田","功成名就天賜福","喜迎四方貴人來"],
+   sections:[{label:"總論",text:"如日出東方，光芒萬丈，功成名就，四方貴人紛紛相助。"},{label:"事業",text:"名聲大噪，功績顯著，適合開創新局，拓展更廣闊的版圖。"},{label:"愛情",text:"感情光明磊落，春風化雨滋潤愛情，心靈相通天賜良緣。"},{label:"財運",text:"財運如日中天，四方財路暢通，各類收入豐厚，大豐收。"},{label:"飲食",text:"以真珠最高規格宴席慶賀大吉，美食佳餚讓喜悅加倍。"}]},
+  {num:"第十三籤",level:"ok",badge:"和順",
+   poem:["和氣致祥春滿園","順天應時萬物生","家和萬事興旺日","歲月靜好心自安"],
+   sections:[{label:"總論",text:"和氣生財，家和萬事興，靜好歲月中蘊藏無限的幸福能量。"},{label:"事業",text:"以和為貴，化解人際矛盾，和諧團隊合作帶來豐碩成果。"},{label:"愛情",text:"家庭和順，夫妻恩愛，相互扶持包容，愛情因此長久。"},{label:"財運",text:"和順之氣帶來財運，避免爭議糾紛，和氣財源自然廣進。"},{label:"飲食",text:"闔家圍桌享用真珠台菜，和樂融融，最是幸福的時刻。"}]},
+  {num:"第十四籤",level:"great",badge:"萬事興",
+   poem:["萬紫千紅花正開","事事如意步步來","春光明媚好時節","笑顏迎接新未來"],
+   sections:[{label:"總論",text:"萬事如意，百花盛開，生命充滿生機，每一天都是最好的。"},{label:"事業",text:"百花齊放好時節，各項計劃同步推進，成果豐碩超越預期。"},{label:"愛情",text:"感情如春花盛開，美麗燦爛，愛意濃厚，幸福每天都新鮮。"},{label:"財運",text:"財運如萬紫千紅，各路財源齊開，此時投資理財最為有利。"},{label:"飲食",text:"以真珠台菜迎接萬紫千紅的好時節，每道料理皆是驚喜。"}]},
+  {num:"第十五籤",level:"good",badge:"福慧雙全",
+   poem:["福慧圓滿照十方","智慧開花結碩果","心寬體健事業成","幸福長駐在心房"],
+   sections:[{label:"總論",text:"福慧雙全，心智清明，以智慧化解困難，福氣自然長駐。"},{label:"事業",text:"以智慧應對挑戰，思路清晰，方向正確，事業穩健成長。"},{label:"愛情",text:"以智慧與包容經營愛情，理解對方，感情因此更加深厚。"},{label:"財運",text:"用智慧理財，慎選投資，聰明判斷帶來豐厚且持久的收益。"},{label:"飲食",text:"真珠精心調製的養生台菜，滋養身心，福慧雙全從飲食開始。"}]},
+  {num:"第十六籤",level:"great",badge:"旺旺來",
+   poem:["旺氣沖天萬象新","財丁兩旺喜盈門","事事順遂如所願","好運年年不間斷"],
+   sections:[{label:"總論",text:"旺氣十足，財丁兩旺，好運年年不斷，人生正走在最璀璨的道路上。"},{label:"事業",text:"事業運勢大旺，出手即有斬獲，此時擴大投入最能獲得豐厚回報。"},{label:"愛情",text:"感情旺盛美好，喜事盈門，緣分深厚，愛情與婚姻雙雙圓滿。"},{label:"財運",text:"財運旺旺而來，正偏財齊旺，把握時機積極行動收益驚人。"},{label:"飲食",text:"吃真珠旺旺台菜，每一口都是滿滿福氣，為好運加油助威。"}]},
+  {num:"第十七籤",level:"ok",badge:"知足常樂",
+   poem:["知足者常樂無憂","感恩惜福日日好","簡單生活心豐足","此心安處是吾家"],
+   sections:[{label:"總論",text:"知足者常樂，感恩惜福，簡單生活中蘊藏最真實的幸福滋味。"},{label:"事業",text:"珍惜現有成就，穩健前進，知足不代表停滯，而是更好的積累。"},{label:"愛情",text:"感謝身邊的人，珍惜當下情緣，此心安處便是最美的愛情。"},{label:"財運",text:"量入為出知足常樂，財富雖非最多，卻是最踏實的豐盛。"},{label:"飲食",text:"真珠家常台菜，簡單卻深厚，知足的味道就是最幸福的美食。"}]},
+  {num:"第十八籤",level:"great",badge:"吉星高照",
+   poem:["吉星高懸照萬家","好運連連福氣大","天賜良機莫錯過","事業愛情皆如花"],
+   sections:[{label:"總論",text:"吉星高照，天賜良機，宜積極把握，各方面均有重大突破。"},{label:"事業",text:"天賜良機不可錯過，積極行動，以最大熱忱投入事業最為有利。"},{label:"愛情",text:"吉星照耀愛情路，姻緣天注定，珍貴緣分如花盛開美麗動人。"},{label:"財運",text:"天降財運，機不可失，時不再來，把握此刻大膽投資行動。"},{label:"飲食",text:"以真珠美宴感謝吉星庇佑，美食慶祝好運，喜悅倍增無窮。"}]},
+  {num:"第十九籤",level:"good",badge:"步步高升",
+   poem:["步步高升向青雲","節節攀登不回頭","功名富貴天所賜","勤奮努力必成就"],
+   sections:[{label:"總論",text:"步步高升，節節攀登，勤奮努力之人天必賜福，前程遠大。"},{label:"事業",text:"仕途事業節節高升，勤奮踏實的態度是最大資本，繼續前進。"},{label:"愛情",text:"感情節節升溫，彼此關係更加親密，一步一腳印走向幸福。"},{label:"財運",text:"財富步步增長，按部就班積累，高升財運因勤奮努力而來。"},{label:"飲食",text:"真珠精緻台菜，每一道都是廚師用心步步精進的努力成果。"}]},
+  {num:"第二十籤",level:"great",badge:"大豐收",
+   poem:["春耕夏耘秋收成","辛勤付出見真情","碩果纍纍滿庭院","珠光寶氣慶豐登"],
+   sections:[{label:"總論",text:"辛勤耕耘終得大豐收，碩果纍纍，一切付出皆得到豐厚回報。"},{label:"事業",text:"事業迎來大豐收，過去努力全數變現，成就超乎想像美好。"},{label:"愛情",text:"愛情修成正果，用心付出得到最美的回報，珠聯璧合天賜良緣。"},{label:"財運",text:"財富大豐收，各路收入齊至，過去投資全面開花結果豐碩。"},{label:"飲食",text:"以真珠豐收宴慶賀碩果，山珍海味齊備，與最愛的人共享豐盛。"}]}
 ];
+
 var cur=null,soundOn=true,shakeCount=0,lastA={x:0,y:0,z:0},shakeBlocked=false,tapCount=0,tapTimer=null,audioCtx=null;
 
 window.addEventListener('load',function(){
@@ -549,7 +469,6 @@ function goToGame(){
 }
 function goToCover(){ transition(function(){ showPage('pageCover'); }); }
 function goToResult(){ renderResult(cur); transition(function(){ showPage('pageResult'); }); }
-
 function doShake(){ triggerShake(); }
 function triggerShake(){
   var can=document.getElementById('shakeCan');
@@ -567,7 +486,6 @@ function triggerShake(){
     launchSticks(cur,function(){ goToResult(); });
   },2050);
 }
-
 function launchSticks(f,cb){
   var ov=document.getElementById('stickOverlay'); ov.innerHTML=''; ov.classList.add('active');
   var cfg=[
@@ -584,7 +502,6 @@ function launchSticks(f,cb){
   })(i); }
   setTimeout(function(){ ov.classList.remove('active'); ov.innerHTML=''; if(cb)cb(); },1700);
 }
-
 function renderResult(f){
   document.getElementById('cardNum').textContent=f.num;
   var b=document.getElementById('cardBadge'); b.textContent=f.badge; b.className='badge badge-'+f.level;
@@ -593,13 +510,11 @@ function renderResult(f){
   var se=document.getElementById('cardSects'); se.innerHTML='';
   f.sections.forEach(function(s,i){ var d=document.createElement('div'); d.className='sect'; d.innerHTML='<span class="sect-tag">'+s.label+'</span><span class="sect-body">'+s.text+'</span>'; d.style.animationDelay=(i*.1+.45)+'s'; se.appendChild(d); });
 }
-
 function getCtx(){ if(!audioCtx){ try{ audioCtx=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } } if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
 function playNote(f,v,d,t,w){ if(!soundOn) return; var c=getCtx(); if(!c) return; var tm=w||c.currentTime; try{ var o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=f; o.type=t||'sine'; g.gain.setValueAtTime(0,tm); g.gain.linearRampToValueAtTime(v,tm+.018); g.gain.exponentialRampToValueAtTime(.0001,tm+d); o.start(tm); o.stop(tm+d+.05); }catch(e){} }
 function playChord(fs,v){ fs.forEach(function(f){ playNote(f,v,.85,'sine'); }); }
 function playWood(){ var c=getCtx(); if(!c) return; [0,.11,.27,.44,.59,.76,.93,1.1,1.28,1.47,1.65,1.82].forEach(function(t){ var f=180+Math.random()*160; playNote(f,.09,.07,'triangle',c.currentTime+t); playNote(f*1.6,.045,.055,'triangle',c.currentTime+t+.014); }); }
 function playBell(){ var c=getCtx(); if(!c) return; [880,1108,1318,1760,2093].forEach(function(f,i){ playNote(f,.07-i*.01,1.4,'sine',c.currentTime+i*.038); }); }
-
 function openPanel(){ document.getElementById('panel').classList.add('open'); }
 function closePanel(){ document.getElementById('panel').classList.remove('open'); }
 function applyAll(){
@@ -621,7 +536,7 @@ function renderList(){
     d.innerHTML='<div class="fi-hd"><span>'+f.num+' · '+f.badge+'</span><button onclick="removeFortune('+i+')">✕</button></div>'+
       '<div class="cr"><label>籤名</label><input type="text" value="'+f.num+'" onchange="fortunes['+i+'].num=this.value"></div>'+
       '<div class="cr"><label>牌匾</label><input type="text" value="'+f.badge+'" onchange="fortunes['+i+'].badge=this.value"></div>'+
-      '<div class="cr"><label>等級</label><select onchange="fortunes['+i+'].level=this.value">'+['great','good','ok','bad'].map(function(l){ return '<option value="'+l+'"'+(f.level==l?' selected':'')+'>'+l+'</option>'; }).join('')+'</select></div>'+
+      '<div class="cr"><label>等級</label><select onchange="fortunes['+i+'].level=this.value">'+['great','good','ok','bad'].map(function(lv){ return '<option value="'+lv+'"'+(f.level==lv?' selected':'')+'>'+lv+'</option>'; }).join('')+'</select></div>'+
       '<div class="cr"><label>籤詩（每行一句）</label><textarea onchange="fortunes['+i+'].poem=this.value.split(\'\\n\').slice(0,4)">'+f.poem.join('\n')+'</textarea></div>';
     l.appendChild(d);
   });
