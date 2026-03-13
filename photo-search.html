@@ -3,250 +3,474 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>真珠 | 珍藏回憶 · 紀念照下載</title>
-    <link rel="stylesheet" href="https://www.jinzhu.com.tw/bootstrap/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://www.jinzhu.com.tw/css/animate.css">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>真珠 · 珍藏回憶 · 紀念照下載</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p-green: #004d40; --p-gold: #b89150; --p-cream: #f9f5f0; }
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: var(--p-cream); -webkit-tap-highlight-color: transparent; }
-        .font-serif { font-family: 'Noto Serif TC', serif; }
+        :root {
+            --ink: #1a2820;
+            --pine: #004d40;
+            --gold: #b89150;
+            --gold-pale: #e8d5a0;
+            --cream: #f7f3ec;
+            --paper: #faf8f4;
+            --stone: #8a8070;
+            --border: rgba(184,145,80,0.2);
+        }
 
-        /* Navbar */
-        .navbar-custom { background-color: #ffffff; height: 60px; display: flex; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: fixed; top: 0; width: 100%; z-index: 1000; }
-        .navbar-brand img { max-height: 40px; image-rendering: -webkit-optimize-contrast; object-fit: contain; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* 側邊選單 */
-        .side-menu { position: fixed; top: 0; right: -320px; width: 320px; height: 100%; background: var(--p-green); z-index: 2000; transition: 0.4s; padding: 70px 0 0; box-shadow: -5px 0 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--paper);
+            color: var(--ink);
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+            padding-bottom: 60px;
+        }
+
+        ::-webkit-scrollbar { width: 0; }
+
+        body::before {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none; z-index: 9999; opacity: 0.4;
+        }
+
+        /* ── NAVBAR ── */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 58px; z-index: 500;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px;
+            background: rgba(250,248,244,0.92);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.4s;
+        }
+        .navbar.scrolled { box-shadow: 0 4px 24px rgba(0,77,64,0.08); }
+        .nav-logo { height: 32px; object-fit: contain; }
+        .back-link {
+            display: flex; align-items: center; gap: 4px;
+            color: var(--pine); font-size: 13px; font-weight: 700;
+            text-decoration: none; letter-spacing: 0.05em;
+        }
+        .menu-btn {
+            background: none; border: none; cursor: pointer;
+            width: 36px; height: 36px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+        }
+        .menu-btn span {
+            display: block; width: 22px; height: 1.5px;
+            background: var(--pine); transition: all 0.3s; transform-origin: center;
+        }
+        .menu-btn.active span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+        .menu-btn.active span:nth-child(2) { opacity: 0; }
+        .menu-btn.active span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+        /* ── SIDE MENU ── */
+        .overlay {
+            position: fixed; inset: 0;
+            background: rgba(20,30,25,0.6);
+            z-index: 800; opacity: 0; visibility: hidden;
+            transition: all 0.35s; backdrop-filter: blur(4px);
+        }
+        .overlay.active { opacity: 1; visibility: visible; }
+
+        .side-menu {
+            position: fixed; top: 0; right: -340px; bottom: 0;
+            width: 300px; background: var(--ink);
+            z-index: 900;
+            transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            display: flex; flex-direction: column; padding-top: 80px;
+        }
         .side-menu.active { right: 0; }
-        .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1500; display: none; }
-        .menu-overlay.active { display: block; }
-        .menu-link { color: white; font-size: 1.1rem; font-weight: bold; text-decoration: none; display: block; padding: 16px 24px; border-bottom: 1px solid rgba(255,255,255,0.08); transition: background 0.2s; }
-        .menu-link:hover { background: rgba(255,255,255,0.07); }
-        .menu-link-active { color: var(--p-gold) !important; }
+        .menu-gold-line {
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        .menu-decor {
+            padding: 24px 32px 12px;
+            color: var(--gold); font-size: 10px;
+            letter-spacing: 0.35em; text-transform: uppercase; opacity: 0.6;
+        }
+        .menu-nav-item {
+            display: block; padding: 16px 32px;
+            color: rgba(255,255,255,0.7); text-decoration: none;
+            font-size: 0.85rem; letter-spacing: 0.2em;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.2s; font-weight: 500;
+        }
+        .menu-nav-item:hover { color: var(--gold-pale); padding-left: 40px; }
+        .menu-nav-item.active { color: var(--gold); }
+        .menu-footer {
+            padding: 20px 32px; color: rgba(255,255,255,0.15);
+            font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+            text-align: center; border-top: 1px solid rgba(255,255,255,0.04);
+            margin-top: auto;
+        }
 
-        /* KV */
-        .kv-section { height: 100vh; overflow: hidden; position: relative; background: #1a1a1a; }
-        .main-title { font-size: 2.2rem; letter-spacing: 0.15em; text-shadow: 0 2px 10px rgba(0,0,0,0.3); font-weight: 700; color: #fff; }
+        /* ── KV HERO ── */
+        .kv {
+            height: 52svh; position: relative;
+            overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .kv-bg {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%; object-fit: cover;
+            transform: scale(1.04); transition: transform 8s ease;
+        }
+        .kv-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to bottom, rgba(10,20,15,0.25) 0%, rgba(10,20,15,0.55) 60%, rgba(10,20,15,0.85) 100%);
+        }
+        .kv-content {
+            position: relative; z-index: 10; text-align: center;
+            animation: fadeUp 1.2s ease both;
+        }
+        .kv-tag {
+            display: inline-block; font-size: 9px; letter-spacing: 0.45em;
+            color: var(--gold-pale); text-transform: uppercase;
+            border: 1px solid rgba(184,145,80,0.4);
+            padding: 5px 18px; border-radius: 999px; margin-bottom: 16px;
+            animation: fadeUp 1.2s 0.2s ease both; opacity: 0;
+        }
+        .kv-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2.4rem; font-weight: 900; color: white;
+            letter-spacing: 0.12em;
+            text-shadow: 0 4px 30px rgba(0,0,0,0.4);
+            animation: fadeUp 1.2s 0.3s ease both; opacity: 0;
+        }
+        .kv-gold-line {
+            width: 40px; height: 1px; margin: 16px auto;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            animation: fadeUp 1.2s 0.5s ease both; opacity: 0;
+        }
+        .kv-sub {
+            font-size: 0.75rem; letter-spacing: 0.35em;
+            color: rgba(255,255,255,0.5); font-weight: 300;
+            animation: fadeUp 1.2s 0.6s ease both; opacity: 0;
+        }
 
-        /* 主卡片 */
-        .main-card { margin-top: -180px; position: relative; z-index: 10; background: #fff; border-radius: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        /* ── MAIN CARD ── */
+        .main-wrap {
+            max-width: 520px; margin: 0 auto;
+            padding: 0 16px;
+            margin-top: -60px; position: relative; z-index: 20;
+        }
 
-        /* 輸入框 */
-        .field-input { width: 100%; border: none; border-bottom: 1.5px solid #e2e8f0; padding: 10px 0; font-size: 15px; font-weight: bold; background: transparent; outline: none; color: #1a2e2b; transition: border-color 0.2s; }
-        .field-input:focus { border-color: var(--p-gold); }
-        .field-input::placeholder { color: #cbd5e1; font-weight: normal; font-size: 14px; }
+        .main-card {
+            background: white; border-radius: 24px;
+            box-shadow: 0 24px 64px rgba(0,77,64,0.1), 0 0 0 1px var(--border);
+            overflow: hidden; position: relative;
+        }
+        .main-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, var(--pine), var(--gold), var(--pine), transparent);
+        }
 
-        /* 或分隔 */
-        .or-divider { display: flex; align-items: center; gap: 8px; color: #d1d5db; font-size: 10px; font-weight: bold; letter-spacing: 0.15em; margin: 16px 0; }
-        .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: #f1f5f9; }
+        .card-header { padding: 28px 28px 0; }
+        .card-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.1rem; font-weight: 700; color: var(--pine);
+            text-align: center; letter-spacing: 0.3em; margin-bottom: 6px;
+        }
+        .card-sub {
+            text-align: center; font-size: 10px;
+            letter-spacing: 0.2em; color: var(--stone); margin-bottom: 28px;
+        }
 
-        /* 搜尋按鈕 */
-        .search-btn { width: 100%; background: var(--p-green); color: white; border: none; border-radius: 999px; padding: 15px; font-size: 15px; font-weight: bold; font-family: 'Noto Serif TC', serif; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s; box-shadow: 0 8px 24px rgba(0,77,64,0.2); margin-top: 8px; }
-        .search-btn:active { transform: scale(0.97); }
+        .field-wrap { padding: 0 28px; margin-bottom: 20px; }
+        .field-label {
+            display: block; font-size: 9px;
+            letter-spacing: 0.3em; text-transform: uppercase;
+            color: var(--gold); font-weight: 700; margin-bottom: 10px;
+        }
+        .field-input {
+            width: 100%; border: none;
+            border-bottom: 1.5px solid rgba(0,0,0,0.1);
+            padding: 10px 0; font-size: 1rem;
+            background: transparent; outline: none;
+            color: var(--ink); font-family: 'Noto Sans TC', sans-serif;
+            transition: border-color 0.3s; text-align: center;
+        }
+        .field-input:focus { border-color: var(--pine); }
+        .field-input::placeholder { color: rgba(0,0,0,0.2); font-size: 0.9rem; }
+
+        .search-btn-wrap { padding: 4px 28px 28px; }
+        .search-btn {
+            width: 100%; background: var(--pine);
+            color: white; border: none; border-radius: 14px;
+            padding: 18px; font-size: 0.9rem; font-weight: 700;
+            letter-spacing: 0.2em; cursor: pointer;
+            transition: all 0.3s; font-family: 'Noto Sans TC', sans-serif;
+            position: relative; overflow: hidden;
+        }
+        .search-btn::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+        }
+        .search-btn:active { transform: scale(0.98); }
         .search-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        /* 狀態文字 */
-        .status-msg { display: none; text-align: center; padding: 16px 0 4px; font-size: 13px; font-weight: bold; }
+        /* ── STATUS ── */
+        .status-wrap { padding: 0 28px 24px; text-align: center; display: none; }
+        .status-searching { color: var(--stone); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; }
+        .status-empty-title { color: #e57373; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+        .status-empty-sub { color: var(--stone); font-size: 11px; }
 
-        /* 結果區 */
-        #result-area { display: none; }
-        .result-divider { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: bold; letter-spacing: 0.15em; margin: 20px 0 16px; }
-        .result-divider::before, .result-divider::after { content: ''; flex: 1; height: 1px; }
+        /* ── RESULT DIVIDER ── */
+        .result-header {
+            display: flex; align-items: center; gap: 12px;
+            padding: 24px 28px 16px;
+        }
+        .result-header-line { flex: 1; height: 1px; background: var(--border); }
+        .result-header-text {
+            font-size: 9px; letter-spacing: 0.3em;
+            text-transform: uppercase; color: var(--gold); font-weight: 700;
+        }
 
-        .photo-card { border-radius: 1.5rem; overflow: hidden; border: 1px solid #f1f5f9; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-        .photo-card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+        /* ── PHOTO CARD ── */
+        .photo-result-wrap { padding: 0 28px 28px; display: none; }
 
-        .download-btn { display: block; width: 100%; background: var(--p-gold); color: white; text-align: center; padding: 13px; font-weight: bold; font-size: 14px; text-decoration: none; border-radius: 999px; transition: opacity 0.2s; box-shadow: 0 6px 16px rgba(184,145,80,0.25); }
-        .download-btn:hover { opacity: 0.85; color: white; text-decoration: none; }
-        .download-btn:active { opacity: 0.7; }
+        .photo-card {
+            border-radius: 18px; overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+        }
+        .photo-card img {
+            width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block;
+        }
+        .photo-card-body { padding: 18px 20px 20px; }
+        .photo-card-name {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1rem; font-weight: 700;
+            color: var(--pine); margin-bottom: 4px;
+        }
+        .photo-card-note { font-size: 11px; color: var(--gold); margin-bottom: 4px; }
+        .photo-card-date { font-size: 10px; color: rgba(0,0,0,0.2); margin-bottom: 18px; }
 
-        /* 分頁點 */
-        .photo-dots { display: flex; justify-content: center; gap: 7px; margin-top: 14px; }
-        .photo-dot { width: 7px; height: 7px; border-radius: 50%; background: #e2e8f0; cursor: pointer; transition: background 0.2s, transform 0.2s; }
-        .photo-dot.active { background: var(--p-gold); transform: scale(1.3); }
+        .dl-btn {
+            display: block; width: 100%;
+            background: linear-gradient(135deg, var(--gold), #d4a85a);
+            color: white; text-align: center;
+            padding: 15px; font-weight: 700; font-size: 14px;
+            text-decoration: none; border-radius: 12px;
+            letter-spacing: 0.1em;
+            box-shadow: 0 6px 20px rgba(184,145,80,0.3);
+            transition: opacity 0.2s;
+        }
+        .dl-btn:active { opacity: 0.85; }
 
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        /* ── DOTS ── */
+        .photo-dots {
+            display: flex; justify-content: center; gap: 8px;
+            padding: 0 28px 8px;
+        }
+        .photo-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(0,0,0,0.12); cursor: pointer;
+            transition: all 0.25s;
+        }
+        .photo-dot.active { background: var(--gold); transform: scale(1.3); }
+        .multi-hint {
+            text-align: center; font-size: 10px;
+            color: var(--stone); padding-bottom: 28px; display: none;
+            letter-spacing: 0.1em;
+        }
+
+        /* ── FOOTER NOTE ── */
+        .page-footer {
+            text-align: center; padding: 32px 16px;
+            font-size: 11px; color: var(--stone); letter-spacing: 0.1em;
+        }
+        .page-footer a { color: var(--gold); text-decoration: none; font-weight: 700; }
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in { animation: fadeUp 0.4s ease both; }
     </style>
 </head>
-<body class="pb-20 text-slate-800">
+<body>
 
-    <!-- Navbar -->
-    <header class="navbar-custom px-4 justify-between">
-        <a href="https://feastogether.github.io/jinzhu//index01.html" class="flex items-center gap-1 text-p-green text-sm font-bold">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-            返回
-        </a>
-        <a class="navbar-brand" href="https://feastogether.github.io/jinzhu//index01.html">
-            <img id="main-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="logo">
-        </a>
-        <button onclick="toggleMenu()" class="text-p-green text-2xl px-2">☰</button>
-    </header>
+<!-- NAVBAR -->
+<header class="navbar" id="navbar">
+    <a href="index.html" class="back-link">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        返回
+    </a>
+    <a href="index.html"><img id="main-logo" class="nav-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠"></a>
+    <button class="menu-btn" id="menu-btn" onclick="toggleMenu()">
+        <span></span><span></span><span></span>
+    </button>
+</header>
 
-    <div id="menu-overlay" class="menu-overlay" onclick="toggleMenu()"></div>
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
-    <!-- 右側選單 -->
-    <nav id="side-menu" class="side-menu text-left">
-        <button onclick="toggleMenu()" class="absolute top-4 right-4 text-white/50 hover:text-white text-2xl transition">✕</button>
-        <a href="https://feastogether.github.io/jinzhu//index01.html" class="menu-link font-serif">首頁 Home</a>
-        <a href="query.html"        class="menu-link font-serif">訂單查詢 Tracking</a>
-        <a href="photo-search.html" class="menu-link font-serif menu-link-active">紀念照下載 Photos</a>
-        <div class="mt-auto px-6 pb-8 text-white/20 text-[10px] uppercase tracking-widest text-center border-t border-white/5 pt-6">
-            Jin Zhu Taichung
+<!-- SIDE MENU -->
+<nav class="side-menu" id="side-menu">
+    <div class="menu-gold-line"></div>
+    <div class="menu-decor">真珠 · Jin Zhu</div>
+    <a href="index.html" class="menu-nav-item">首頁 Home</a>
+    <a href="query.html" class="menu-nav-item">訂單查詢 Tracking</a>
+    <a href="photo-search.html" class="menu-nav-item active">紀念照下載 Photos</a>
+    <div class="menu-footer">Jin Zhu Taichung · 文心店</div>
+</nav>
+
+<!-- KV -->
+<div class="kv">
+    <img id="kv-bg" class="kv-bg" src="" alt="">
+    <div class="kv-overlay"></div>
+    <div class="kv-content">
+        <div class="kv-tag">Memories · Photos</div>
+        <h1 class="kv-title">珍藏回憶</h1>
+        <div class="kv-gold-line"></div>
+        <p class="kv-sub">紀念照片下載 · Jin Zhu</p>
+    </div>
+</div>
+
+<!-- MAIN -->
+<main class="main-wrap">
+    <div class="main-card animate-in">
+        <div class="card-header">
+            <h2 class="card-title">領取您的紀念照</h2>
+            <p class="card-sub">輸入姓名、電話或訂單號碼擇一即可</p>
         </div>
-    </nav>
 
-    <!-- KV 背景 -->
-    <div class="kv-section">
-        <img id="kv-bg" src="" class="absolute inset-0 w-full h-full object-cover opacity-60">
-        <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <p class="text-white/60 font-serif tracking-[0.35em] text-sm mb-3 animate__animated animate__fadeIn">珍藏回憶</p>
-            <h1 class="main-title font-serif animate__animated animate__fadeIn">紀念照片下載</h1>
-            <div class="w-10 h-0.5 mt-4 animate__animated animate__fadeIn animate__delay-1s" style="background:var(--p-gold)"></div>
-            <p class="text-white/50 tracking-[0.2em] text-xs mt-3 animate__animated animate__fadeIn animate__delay-1s">Photos · Memories · Jin Zhu</p>
+        <div class="field-wrap">
+            <label class="field-label">搜尋 Search</label>
+            <input id="input-keyword" type="text" class="field-input"
+                placeholder="姓名 ／ 電話 ／ 訂單號碼"
+                onkeydown="if(event.key==='Enter') doSearch()">
         </div>
+
+        <div class="search-btn-wrap">
+            <button id="search-btn" class="search-btn" onclick="doSearch()">立即搜尋回憶</button>
+        </div>
+
+        <!-- 搜尋中 -->
+        <div id="status-searching" class="status-wrap">
+            <p class="status-searching">搜尋中⋯</p>
+        </div>
+
+        <!-- 無結果 -->
+        <div id="status-empty" class="status-wrap">
+            <p class="status-empty-title">找不到相符的紀念照</p>
+            <p class="status-empty-sub">請確認輸入的資料是否正確</p>
+        </div>
+
+        <!-- 結果標題 -->
+        <div id="result-header" class="result-header" style="display:none">
+            <div class="result-header-line"></div>
+            <span class="result-header-text">找到您的紀念照</span>
+            <div class="result-header-line"></div>
+        </div>
+
+        <!-- 照片結果 -->
+        <div id="photo-result-wrap" class="photo-result-wrap">
+            <div class="photo-card">
+                <img id="photo-img" src="" alt="紀念照">
+                <div class="photo-card-body">
+                    <p id="photo-name" class="photo-card-name"></p>
+                    <p id="photo-note" class="photo-card-note"></p>
+                    <p id="photo-date" class="photo-card-date"></p>
+                    <a id="download-btn" href="" download class="dl-btn">⬇ &nbsp;點此下載照片</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分頁點 -->
+        <div id="photo-dots" class="photo-dots"></div>
+        <p id="multi-hint" class="multi-hint">點擊圓點可切換多張照片</p>
     </div>
 
-    <!-- 主內容 -->
-    <main class="max-w-xl mx-auto px-4 relative z-20">
+    <p class="page-footer">
+        如有問題請致電：<a href="tel:0437027538">04-3702-7538</a>
+    </p>
+</main>
 
-        <div class="main-card p-8 border border-white animate__animated animate__slideInUp">
+<script>
+    const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+    const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-            <h2 class="text-xl font-bold text-p-green text-center mb-2 font-serif tracking-widest uppercase">領取您的紀念照</h2>
-            <p class="text-[11px] text-stone-400 text-center mb-8 tracking-wide">輸入姓名、電話或訂單號碼擇一即可</p>
+    let foundPhotos = [];
 
-            <!-- 單一輸入框 -->
-            <div class="mb-6">
-                <input id="input-keyword" type="text" class="field-input text-center text-base"
-                    placeholder="姓名 ／ 電話 ／ 訂單號碼"
-                    onkeydown="if(event.key==='Enter') doSearch()">
-            </div>
+    async function init() {
+        const isMob = window.innerWidth <= 768;
+        const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
+        if (data?.logo_url) document.getElementById('main-logo').src = `${data.logo_url}?t=${Date.now()}`;
+        const kv = document.getElementById('kv-bg');
+        kv.src = isMob
+            ? "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg"
+            : "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_PC-KV.jpeg";
+        setTimeout(() => kv.style.transform = 'scale(1)', 100);
+    }
+    init();
 
-            <button id="search-btn" class="search-btn" onclick="doSearch()">立即搜尋回憶</button>
+    window.addEventListener('scroll', () => {
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+    });
 
-            <!-- 搜尋中 -->
-            <div id="status-searching" class="status-msg" style="color:#94a3b8">搜尋中⋯</div>
+    function toggleMenu() {
+        document.getElementById('menu-btn').classList.toggle('active');
+        document.getElementById('side-menu').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
 
-            <!-- 無結果 -->
-            <div id="status-empty" class="status-msg" style="color:#f87171">
-                找不到相符的紀念照
-                <span style="display:block; font-weight:normal; font-size:12px; color:#94a3b8; margin-top:4px">請確認輸入的資料是否正確</span>
-            </div>
+    async function doSearch() {
+        const kw = document.getElementById('input-keyword').value.trim();
+        if (!kw) { document.getElementById('input-keyword').focus(); return; }
+        setStatus('searching');
+        const { data, error } = await _s.from('customer_photos').select('*')
+            .or(`customer_name.ilike.%${kw}%,phone.ilike.%${kw}%,order_no.ilike.%${kw}%`)
+            .order('created_at', { ascending: false });
+        if (error || !data || data.length === 0) { setStatus('empty'); return; }
+        foundPhotos = data;
+        setStatus('result');
+        showPhoto(0);
+        renderDots();
+    }
 
-            <!-- 結果 -->
-            <div id="result-area">
-                <div class="result-divider" style="color:var(--p-gold)">
-                    <span>找到您的紀念照</span>
-                </div>
-                <div class="result-divider" style="display:none"></div>
+    function showPhoto(idx) {
+        const p = foundPhotos[idx];
+        document.getElementById('photo-img').src = p.photo_url;
+        document.getElementById('photo-name').textContent = p.customer_name || '您的紀念照';
+        document.getElementById('photo-note').textContent = p.note ? `✦ ${p.note}` : '';
+        document.getElementById('photo-date').textContent = p.created_at
+            ? '拍攝日期：' + new Date(p.created_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+        const dl = document.getElementById('download-btn');
+        dl.href = p.photo_url;
+        dl.download = `真珠紀念照_${p.customer_name || (idx + 1)}.jpg`;
+        document.querySelectorAll('.photo-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+    }
 
-                <div class="photo-card mb-5">
-                    <img id="photo-img" src="" alt="紀念照">
-                    <div class="p-4 pb-5">
-                        <p id="photo-name" class="font-bold font-serif text-base mb-0.5" style="color:var(--p-green)"></p>
-                        <p id="photo-note" class="text-xs mb-1" style="color:var(--p-gold)"></p>
-                        <p id="photo-date" class="text-[10px] text-stone-300 mb-4"></p>
-                        <a id="download-btn" href="" download class="download-btn">⬇ &nbsp;點此下載照片</a>
-                    </div>
-                </div>
+    function renderDots() {
+        const dots = document.getElementById('photo-dots');
+        const hint = document.getElementById('multi-hint');
+        if (foundPhotos.length <= 1) { dots.innerHTML = ''; hint.style.display = 'none'; return; }
+        hint.style.display = 'block';
+        dots.innerHTML = foundPhotos.map((_, i) =>
+            `<div class="photo-dot ${i === 0 ? 'active' : ''}" onclick="showPhoto(${i})"></div>`
+        ).join('');
+    }
 
-                <div id="photo-dots" class="photo-dots"></div>
-                <p id="multi-hint" class="text-center text-[10px] text-stone-300 mt-3 hidden">點擊圓點可切換多張照片</p>
-            </div>
-
-        </div>
-
-        <p class="text-center text-stone-400 text-[10px] tracking-widest py-10">
-            如有問題請致電：<a href="tel:0437027538" class="underline" style="color:var(--p-gold)">04-3702-7538</a>
-        </p>
-
-    </main>
-
-    <script>
-        const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
-        const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let foundPhotos = [];
-
-        async function init() {
-            const isMob = window.innerWidth <= 768;
-            const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
-            if (data?.logo_url) document.getElementById('main-logo').src = `${data.logo_url}?t=${Date.now()}`;
-            document.getElementById('kv-bg').src = isMob
-                ? "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg"
-                : "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_PC-KV.jpeg";
-        }
-        init();
-
-        function toggleMenu() {
-            document.getElementById('side-menu').classList.toggle('active');
-            document.getElementById('menu-overlay').classList.toggle('active');
-        }
-
-        async function doSearch() {
-            const kw = document.getElementById('input-keyword').value.trim();
-
-            if (!kw) {
-                document.getElementById('input-keyword').focus();
-                return;
-            }
-
-            setStatus('searching');
-
-            const { data, error } = await _s
-                .from('customer_photos')
-                .select('*')
-                .or(`customer_name.ilike.%${kw}%,phone.ilike.%${kw}%,order_no.ilike.%${kw}%`)
-                .order('created_at', { ascending: false });
-
-            if (error || !data || data.length === 0) {
-                setStatus('empty');
-                return;
-            }
-
-            foundPhotos = data;
-            setStatus('result');
-            showPhoto(0);
-            renderDots();
-        }
-
-        function showPhoto(idx) {
-            const p = foundPhotos[idx];
-            document.getElementById('photo-img').src        = p.photo_url;
-            document.getElementById('photo-name').innerText = p.customer_name || '您的紀念照';
-            document.getElementById('photo-note').innerText = p.note ? `✦ ${p.note}` : '';
-            document.getElementById('photo-date').innerText = p.created_at
-                ? '拍攝日期：' + new Date(p.created_at).toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' })
-                : '';
-            const dl   = document.getElementById('download-btn');
-            dl.href     = p.photo_url;
-            dl.download = `真珠紀念照_${p.customer_name || (idx + 1)}.jpg`;
-
-            document.querySelectorAll('.photo-dot').forEach((d, i) =>
-                d.classList.toggle('active', i === idx));
-        }
-
-        function renderDots() {
-            const dots = document.getElementById('photo-dots');
-            const hint = document.getElementById('multi-hint');
-            if (foundPhotos.length <= 1) { dots.innerHTML = ''; hint.classList.add('hidden'); return; }
-            hint.classList.remove('hidden');
-            dots.innerHTML = foundPhotos.map((_, i) =>
-                `<div class="photo-dot ${i === 0 ? 'active' : ''}" onclick="showPhoto(${i})"></div>`
-            ).join('');
-        }
-
-        function setStatus(state) {
-            document.getElementById('status-searching').style.display = state === 'searching' ? 'block' : 'none';
-            document.getElementById('status-empty').style.display     = state === 'empty'     ? 'block' : 'none';
-            document.getElementById('result-area').style.display      = state === 'result'    ? 'block' : 'none';
-            const btn = document.getElementById('search-btn');
-            btn.disabled  = state === 'searching';
-            btn.innerText = state === 'searching' ? '搜尋中⋯' : '立即搜尋回憶';
-        }
-    </script>
+    function setStatus(state) {
+        document.getElementById('status-searching').style.display = state === 'searching' ? 'block' : 'none';
+        document.getElementById('status-empty').style.display     = state === 'empty'     ? 'block' : 'none';
+        document.getElementById('result-header').style.display    = state === 'result'    ? 'flex'  : 'none';
+        document.getElementById('photo-result-wrap').style.display = state === 'result'   ? 'block' : 'none';
+        const btn = document.getElementById('search-btn');
+        btn.disabled = state === 'searching';
+        btn.textContent = state === 'searching' ? '搜尋中⋯' : '立即搜尋回憶';
+    }
+</script>
 </body>
 </html>
