@@ -1018,7 +1018,7 @@ async function loadOrders() {
                             <label>訂位時間</label>
                             <select id="btime-${o.id}" onchange="updateBookingDateTime('${o.id}')">
                                 <option value="">-- 選擇時間 --</option>
-                                ${Array.from({length:24},(_,h)=>[0,15,30,45].map(m=>{const hh=String(h).padStart(2,'0'),mm=String(m).padStart(2,'0'),val=`${hh}:${mm}`,cur=bTime?bTime.split('T')[1]?.slice(0,5):'';return`<option value="${val}"${cur===val?' selected':''}>${val}</option>`;}).join('')).join('')}
+                                ${[11,12,13,17,18,19].flatMap(h=>[0,15,30,45].map(m=>{const hh=String(h).padStart(2,'0'),mm=String(m).padStart(2,'0'),val=`${hh}:${mm}`,cur=bTime?bTime.split('T')[1]?.slice(0,5):'';return`<option value="${val}"${cur===val?' selected':''}>${val}</option>`;})).join('')}
                             </select>
                         </div>
                         <div class="order-field">
