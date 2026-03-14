@@ -1088,10 +1088,15 @@ async function updateOrderData(id,field,val,inputEl){
     if(!error)toast('已更新');else toast('更新失敗','error');
 }
 async function updateBookingDateTime(id){
-    const date=document.getElementById(`bdate-${id}`)?.value, time=document.getElementById(`btime-${id}`)?.value;
-    if(!date||!time)return;
-    const{error}=await _s.from('orders').update({booking_date:new Date(`${date}T${time}:00`).toISOString()}).eq('id',id);
-    if(!error)toast('訂位時間已更新'); else toast('更新失敗','error');
+    const date=document.getElementById(`bdate-${id}`)?.value;
+    const time=document.getElementById(`btime-${id}`)?.value;
+    if(!date && !time) return;
+    if(!date){ toast('請先填寫訂位日期','warn'); return; }
+    if(!time){ toast('請選擇訂位時間','warn'); return; }
+    // 直接用字串組合避免時區偏移
+    const isoStr = `${date}T${time}:00`;
+    const{error}=await _s.from('orders').update({booking_date: isoStr}).eq('id',id);
+    if(!error) toast('訂位時間已更新'); else toast('更新失敗','error');
 }
 async function toggleSync(id,cur){
     await _s.from('orders').update({status:cur==='synced'?'pending':'synced'}).eq('id',id);
