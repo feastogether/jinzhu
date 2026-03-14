@@ -406,46 +406,48 @@
         <button onclick="exportXls()" class="btn btn-primary">📊 導出 Excel</button>
     </div>
 
-    <div class="filter-bar">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-            <div>
-                <label class="filter-label">快速日期</label>
-                <select id="filter-date-preset" onchange="setQuickDate(this.value)" class="filter-select">
-                    <option value="all">不限日期</option>
-                    <option value="today">今日</option>
-                    <option value="week">本週</option>
-                    <option value="custom">自選日期</option>
-                </select>
-            </div>
-            <div id="custom-date-box" class="hidden">
-                <label class="filter-label">自選日期</label>
-                <input type="date" id="filter-date" class="filter-input">
-            </div>
-            <div>
-                <label class="filter-label">活動過濾</label>
-                <select id="filter-campaign" class="filter-select"><option value="all">全部活動</option></select>
-            </div>
-            <div>
-                <label class="filter-label">處理狀態</label>
-                <select id="filter-status" class="filter-select">
-                    <option value="all">全部</option>
-                    <option value="pending">準備中</option>
-                    <option value="synced">已完成</option>
-                </select>
-            </div>
-        </div>
-        <div class="flex gap-2 items-center">
-            <input type="text" id="filter-search" class="filter-input flex-1" placeholder="搜尋顧客姓名或電話…">
+    <!-- 訂單篩選列（摺疊式） -->
+    <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-5">
+        <!-- 常駐工具列 -->
+        <div class="flex items-center gap-2 px-3 py-2 border-b border-slate-100">
+            <input type="text" id="filter-search" class="filter-input flex-1" placeholder="搜尋顧客姓名或電話…" style="padding:5px 10px">
+            <select id="filter-date-preset" onchange="setQuickDate(this.value);loadOrders()" class="filter-select" style="width:auto;padding:5px 8px">
+                <option value="all">不限</option>
+                <option value="today">今日</option>
+                <option value="week">本週</option>
+                <option value="custom">自選</option>
+            </select>
+            <select id="filter-status" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px">
+                <option value="all">全部</option>
+                <option value="pending">準備中</option>
+                <option value="synced">已完成</option>
+            </select>
             <button onclick="loadOrders()" class="btn btn-primary btn-sm">篩選</button>
-            <button onclick="resetFilters()" class="btn btn-ghost btn-sm">重置</button>
+            <button onclick="toggleOrderFilter()" id="filter-toggle-btn" class="btn btn-ghost btn-sm px-2" title="更多篩選">
+                <svg id="filter-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </button>
         </div>
-        <div class="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-                <input type="checkbox" id="order-select-all" onchange="toggleOrderSelectAll(this.checked)" class="accent-red-400 w-4 h-4">
-                <span class="text-xs font-bold text-slate-500">全選</span>
-            </label>
-            <span id="order-selected-count" class="text-xs font-bold text-red-500 hidden">已選 0 筆</span>
-            <button id="order-batch-delete-btn" onclick="batchDeleteOrders()" class="hidden btn btn-danger btn-sm">🗑 批次刪除</button>
+        <!-- 展開區 -->
+        <div id="filter-expand" class="hidden px-3 pb-3 pt-2 space-y-2 bg-slate-50">
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div id="custom-date-box" class="hidden">
+                    <label class="filter-label">自選日期</label>
+                    <input type="date" id="filter-date" class="filter-input">
+                </div>
+                <div>
+                    <label class="filter-label">活動代號</label>
+                    <select id="filter-campaign" class="filter-select"><option value="all">全部活動</option></select>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 pt-2 border-t border-slate-200">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" id="order-select-all" onchange="toggleOrderSelectAll(this.checked)" class="accent-red-400 w-4 h-4">
+                    <span class="text-xs font-bold text-slate-500">全選</span>
+                </label>
+                <span id="order-selected-count" class="text-xs font-bold text-red-500 hidden">已選 0 筆</span>
+                <button id="order-batch-delete-btn" onclick="batchDeleteOrders()" class="hidden btn btn-danger btn-sm">🗑 批次刪除</button>
+                <button onclick="resetFilters()" class="btn btn-ghost btn-sm ml-auto">重置篩選</button>
+            </div>
         </div>
     </div>
 
@@ -545,43 +547,62 @@
 
 <!-- 備料統計報表 -->
 <section id="sec-report" class="hidden space-y-4">
+    <!-- 報表篩選列（摺疊式） -->
     <div class="rounded-xl overflow-hidden shadow-md" style="background:linear-gradient(135deg,#004d40,#00695c)">
-        <div class="flex flex-wrap justify-between items-center gap-2 px-4 pt-4 pb-3 border-b border-white/10">
-            <div class="flex items-center gap-2">
-                <div class="w-1 h-5 rounded-full bg-amber-400"></div>
-                <h2 class="text-base font-black text-white font-serif tracking-widest">備料統計中心</h2>
-                <span id="report-period-display" class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(184,145,80,.2);color:#d4a85a">尚未查詢</span>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="reportPrint()" class="btn btn-sm" style="background:#fee2e2;color:#dc2626">🖨 列印</button>
-                <button onclick="exportFullData()" class="btn btn-sm" style="background:#dcfce7;color:#16a34a">📊 匯出</button>
+        <!-- 常駐列 -->
+        <div class="flex flex-wrap items-center gap-2 px-4 py-2.5">
+            <div class="w-1 h-4 rounded-full bg-amber-400 flex-shrink-0"></div>
+            <span class="font-black text-white text-sm font-serif tracking-widest flex-shrink-0">備料統計</span>
+            <span id="report-period-display" class="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style="background:rgba(184,145,80,.2);color:#d4a85a">尚未查詢</span>
+            <div class="flex gap-1 ml-auto flex-shrink-0">
+                <div class="flex gap-1 mr-1">
+                    <button class="rpt-preset-btn text-[10px] px-2 py-1" onclick="rptPreset('today');fetchData()">今日</button>
+                    <button class="rpt-preset-btn text-[10px] px-2 py-1" onclick="rptPreset('week');fetchData()">本週</button>
+                    <button class="rpt-preset-btn text-[10px] px-2 py-1" onclick="rptPreset('month');fetchData()">本月</button>
+                </div>
+                <button onclick="fetchData()" class="btn btn-sm" style="background:var(--gold);color:white;padding:4px 12px">
+                    <span id="r-run-lbl">▶ 查詢</span>
+                </button>
+                <button onclick="reportPrint()" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;padding:4px 10px">🖨</button>
+                <button onclick="exportFullData()" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;padding:4px 10px">📊</button>
+                <button onclick="toggleReportFilter()" id="report-filter-toggle" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;padding:4px 10px" title="展開詳細設定">
+                    <svg id="report-chevron" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
             </div>
         </div>
-        <div class="px-4 py-3">
-            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 items-end">
-                <div class="col-span-3 sm:col-span-1">
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1.5" style="color:rgba(255,255,255,.45)">快速選擇</span>
-                    <div class="flex flex-wrap gap-1">
-                        <button class="rpt-preset-btn" onclick="rptPreset('today')">今日</button>
-                        <button class="rpt-preset-btn" onclick="rptPreset('yesterday')">昨日</button>
-                        <button class="rpt-preset-btn" onclick="rptPreset('week')">本週</button>
-                        <button class="rpt-preset-btn" onclick="rptPreset('month')">本月</button>
-                    </div>
-                </div>
-                <div><span class="block text-[9px] font-bold tracking-widest uppercase mb-1.5" style="color:rgba(255,255,255,.45)">開始日期</span><input type="date" id="r-s-date" class="rpt-f-input w-full"></div>
-                <div><span class="block text-[9px] font-bold tracking-widest uppercase mb-1.5" style="color:rgba(255,255,255,.45)">結束日期</span><input type="date" id="r-e-date" class="rpt-f-input w-full"></div>
-                <div><span class="block text-[9px] font-bold tracking-widest uppercase mb-1.5" style="color:rgba(255,255,255,.45)">開始時間</span><input type="time" id="r-s-time" value="00:00" class="rpt-f-input w-full"></div>
-                <div><span class="block text-[9px] font-bold tracking-widest uppercase mb-1.5" style="color:rgba(255,255,255,.45)">結束時間</span><input type="time" id="r-e-time" value="23:59" class="rpt-f-input w-full"></div>
+        <!-- 展開區 -->
+        <div id="report-filter-expand" class="hidden border-t border-white/10 px-4 py-3">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
                 <div>
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1.5" style="color:rgba(255,255,255,.45)">活動代號</span>
+                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">開始日期</span>
+                    <input type="date" id="r-s-date" class="rpt-f-input w-full">
+                </div>
+                <div>
+                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">結束日期</span>
+                    <input type="date" id="r-e-date" class="rpt-f-input w-full">
+                </div>
+                <div>
+                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">開始時間</span>
+                    <input type="time" id="r-s-time" value="00:00" class="rpt-f-input w-full">
+                </div>
+                <div>
+                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">結束時間</span>
+                    <input type="time" id="r-e-time" value="23:59" class="rpt-f-input w-full">
+                </div>
+                <div>
+                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">活動代號</span>
                     <select id="report-campaign" class="rpt-f-input w-full"><option value="all">全部來源</option><option value="none">一般訂單</option></select>
                 </div>
             </div>
-            <button id="r-run-btn" onclick="fetchData()" class="mt-3 w-full py-2.5 rounded-xl font-bold text-sm tracking-widest shadow-lg transition" style="background:var(--gold);color:white">
-                <span id="r-run-lbl">▶ 執行查詢</span>
-            </button>
+            <div class="flex gap-1.5 mt-2">
+                <button class="rpt-preset-btn" onclick="rptPreset('today')">今日</button>
+                <button class="rpt-preset-btn" onclick="rptPreset('yesterday')">昨日</button>
+                <button class="rpt-preset-btn" onclick="rptPreset('week')">本週</button>
+                <button class="rpt-preset-btn" onclick="rptPreset('month')">本月</button>
+            </div>
         </div>
     </div>
+    <input type="hidden" id="r-run-btn">
 
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         <div class="kpi-card green"><div class="kpi-label">訂單數</div><div class="kpi-value" id="kpi-orders">—</div><div class="kpi-unit">筆</div></div>
@@ -1426,12 +1447,12 @@ async function fetchData(){
     const st=document.getElementById('r-s-time').value||'00:00',et=document.getElementById('r-e-time').value||'23:59';
     const cam=document.getElementById('report-campaign').value;
     if(!sd||!ed){toast('請選擇日期區間','warn');return;}
-    const btn=document.getElementById('r-run-btn'),lbl=document.getElementById('r-run-lbl');
-    btn.disabled=true;lbl.innerHTML='<span class="rpt-spin"></span>';
+    const lbl=document.getElementById('r-run-lbl');
+    if(lbl) lbl.innerHTML='<span class="rpt-spin"></span>';
     let q=_s.from('orders').select('*').gte('created_at',`${sd}T${st}:00`).lte('created_at',`${ed}T${et}:59`).order('created_at',{ascending:true});
     if(cam==='none')q=q.is('campaign_code',null);else if(cam!=='all')q=q.eq('campaign_code',cam);
     const{data:orders,error}=await q;
-    btn.disabled=false;lbl.textContent='▶ 執行查詢';
+    if(lbl) lbl.textContent='▶ 查詢';
     if(error){toast('查詢失敗','error');return;}
     const camLabel=cam==='all'?'全部':cam==='none'?'一般訂單':cam;
     document.getElementById('report-period-display').textContent=`${sd} ～ ${ed} ｜ ${camLabel}`;
@@ -1634,6 +1655,20 @@ async function doLogin(){
     const{error}=await _s.auth.signInWithPassword({email,password});
     if(error){errEl.classList.remove('hidden');btn.disabled=false;btn.textContent='登入';}
     else{document.getElementById('login-screen').classList.add('hidden');}
+}
+
+// ── COLLAPSIBLE FILTERS ──
+function toggleOrderFilter() {
+    const panel = document.getElementById('filter-expand');
+    const chevron = document.getElementById('filter-chevron');
+    const open = panel.classList.toggle('hidden');
+    chevron.style.transform = open ? '' : 'rotate(180deg)';
+}
+function toggleReportFilter() {
+    const panel = document.getElementById('report-filter-expand');
+    const chevron = document.getElementById('report-chevron');
+    const open = panel.classList.toggle('hidden');
+    chevron.style.transform = open ? '' : 'rotate(180deg)';
 }
 
 // ── INIT ──
