@@ -809,9 +809,28 @@
             <div class="w-3/5 flex flex-col border-r overflow-hidden">
                 <div class="px-6 py-5 border-b flex-shrink-0">
                     <p class="filter-label mb-3">分組設定</p>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
                         <div><label class="filter-label">分組名稱</label><input id="g-name" class="filter-input mt-1" placeholder="例：主食"></div>
-                        <div><label class="filter-label">必選數量</label><input id="g-limit" type="number" min="1" class="filter-input mt-1 text-center font-bold"></div>
+                        <div id="g-limit-wrap"><label class="filter-label">任選數量</label><input id="g-limit" type="number" min="1" value="1" class="filter-input mt-1 text-center font-bold"></div>
+                    </div>
+                    <div>
+                        <label class="filter-label mb-2">分組類型</label>
+                        <div class="flex gap-3 mt-1">
+                            <label class="flex-1 flex items-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition hover:border-amber-400" id="type-choose-label" style="border-color:var(--pine);background:#f0fdf4">
+                                <input type="radio" name="g-type" id="g-type-choose" value="choose" checked onchange="onGroupTypeChange()" class="accent-green-700">
+                                <div>
+                                    <div class="font-bold text-xs" style="color:var(--pine)">任選 x 道</div>
+                                    <div class="text-[10px] text-slate-400">客人從下方選取指定數量</div>
+                                </div>
+                            </label>
+                            <label class="flex-1 flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer transition hover:border-amber-400" id="type-include-label">
+                                <input type="radio" name="g-type" id="g-type-include" value="include" onchange="onGroupTypeChange()" class="accent-amber-500">
+                                <div>
+                                    <div class="font-bold text-xs text-amber-600">包含 x 道</div>
+                                    <div class="text-[10px] text-slate-400">下方品項全部自動包含</div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div class="flex-1 flex flex-col overflow-hidden px-6 py-4">
@@ -1331,8 +1350,21 @@ async function menuDrop(e){
 }
 async function openMenuModal(isEdit){
     document.getElementById('menu-modal').classList.remove('hidden');
-    if(!isEdit){document.getElementById('m-id').value='';document.getElementById('m-name').value='';document.getElementById('m-price').value='';document.getElementById('m-desc').value='';document.getElementById('m-is-set').checked=false;}
-    if(!document.getElementById('m-cat').options.length){const{data:cats}=await _s.from('categories').select('*').order('sort_order');document.getElementById('m-cat').innerHTML=(cats||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');}
+    if(!isEdit){
+        document.getElementById('m-id').value='';
+        document.getElementById('m-name').value='';
+        document.getElementById('m-price').value='';
+        document.getElementById('m-desc').value='';
+        document.getElementById('m-is-set').checked=false;
+        document.getElementById('m-img').value=''; // 清除舊圖片選擇
+    }
+    if(!document.getElementById('m-cat').options.length){
+        const{data:cats}=await _s.from('categories').select('*').order('sort_order');
+        document.getElementById('m-cat').innerHTML=(cats||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+    } else if(!isEdit) {
+        // 新增時重設 category select 回第一項
+        document.getElementById('m-cat').selectedIndex=0;
+    }
     const{data:flvs}=await _s.from('flavor_groups').select('*');
     document.getElementById('flv-checks').innerHTML=(flvs||[]).map(f=>`<label class="flex items-center gap-1 text-[11px]"><input type="checkbox" class="flv-chk accent-green-700" value="${f.id}"> ${f.name}</label>`).join('');
 }
@@ -1379,20 +1411,66 @@ function pickDrop(e){e.preventDefault();const ti=parseInt(e.currentTarget.datase
 async function editSetGroup(gid){
     currentEditingGroupId=gid;
     const{data:g}=await _s.from('set_menu_groups').select('*,set_menu_contents(menu_items(*))').eq('id',gid).single();
-    if(g){document.getElementById('g-name').value=g.group_name;document.getElementById('g-limit').value=g.selection_limit;document.getElementById('set-modal-title').textContent='編輯分組';document.getElementById('btn-save-group').textContent='儲存更新';document.getElementById('btn-cancel-edit').classList.remove('hidden');const sorted=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));curPicks=sorted.map(c=>({id:c.menu_items.id,name:c.menu_items.name}));renderTempPicks();}
+    if(g){
+        document.getElementById('g-name').value=g.group_name;
+        document.getElementById('g-limit').value=g.selection_limit;
+        const isInclude = g.selection_type==='include';
+        document.getElementById('g-type-include').checked=isInclude;
+        document.getElementById('g-type-choose').checked=!isInclude;
+        onGroupTypeChange();
+        document.getElementById('set-modal-title').textContent='編輯分組';
+        document.getElementById('btn-save-group').textContent='儲存更新';
+        document.getElementById('btn-cancel-edit').classList.remove('hidden');
+        const sorted=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+        curPicks=sorted.map(c=>({id:c.menu_items.id,name:c.menu_items.name}));
+        renderTempPicks();
+    }
 }
-function resetSetForm(){currentEditingGroupId=null;document.getElementById('g-name').value='';document.getElementById('g-limit').value=1;document.getElementById('temp-pick-display').innerHTML='';document.getElementById('set-modal-title').textContent='套餐分組設定';document.getElementById('btn-save-group').textContent='確認儲存分組';document.getElementById('btn-cancel-edit').classList.add('hidden');curPicks=[];pickerSelectedItems=[];updatePickerStats();}
+function onGroupTypeChange(){
+    const isInclude = document.getElementById('g-type-include').checked;
+    document.getElementById('g-limit-wrap').style.opacity = isInclude ? '0.4' : '1';
+    document.getElementById('g-limit-wrap').style.pointerEvents = isInclude ? 'none' : '';
+    document.getElementById('type-choose-label').style.borderColor = isInclude ? '' : 'var(--pine)';
+    document.getElementById('type-choose-label').style.background = isInclude ? '' : '#f0fdf4';
+    document.getElementById('type-include-label').style.borderColor = isInclude ? 'var(--gold)' : '';
+    document.getElementById('type-include-label').style.background = isInclude ? '#fffbeb' : '';
+}
+function resetSetForm(){
+    currentEditingGroupId=null;
+    document.getElementById('g-name').value='';
+    document.getElementById('g-limit').value=1;
+    document.getElementById('g-type-choose').checked=true;
+    onGroupTypeChange();
+    document.getElementById('temp-pick-display').innerHTML='';
+    document.getElementById('set-modal-title').textContent='套餐分組設定';
+    document.getElementById('btn-save-group').textContent='確認儲存分組';
+    document.getElementById('btn-cancel-edit').classList.add('hidden');
+    curPicks=[];pickerSelectedItems=[];updatePickerStats();
+}
 async function saveFullSet(){
-    const n=document.getElementById('g-name').value,l=document.getElementById('g-limit').value;
+    const n=document.getElementById('g-name').value;
+    const l=document.getElementById('g-limit').value;
+    const stype=document.getElementById('g-type-include').checked?'include':'choose';
     if(!n||!curPicks.length){toast('請填寫分組名稱並加入品項','warn');return;}
     let gid=currentEditingGroupId;
-    if(gid){await _s.from('set_menu_groups').update({group_name:n,selection_limit:l}).eq('id',gid);await _s.from('set_menu_contents').delete().eq('group_id',gid);}
-    else{const{data:g}=await _s.from('set_menu_groups').insert([{parent_set_id:curItem,group_name:n,selection_limit:l}]).select();if(g)gid=g[0].id;}
+    if(gid){
+        await _s.from('set_menu_groups').update({group_name:n,selection_limit:parseInt(l),selection_type:stype}).eq('id',gid);
+        await _s.from('set_menu_contents').delete().eq('group_id',gid);
+    } else {
+        const{data:g}=await _s.from('set_menu_groups').insert([{parent_set_id:curItem,group_name:n,selection_limit:parseInt(l),selection_type:stype}]).select();
+        if(g)gid=g[0].id;
+    }
     if(gid){await _s.from('set_menu_contents').insert(curPicks.map((p,i)=>({group_id:gid,item_id:p.id,sort_order:i})));resetSetForm();loadSavedSets();toast('分組已儲存');}
 }
 async function loadSavedSets(){
     const{data}=await _s.from('set_menu_groups').select('*,set_menu_contents(menu_items(*))').eq('parent_set_id',curItem).order('sort_order',{ascending:true});
-    document.getElementById('saved-groups-view').innerHTML=(data||[]).map(g=>`<div class="p-3 bg-white border rounded-xl shadow-sm cursor-grab select-none" draggable="true" data-gid="${g.id}" ondragstart="grpDragStart(event)" ondragover="grpDragOver(event)" ondrop="grpDrop(event)" ondragend="grpDragEnd(event)"><div class="flex justify-between items-center"><div class="flex-1 text-left text-xs"><span class="text-slate-300 mr-2 text-[10px]">⠿</span><b style="color:var(--pine)">${g.group_name} (限 ${g.selection_limit})</b><p class="text-[10px] text-gray-400 line-clamp-1 mt-0.5">${g.set_menu_contents.map(c=>c.menu_items?.name).join('、')}</p></div><div class="flex gap-2 ml-2"><button onclick="event.stopPropagation();editSetGroup('${g.id}')" class="btn btn-ghost btn-sm" style="font-size:10px">編輯</button><button onclick="event.stopPropagation();delSetGroup('${g.id}')" class="btn btn-danger btn-sm" style="font-size:10px">刪除</button></div></div></div>`).join('');
+    document.getElementById('saved-groups-view').innerHTML=(data||[]).map(g=>{
+        const isInclude=g.selection_type==='include';
+        const badge=isInclude
+            ?`<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">包含</span>`
+            :`<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">任選 ${g.selection_limit}</span>`;
+        return `<div class="p-3 bg-white border rounded-xl shadow-sm cursor-grab select-none" draggable="true" data-gid="${g.id}" ondragstart="grpDragStart(event)" ondragover="grpDragOver(event)" ondrop="grpDrop(event)" ondragend="grpDragEnd(event)"><div class="flex justify-between items-center"><div class="flex-1 text-left text-xs"><span class="text-slate-300 mr-2 text-[10px]">⠿</span><b style="color:var(--pine)">${g.group_name}</b> ${badge}<p class="text-[10px] text-gray-400 line-clamp-1 mt-1">${g.set_menu_contents.map(c=>c.menu_items?.name).join('、')}</p></div><div class="flex gap-2 ml-2"><button onclick="event.stopPropagation();editSetGroup('${g.id}')" class="btn btn-ghost btn-sm" style="font-size:10px">編輯</button><button onclick="event.stopPropagation();delSetGroup('${g.id}')" class="btn btn-danger btn-sm" style="font-size:10px">刪除</button></div></div></div>`;
+    }).join('');
 }
 let grpDragSrcId=null;
 function grpDragStart(e){grpDragSrcId=e.currentTarget.dataset.gid;e.currentTarget.style.opacity='0.4';}
