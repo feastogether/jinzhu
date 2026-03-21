@@ -1459,22 +1459,43 @@
             const sortedGroups = [...tempItem.set_menu_groups].sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
             document.getElementById('set-group-container').innerHTML = sortedGroups.map(g => {
                 const sortedContents = [...g.set_menu_contents].sort((a,b) => (a.sort_order||0)-(b.sort_order||0));
-                return `<div class="set-group group-block" data-name="${g.group_name}" data-limit="${g.selection_limit}">
-                    <div class="set-group-header">
-                        <span class="set-group-name">${g.group_name}</span>
-                        <span class="set-group-limit">必選 ${g.selection_limit}</span>
-                    </div>
-                    <div class="set-items-grid">${sortedContents.map((c, idx) => `
-                        <div class="set-item-card" id="sub-${g.id}-${c.menu_items.id}-${idx}"
-                            data-id="${c.menu_items.id}" data-name="${c.menu_items.name}"
-                            data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}" data-selected-flv="">
-                            <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="set-item-header">
-                                <span>${c.menu_items.name}</span>
-                                ${c.menu_items.item_flavor_relation?.length > 0 ? '<span style="color:var(--gold);font-size:8px">●</span>' : ''}
-                            </div>
-                            <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
-                        </div>`).join('')}</div>
-                </div>`;
+                const isInclude = g.selection_type === 'include';
+                if (isInclude) {
+                    return `<div class="set-group group-block" data-name="${g.group_name}" data-limit="${sortedContents.length}" data-type="include">
+                        <div class="set-group-header">
+                            <span class="set-group-name">${g.group_name}</span>
+                            <span class="set-group-limit" style="background:var(--gold)">包含 ${sortedContents.length} 道</span>
+                        </div>
+                        <div class="set-items-grid">${sortedContents.map((c, idx) => `
+                            <div class="set-item-card selected" id="sub-${g.id}-${c.menu_items.id}-${idx}"
+                                data-id="${c.menu_items.id}" data-name="${c.menu_items.name}"
+                                data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}"
+                                data-selected-flv="" data-auto-include="true">
+                                <div class="set-item-header" style="background:rgba(184,145,80,0.06);pointer-events:none">
+                                    <span>${c.menu_items.name}</span>
+                                    <span style="color:var(--gold);font-size:11px">✓</span>
+                                </div>
+                                <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
+                            </div>`).join('')}</div>
+                    </div>`;
+                } else {
+                    return `<div class="set-group group-block" data-name="${g.group_name}" data-limit="${g.selection_limit}" data-type="choose">
+                        <div class="set-group-header">
+                            <span class="set-group-name">${g.group_name}</span>
+                            <span class="set-group-limit">任選 ${g.selection_limit}</span>
+                        </div>
+                        <div class="set-items-grid">${sortedContents.map((c, idx) => `
+                            <div class="set-item-card" id="sub-${g.id}-${c.menu_items.id}-${idx}"
+                                data-id="${c.menu_items.id}" data-name="${c.menu_items.name}"
+                                data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}" data-selected-flv="">
+                                <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="set-item-header">
+                                    <span>${c.menu_items.name}</span>
+                                    ${c.menu_items.item_flavor_relation?.length > 0 ? '<span style="color:var(--gold);font-size:8px">●</span>' : ''}
+                                </div>
+                                <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
+                            </div>`).join('')}</div>
+                    </div>`;
+                }
             }).join('');
         }
         document.getElementById('detail-scroll').scrollTop = 0;
@@ -1541,10 +1562,15 @@
         let sn = [];
         if (tempItem.is_set_menu) {
             for (let b of document.querySelectorAll('.group-block')) {
+                const isInclude = b.dataset.type === 'include';
                 const sels = b.querySelectorAll('.set-item-card.selected');
-                if (sels.length < parseInt(b.dataset.limit)) { showToast(`【${b.dataset.name}】尚未選滿`); return; }
+                if (!isInclude && sels.length < parseInt(b.dataset.limit)) {
+                    showToast(`【${b.dataset.name}】尚未選滿`); return;
+                }
                 for (let c of sels) {
-                    if (c.dataset.hasFlv === 'true' && !c.dataset.selectedFlv) { showToast(`請選擇【${c.dataset.name}】口味`); return; }
+                    if (!isInclude && c.dataset.hasFlv === 'true' && !c.dataset.selectedFlv) {
+                        showToast(`請選擇【${c.dataset.name}】口味`); return;
+                    }
                     sn.push(c.dataset.name + (c.dataset.selectedFlv ? ` [${c.dataset.selectedFlv}]` : ''));
                 }
             }
