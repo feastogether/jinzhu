@@ -996,8 +996,8 @@
         }
         .confirm-btn {
             display: block; width: 100%;
-            margin-top: 32px;
-            padding: 18px;
+            margin-top: 12px;
+            padding: 16px;
             border: 2px solid var(--pine);
             border-radius: 16px;
             color: var(--pine);
@@ -1007,6 +1007,18 @@
             cursor: pointer;
             text-decoration: none;
             font-family: 'Noto Sans TC', sans-serif;
+            text-align: center;
+        }
+        .confirm-btn.filled {
+            background: var(--pine);
+            color: white;
+            border-color: var(--pine);
+        }
+        .confirm-btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 24px;
         }
 
         /* ── ANNOUNCEMENT POPUP ── */
@@ -1123,7 +1135,7 @@
     <div class="menu-gold-line"></div>
     <div class="menu-decor">真珠 · Jin Zhu</div>
     <a href="index.html" class="menu-nav-item">首頁 Home</a>
-    <a href="query.html" class="menu-nav-item">訂單查詢 Tracking</a>
+    <a href="od.html" class="menu-nav-item">訂單查詢 Tracking</a>
     <a href="photo-search.html" class="menu-nav-item">紀念照下載 Photos</a>
     <div class="photo-search-wrap">
         <span class="photo-label">📷 珍藏回憶 · 下載紀念照</span>
@@ -1214,7 +1226,11 @@
         <p class="confirm-text">真心款待，誠摯準備。</p>
         <p class="confirm-text" style="margin-top:8px">如需更改菜色，請致電與我們聯繫：</p>
         <a href="tel:0437027538" class="confirm-phone">04-3702-7538</a>
-        <button class="confirm-btn" onclick="location.href='query.html'">前往訂單查詢</button>
+        <div class="confirm-btn-row">
+            <a href="tel:0437027538" class="confirm-btn filled">📞 撥打電話</a>
+            <a href="https://line.me/ti/p/@435trmtc" target="_blank" class="confirm-btn" style="border-color:#06c755;color:#06c755">💬 官方 LINE</a>
+        </div>
+        <a href="od.html" class="confirm-btn" style="margin-top:10px">📋 前往訂單查詢</a>
     </div>
 </section>
 </main>
@@ -1258,7 +1274,7 @@
         </div>
         <div class="preview-list" id="preview-list"></div>
         <div class="preview-footer">
-            <textarea id="order-note" class="note-textarea" placeholder="備註（例：去蔥、不需要餐具）"></textarea>
+            <textarea id="order-note" class="note-textarea" placeholder="請輸入備註"></textarea>
             <div class="total-row">
                 <div>
                     <span class="total-label">Total Amount</span>
