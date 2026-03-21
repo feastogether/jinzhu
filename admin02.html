@@ -1600,21 +1600,99 @@ function exportFullData(){
     if(!window.lastData){toast('請先查詢數據','warn');return;}
     const{orders,dishCount,setMenuCount,sorted,totalAdult,totalKid,totalChild,totalRev,totalSets}=window.lastData;
     const wb=XLSX.utils.book_new();
+
+    // ── 逐桌明細 ──
     const tableRows=[];
     [...orders].sort((a,b)=>(a.table_no||'zzz').localeCompare(b.table_no||'zzz','zh-TW',{numeric:true})).forEach(o=>{
-        const items=o.order_content||[],timeStr=new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+        const items=o.order_content||[];
+        const timeStr=new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
         const displayRows=[];
-        items.forEach(item=>{const clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();const pIdx=clean.indexOf(' (');const inner=pIdx>-1?clean.slice(pIdx+2,-1):null;const isSet=inner&&inner.includes('、');if(isSet){inner.split('、').forEach((sub,si)=>{const s=sub.replace(/\s*\[.*?\]/g,'').trim();if(s)displayRows.push({dish:s,price:si===0?item.price:''});});}else{displayRows.push({dish:clean,price:item.price});}});
-        displayRows.forEach((row,i)=>{tableRows.push({'桌號':i===0?(o.table_no||'—'):'','姓名':i===0?(o.customer_name||'—'):'','手機':i===0?(o.phone||'—'):'','大人':i===0?(o.adult_count||0):'','小孩':i===0?(o.kid_count||0):'','兒童':i===0?(o.child_count||0):'','活動':i===0?(o.campaign_code||'—'):'','餐點':row.dish,'金額':row.price,'訂單合計':i===0?(o.total_price||0):'','時間':i===0?timeStr:'','備註':i===0?(o.note||''):''});});
-        tableRows.push({'桌號':'','姓名':'','手機':'','大人':'','小孩':'','兒童':'','活動':'','餐點':'','金額':'','訂單合計':'','時間':'','備註':''});
+        items.forEach(item=>{
+            // 取出數量（x2 → 2，沒有則為 1）
+            const qtyM=item.name.match(/ x(\d+)/);
+            const qty=qtyM?parseInt(qtyM[1]):1;
+            const nameNoQty=item.name.replace(/ x\d+/g,'');
+            const clean=nameNoQty.replace(/\s*\[.*?\]/g,'').trim();
+            const pIdx=clean.indexOf(' (');
+            const inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
+            const isSet=inner&&inner.includes('、');
+            if(isSet){
+                const brand=clean.slice(0,pIdx).trim();
+                inner.split('、').forEach((sub,si)=>{
+                    const s=sub.replace(/\s*\[.*?\]/g,'').trim();
+                    if(s)displayRows.push({dish:brand+(si===0?'':` ‣${s}`),qty:si===0?qty:'',price:si===0?item.price:''});
+                });
+            } else {
+                displayRows.push({dish:clean,qty,price:item.price});
+            }
+        });
+        displayRows.forEach((row,i)=>{
+            tableRows.push({
+                '桌號':i===0?(o.table_no||'—'):'',
+                '姓名':i===0?(o.customer_name||'—'):'',
+                '手機':i===0?(o.phone||'—'):'',
+                '大人':i===0?(o.adult_count||0):'',
+                '小孩':i===0?(o.kid_count||0):'',
+                '兒童':i===0?(o.child_count||0):'',
+                '活動':i===0?(o.campaign_code||'—'):'',
+                '餐點':row.dish,
+                '數量':row.qty,
+                '金額':row.price,
+                '訂單合計':i===0?(o.total_price||0):'',
+                '時間':i===0?timeStr:'',
+                '備註':i===0?(o.note||''):''
+            });
+        });
+        tableRows.push({'桌號':'','姓名':'','手機':'','大人':'','小孩':'','兒童':'','活動':'','餐點':'','數量':'','金額':'','訂單合計':'','時間':'','備註':''});
     });
-    const wsT=XLSX.utils.json_to_sheet(tableRows);wsT['!cols']=[{wch:8},{wch:12},{wch:14},{wch:6},{wch:6},{wch:6},{wch:10},{wch:30},{wch:8},{wch:10},{wch:16},{wch:20}];
+    const wsT=XLSX.utils.json_to_sheet(tableRows);
+    wsT['!cols']=[{wch:8},{wch:12},{wch:14},{wch:6},{wch:6},{wch:6},{wch:10},{wch:30},{wch:6},{wch:8},{wch:10},{wch:16},{wch:20}];
     XLSX.utils.book_append_sheet(wb,wsT,'🪑 逐桌明細');
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{項目:'訂單數',數值:orders.length},{項目:'大人',數值:totalAdult},{項目:'小孩',數值:totalKid},{項目:'兒童',數值:totalChild},{項目:'總人數',數值:totalAdult+totalKid+totalChild},{項目:'套餐',數值:totalSets},{項目:'品項數',數值:sorted.length},{項目:'預估營收',數值:totalRev}]),'📊 摘要');
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sorted.map(([name,count],i)=>({排名:i+1,品名:name,備料數量:count}))),'🍳 備料總表');
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({套餐名稱:name,銷售組數:count}))),'🍱 套餐明細');
-    const rows=[];orders.forEach((o,idx)=>{(o.order_content||[]).forEach((item,li)=>{rows.push({序號:li===0?idx+1:'',時間:li===0?new Date(o.created_at).toLocaleString('zh-TW'):'',姓名:li===0?(o.customer_name||''):'',電話:li===0?(o.phone||''):'',桌號:li===0?(o.table_no||''):'',大人:li===0?(o.adult_count||0):'',小孩:li===0?(o.kid_count||0):'',兒童:li===0?(o.child_count||0):'',活動:li===0?(o.campaign_code||'一般'):'',品項:item.name,金額:item.price,合計:li===0?(o.total_price||0):'',備註:li===0?(o.note||''):''});});});
+
+    // ── 摘要 ──
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([
+        {項目:'訂單數',數值:orders.length},
+        {項目:'大人',數值:totalAdult},{項目:'小孩',數值:totalKid},{項目:'兒童',數值:totalChild},
+        {項目:'總人數',數值:totalAdult+totalKid+totalChild},
+        {項目:'套餐',數值:totalSets},{項目:'品項數',數值:sorted.length},{項目:'預估營收',數值:totalRev}
+    ]),'📊 摘要');
+
+    // ── 備料總表 ──
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(
+        sorted.map(([name,count],i)=>({排名:i+1,品名:name,備料數量:count}))
+    ),'🍳 備料總表');
+
+    // ── 套餐明細 ──
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(
+        Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({套餐名稱:name,銷售組數:count}))
+    ),'🍱 套餐明細');
+
+    // ── 流水帳（含數量欄） ──
+    const rows=[];
+    orders.forEach((o,idx)=>{
+        (o.order_content||[]).forEach((item,li)=>{
+            const qtyM=item.name.match(/ x(\d+)/);
+            const qty=qtyM?parseInt(qtyM[1]):1;
+            rows.push({
+                序號:li===0?idx+1:'',
+                時間:li===0?new Date(o.created_at).toLocaleString('zh-TW'):'',
+                姓名:li===0?(o.customer_name||''):'',
+                電話:li===0?(o.phone||''):'',
+                桌號:li===0?(o.table_no||''):'',
+                大人:li===0?(o.adult_count||0):'',
+                小孩:li===0?(o.kid_count||0):'',
+                兒童:li===0?(o.child_count||0):'',
+                活動:li===0?(o.campaign_code||'一般'):'',
+                品項:item.name,
+                數量:qty,
+                金額:item.price,
+                合計:li===0?(o.total_price||0):'',
+                備註:li===0?(o.note||''):''
+            });
+        });
+    });
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'📋 流水帳');
+
     XLSX.writeFile(wb,`真珠備料統計_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.xlsx`);
     toast('Excel 已匯出 📊');
 }
