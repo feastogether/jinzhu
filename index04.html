@@ -1232,6 +1232,7 @@
             <a href="https://line.me/ti/p/@435trmtc" target="_blank" class="confirm-btn" style="border-color:#06c755;color:#06c755">💬 官方 LINE</a>
         </div>
         <a href="query.html" class="confirm-btn" style="margin-top:10px">📋 前往訂單查詢</a>
+        <a href="jinzhu-fortune.html" class="confirm-btn" style="margin-top:10px;border-color:var(--gold);color:var(--gold)">🎋 抽真珠好運簽</a>
     </div>
 </section>
 </main>
@@ -1275,7 +1276,7 @@
         </div>
         <div class="preview-list" id="preview-list"></div>
         <div class="preview-footer">
-            <textarea id="order-note" class="note-textarea" placeholder="如有忌口過敏食材請在此備註"></textarea>
+            <textarea id="order-note" class="note-textarea" placeholder="請輸入備註"></textarea>
             <div class="total-row">
                 <div>
                     <span class="total-label">Total Amount</span>
@@ -1371,7 +1372,7 @@
     async function loadContent() {
         const { data: cats } = await _s.from('categories').select('*').eq('is_visible', true).order('sort_order');
         const { data: items } = await _s.from('menu_items')
-            .select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))  ))')
+            .select('*, item_flavor_relation(flavor_groups(*, flavor_options(*))), set_menu_groups(*, set_menu_contents(*,menu_items(*, item_flavor_relation(flavor_groups(*, flavor_options(*))))  ))')
             .eq('is_hidden', false)
             .order('sort_order', { ascending: true });
         menuData = items;
@@ -1506,10 +1507,13 @@
                             <span class="set-group-name">${g.group_name}</span>
                             <span class="set-group-limit">任選 ${g.selection_limit}</span>
                         </div>
-                        <div class="set-items-grid">${sortedContents.map((c, idx) => `
+                        <div class="set-items-grid">${sortedContents.map((c, idx) => {
+                            const mq = c.max_qty || 1;
+                            return `
                             <div class="set-item-card" id="sub-${g.id}-${c.menu_items.id}-${idx}"
                                 data-id="${c.menu_items.id}" data-name="${c.menu_items.name}"
-                                data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}" data-selected-flv="">
+                                data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}"
+                                data-selected-flv="" data-max-qty="${mq}" data-chosen-qty="1">
                                 <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="set-item-header" style="flex-direction:column;align-items:stretch;padding:0;gap:0">
                                     ${c.menu_items.image_url ? `<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="${c.menu_items.image_url}" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>` : `<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>`}
                                     <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
@@ -1517,8 +1521,15 @@
                                         ${c.menu_items.item_flavor_relation?.length > 0 ? '<span style="color:var(--gold);font-size:8px">●</span>' : ''}
                                     </div>
                                 </div>
+                                ${mq > 1 ? `
+                                <div id="qty-ctrl-sub-${g.id}-${c.menu_items.id}-${idx}" style="display:none;align-items:center;justify-content:center;gap:8px;padding:6px 10px;background:#fafafa;border-top:1px solid rgba(0,0,0,0.06)">
+                                    <button onclick="event.stopPropagation();changeSubQty('sub-${g.id}-${c.menu_items.id}-${idx}',-1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">−</button>
+                                    <span id="qty-num-sub-${g.id}-${c.menu_items.id}-${idx}" style="font-weight:900;font-size:14px;color:var(--pine);min-width:16px;text-align:center">1</span>
+                                    <button onclick="event.stopPropagation();changeSubQty('sub-${g.id}-${c.menu_items.id}-${idx}',1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">＋</button>
+                                </div>` : ''}
                                 <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
-                            </div>`).join('')}</div>
+                            </div>`;
+                        }).join('')}</div>
                     </div>`;
                 }
             }).join('');
@@ -1547,6 +1558,17 @@
         }
     }
 
+    function changeSubQty(uid, delta) {
+        const card = document.getElementById(uid);
+        if (!card) return;
+        const maxQty = parseInt(card.dataset.maxQty) || 1;
+        let cur = parseInt(card.dataset.chosenQty) || 1;
+        cur = Math.max(1, Math.min(maxQty, cur + delta));
+        card.dataset.chosenQty = cur;
+        const numEl = document.getElementById(`qty-num-${uid}`);
+        if (numEl) numEl.textContent = cur;
+    }
+
     function handleSubClick(uid) {
         const card = document.getElementById(uid);
         const block = card.closest('.group-block');
@@ -1556,6 +1578,9 @@
                 c.classList.remove('selected');
                 const fa = document.getElementById(`flv-${c.id}`);
                 if (fa) { fa.classList.remove('visible'); }
+                // 隱藏數量控制
+                const qc = document.getElementById(`qty-ctrl-${c.id}`);
+                if (qc) qc.style.display = 'none';
             });
             card.classList.add('selected');
         } else {
@@ -1563,11 +1588,17 @@
                 card.classList.remove('selected');
                 const fa = document.getElementById(`flv-${uid}`);
                 if (fa) fa.classList.remove('visible');
+                const qc = document.getElementById(`qty-ctrl-${uid}`);
+                if (qc) qc.style.display = 'none';
                 return;
             }
             if (block.querySelectorAll('.set-item-card.selected').length >= limit) { showToast(`本區上限為 ${limit} 項`); return; }
             card.classList.add('selected');
         }
+        // 若 max_qty > 1，顯示數量控制器
+        const qc = document.getElementById(`qty-ctrl-${uid}`);
+        if (qc) qc.style.display = 'flex';
+
         if (card.dataset.hasFlv === 'true') {
             const area = document.getElementById(`flv-${uid}`);
             const sub = menuData.find(m => m.id === card.dataset.id);
@@ -1596,7 +1627,9 @@
                     if (!isInclude && c.dataset.hasFlv === 'true' && !c.dataset.selectedFlv) {
                         showToast(`請選擇【${c.dataset.name}】口味`); return;
                     }
-                    sn.push(c.dataset.name + (c.dataset.selectedFlv ? ` [${c.dataset.selectedFlv}]` : ''));
+                    const chosenQty = parseInt(c.dataset.chosenQty) || 1;
+                    const qtyStr = chosenQty > 1 ? ` x${chosenQty}` : '';
+                    sn.push(c.dataset.name + qtyStr + (c.dataset.selectedFlv ? ` [${c.dataset.selectedFlv}]` : ''));
                 }
             }
         }
