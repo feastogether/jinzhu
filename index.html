@@ -448,6 +448,7 @@
             display: flex;
             transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             will-change: transform;
+            align-items: flex-start;
         }
         #menu-swipe-track .menu-section {
             flex-shrink: 0;
@@ -1119,7 +1120,7 @@
 <!-- NAVBAR -->
 <header class="navbar" id="navbar">
     <div style="width:36px"></div>
-    <a href="#" onclick="location.reload()">
+    <a href="od.html" onclick="location.href='od.html'">
         <img id="main-logo" class="nav-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠">
     </a>
     <button class="menu-btn" id="menu-btn" onclick="toggleMenu()">
@@ -1274,7 +1275,7 @@
         </div>
         <div class="preview-list" id="preview-list"></div>
         <div class="preview-footer">
-            <textarea id="order-note" class="note-textarea" placeholder="請輸入備註"></textarea>
+            <textarea id="order-note" class="note-textarea" placeholder="如有忌口過敏食材請在此備註"></textarea>
             <div class="total-row">
                 <div>
                     <span class="total-label">Total Amount</span>
@@ -1425,6 +1426,8 @@
             b.classList.toggle('active', i === index);
             if (i === index) b.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
         });
+        // 切換分類時捲回頂部（navbar + cat-nav 高度約 116px）
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function initSwipe() {
@@ -1487,9 +1490,12 @@
                                 data-id="${c.menu_items.id}" data-name="${c.menu_items.name}"
                                 data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}"
                                 data-selected-flv="" data-auto-include="true">
-                                <div class="set-item-header" style="background:rgba(184,145,80,0.06);pointer-events:none">
-                                    <span>${c.menu_items.name}</span>
-                                    <span style="color:var(--gold);font-size:11px">✓</span>
+                                <div class="set-item-header" style="background:rgba(184,145,80,0.06);pointer-events:none;flex-direction:column;align-items:stretch;padding:0;gap:0">
+                                    ${c.menu_items.image_url ? `<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="${c.menu_items.image_url}" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>` : `<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>`}
+                                    <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
+                                        <span style="font-size:11px">${c.menu_items.name}</span>
+                                        <span style="color:var(--gold);font-size:11px">✓</span>
+                                    </div>
                                 </div>
                                 <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
                             </div>`).join('')}</div>
@@ -1504,9 +1510,12 @@
                             <div class="set-item-card" id="sub-${g.id}-${c.menu_items.id}-${idx}"
                                 data-id="${c.menu_items.id}" data-name="${c.menu_items.name}"
                                 data-has-flv="${c.menu_items.item_flavor_relation?.length > 0}" data-selected-flv="">
-                                <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="set-item-header">
-                                    <span>${c.menu_items.name}</span>
-                                    ${c.menu_items.item_flavor_relation?.length > 0 ? '<span style="color:var(--gold);font-size:8px">●</span>' : ''}
+                                <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="set-item-header" style="flex-direction:column;align-items:stretch;padding:0;gap:0">
+                                    ${c.menu_items.image_url ? `<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="${c.menu_items.image_url}" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>` : `<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>`}
+                                    <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
+                                        <span style="font-size:11px">${c.menu_items.name}</span>
+                                        ${c.menu_items.item_flavor_relation?.length > 0 ? '<span style="color:var(--gold);font-size:8px">●</span>' : ''}
+                                    </div>
                                 </div>
                                 <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
                             </div>`).join('')}</div>
@@ -1632,7 +1641,12 @@
         openPreview();
     }
 
+    let isSubmitting = false;
     async function finalSubmit() {
+        if (isSubmitting) return;
+        isSubmitting = true;
+        const btn = document.querySelector('.submit-btn');
+        if (btn) { btn.disabled = true; btn.textContent = '送出中…'; }
         const { error } = await _s.from('orders').insert([{
             customer_name: guest.name,
             phone: guest.phone,
@@ -1646,6 +1660,10 @@
             document.getElementById('cart-bar').classList.remove('visible');
             document.getElementById('step-3').classList.add('visible');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            showToast('送出失敗，請再試一次');
+            isSubmitting = false;
+            if (btn) { btn.disabled = false; btn.textContent = '確認送出'; }
         }
     }
 
