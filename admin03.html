@@ -1101,6 +1101,21 @@ async function loadOrders() {
             </div>
             <div class="order-body">
 
+                <!-- 區塊0：姓名電話 -->
+                <div class="order-section">
+                    <div class="order-section-label">👤 聯絡資訊</div>
+                    <div class="order-fields-grid">
+                        <div class="order-field">
+                            <label>姓名</label>
+                            <input type="text" value="${o.customer_name||''}" onchange="updateOrderData('${o.id}','customer_name',this.value,this)" placeholder="姓名">
+                        </div>
+                        <div class="order-field">
+                            <label>電話</label>
+                            <input type="tel" value="${o.phone||''}" onchange="updateOrderData('${o.id}','phone',this.value,this)" placeholder="電話">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 區塊1：訂位資訊 -->
                 <div class="order-section">
                     <div class="order-section-label">📅 訂位資訊</div>
@@ -1142,38 +1157,67 @@ async function loadOrders() {
 
                 <!-- 區塊3：餐點明細 -->
                 <div class="order-section">
-                    <div class="order-section-label">🍱 餐點明細（統計）</div>
-                    <div class="order-items-list">
-                        ${(()=>{
-                            // 統計各品項數量（拆解套餐子品項）
-                            const dishCount={};
-                            (o.order_content||[]).forEach(item=>{
-                                const qM=item.name.match(/ x(\d+)/), qty=qM?parseInt(qM[1]):1;
-                                let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                                const pIdx=clean.indexOf(' ('), inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-                                const isSet=inner&&inner.includes('、');
-                                if(isSet){
-                                    const brand=clean.slice(0,pIdx).trim();
-                                    dishCount[brand]=(dishCount[brand]||0)+qty;
-                                    inner.split('、').forEach(sub=>{
-                                        const sM=sub.match(/ x(\d+)/), sq=sM?parseInt(sM[1]):1;
-                                        const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                                        if(s) dishCount[s]=(dishCount[s]||0)+qty*sq;
-                                    });
-                                } else {
-                                    dishCount[clean]=(dishCount[clean]||0)+qty;
-                                }
-                            });
-                            return Object.entries(dishCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>
-                                `<div class="order-item-row">
-                                    <div class="order-item-dot"></div>
-                                    <div class="order-item-name">${name}</div>
-                                    <div style="font-weight:900;color:var(--pine);font-size:13px;min-width:32px;text-align:right">${count}</div>
-                                    <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
-                                </div>`
-                            ).join('');
-                        })()}
-                    </div>
+                    <div class="order-section-label">🍱 餐點明細</div>
+                    ${(()=>{
+                        const sets=[], singles={};
+                        (o.order_content||[]).forEach(item=>{
+                            const qM=item.name.match(/ x(\d+)/), qty=qM?parseInt(qM[1]):1;
+                            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                            const pIdx=clean.indexOf(' ('), inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
+                            const isSet=inner&&inner.includes('、');
+                            if(isSet){
+                                const brand=clean.slice(0,pIdx).trim();
+                                const subs={};
+                                inner.split('、').forEach(sub=>{
+                                    const sM=sub.match(/ x(\d+)/), sq=sM?parseInt(sM[1]):1;
+                                    const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                                    if(s) subs[s]=(subs[s]||0)+qty*sq;
+                                });
+                                sets.push({brand,qty,subs});
+                            } else {
+                                singles[clean]=(singles[clean]||0)+qty;
+                            }
+                        });
+                        let html='';
+                        // 套餐區塊
+                        if(sets.length){
+                            html+=sets.map(set=>`
+                            <div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:8px">
+                                <div style="background:rgba(184,145,80,0.08);padding:6px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(184,145,80,0.2)">
+                                    <span style="font-weight:900;font-size:12px;color:var(--gold)">🍱 ${set.brand}</span>
+                                    <span style="font-weight:900;font-size:13px;color:var(--gold)">${set.qty} 套</span>
+                                </div>
+                                <div style="padding:4px 12px">
+                                    ${Object.entries(set.subs).map(([name,count])=>`
+                                    <div class="order-item-row">
+                                        <div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+                                        <div class="order-item-name" style="font-size:11px">${name}</div>
+                                        <div style="font-weight:900;color:var(--pine);font-size:12px">${count}</div>
+                                        <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
+                                    </div>`).join('')}
+                                </div>
+                            </div>`).join('');
+                        }
+                        // 單點區塊
+                        const singleEntries=Object.entries(singles).sort((a,b)=>b[1]-a[1]);
+                        if(singleEntries.length){
+                            html+=`<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
+                                <div style="background:#f8fafc;padding:6px 12px;border-bottom:1px solid var(--border)">
+                                    <span style="font-weight:900;font-size:11px;color:var(--stone);text-transform:uppercase;letter-spacing:.1em">單點</span>
+                                </div>
+                                <div style="padding:4px 12px">
+                                    ${singleEntries.map(([name,count])=>`
+                                    <div class="order-item-row">
+                                        <div class="order-item-dot"></div>
+                                        <div class="order-item-name">${name}</div>
+                                        <div style="font-weight:900;color:var(--pine);font-size:13px">${count}</div>
+                                        <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
+                                    </div>`).join('')}
+                                </div>
+                            </div>`;
+                        }
+                        return html;
+                    })()}
                     ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
                 </div>
 
