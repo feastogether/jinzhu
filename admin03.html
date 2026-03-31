@@ -1365,7 +1365,30 @@ function refreshEditCart(){
 }
 function openEditPop(itemId,index=-1){
     reEditIndex=index;let prevNames=[],prevFlvs=[];
-    if(index>-1){const raw=editCart[index].name;const base=raw.split(' [')[0].split(' (')[0].replace(/ x\d+/g,'').trim();curEditItem=allMenuItems.find(i=>i.name===base);const gM=raw.match(/\((.*?)\)/);if(gM)prevNames=gM[1].split('、').map(n=>n.split(' [')[0]);const fM=raw.match(/\[(.*?)\]/);if(fM)prevFlvs=fM[1].split('/');}
+    if(index>-1){
+        const raw=editCart[index].name;
+        // 取套餐名稱（去掉數量、口味、子品項）
+        const base=raw.split(' [')[0].split(' (')[0].replace(/ x\d+/g,'').trim();
+        curEditItem=allMenuItems.find(i=>i.name===base);
+        // 取子品項列表（括號內容，找最後一個括號區段）
+        const pStart=raw.lastIndexOf(' (');
+        if(pStart>-1){
+            const inner=raw.slice(pStart+2,-1);
+            prevNames=inner.split('、').map(n=>n.split(' [')[0].replace(/ x\d+/g,'').trim());
+        }
+        // 取口味（方括號內容）
+        const fM=raw.match(/\[(.*?)\]/);
+        if(fM)prevFlvs=fM[1].split('/');
+    }
+    else{curEditItem=allMenuItems.find(i=>i.id===itemId);}
+    if(!curEditItem)return;
+    curEditPopSels={flavors:{},groups:{}};
+    const container=document.getElementById('edit-pop-content');container.innerHTML='';
+    if(curEditItem.item_flavor_relation?.length>0){container.innerHTML+=curEditItem.item_flavor_relation.map(r=>`<div><p class="text-[10px] text-slate-400 mb-2 uppercase font-bold">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o=>{const isM=prevFlvs.includes(o.option_name);if(isM)curEditPopSels.flavors[r.flavor_groups.id]=o.option_name;return`<div onclick="setEditPopFlv(this,'${r.flavor_groups.id}','${o.option_name}')" class="px-4 py-1.5 border rounded-full text-xs cursor-pointer transition ${isM?'flavor-selected':'bg-slate-50'}">${o.option_name}</div>`;}).join('')}</div></div>`).join('');}
+    if(curEditItem.is_set_menu&&curEditItem.set_menu_groups){container.innerHTML+=curEditItem.set_menu_groups.map(g=>{curEditPopSels.groups[g.id]=[];return`<div><p class="text-[10px] font-bold mb-2 uppercase" style="color:var(--pine)">${g.group_name}</p><div class="grid grid-cols-2 gap-2">${g.set_menu_contents.map(c=>{const isM=prevNames.includes(c.menu_items.name);if(isM)curEditPopSels.groups[g.id].push({name:c.menu_items.name});return`<div onclick="setEditPopGroup(this,'${g.id}','${c.menu_items.name}',${g.selection_limit})" class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold ${isM?'opt-selected':'bg-slate-50'}">${c.menu_items.name}</div>`;}).join('')}</div></div>`;}).join('');}
+    document.getElementById('edit-pop-title').textContent=curEditItem.name;
+    document.getElementById('edit-flavor-popup').classList.remove('hidden');
+}
     else{curEditItem=allMenuItems.find(i=>i.id===itemId);}
     if(!curEditItem)return;
     curEditPopSels={flavors:{},groups:{}};
