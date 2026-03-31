@@ -1142,9 +1142,37 @@ async function loadOrders() {
 
                 <!-- 區塊3：餐點明細 -->
                 <div class="order-section">
-                    <div class="order-section-label">🍱 餐點明細</div>
+                    <div class="order-section-label">🍱 餐點明細（統計）</div>
                     <div class="order-items-list">
-                        ${o.order_content.map(i=>`<div class="order-item-row"><div class="order-item-dot"></div><div class="order-item-name">${i.name}</div><div class="text-slate-400 font-bold">$${i.price}</div></div>`).join('')}
+                        ${(()=>{
+                            // 統計各品項數量（拆解套餐子品項）
+                            const dishCount={};
+                            (o.order_content||[]).forEach(item=>{
+                                const qM=item.name.match(/ x(\d+)/), qty=qM?parseInt(qM[1]):1;
+                                let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                                const pIdx=clean.indexOf(' ('), inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
+                                const isSet=inner&&inner.includes('、');
+                                if(isSet){
+                                    const brand=clean.slice(0,pIdx).trim();
+                                    dishCount[brand]=(dishCount[brand]||0)+qty;
+                                    inner.split('、').forEach(sub=>{
+                                        const sM=sub.match(/ x(\d+)/), sq=sM?parseInt(sM[1]):1;
+                                        const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                                        if(s) dishCount[s]=(dishCount[s]||0)+qty*sq;
+                                    });
+                                } else {
+                                    dishCount[clean]=(dishCount[clean]||0)+qty;
+                                }
+                            });
+                            return Object.entries(dishCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>
+                                `<div class="order-item-row">
+                                    <div class="order-item-dot"></div>
+                                    <div class="order-item-name">${name}</div>
+                                    <div style="font-weight:900;color:var(--pine);font-size:13px;min-width:32px;text-align:right">${count}</div>
+                                    <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
+                                </div>`
+                            ).join('');
+                        })()}
                     </div>
                     ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
                 </div>
