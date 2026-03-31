@@ -1365,7 +1365,7 @@ function refreshEditCart(){
 }
 function openEditPop(itemId,index=-1){
     reEditIndex=index;let prevNames=[],prevFlvs=[];
-    if(index>-1){const raw=editCart[index].name;const base=raw.split(' [')[0].split(' (')[0];curEditItem=allMenuItems.find(i=>i.name===base);const gM=raw.match(/\((.*?)\)/);if(gM)prevNames=gM[1].split('、').map(n=>n.split(' [')[0]);const fM=raw.match(/\[(.*?)\]/);if(fM)prevFlvs=fM[1].split('/');}
+    if(index>-1){const raw=editCart[index].name;const base=raw.split(' [')[0].split(' (')[0].replace(/ x\d+/g,'').trim();curEditItem=allMenuItems.find(i=>i.name===base);const gM=raw.match(/\((.*?)\)/);if(gM)prevNames=gM[1].split('、').map(n=>n.split(' [')[0]);const fM=raw.match(/\[(.*?)\]/);if(fM)prevFlvs=fM[1].split('/');}
     else{curEditItem=allMenuItems.find(i=>i.id===itemId);}
     if(!curEditItem)return;
     curEditPopSels={flavors:{},groups:{}};
@@ -1380,8 +1380,14 @@ function setEditPopGroup(el,gid,name,limit){const sibs=Array.from(el.parentEleme
 function confirmEditPop(){
     const fn=Object.values(curEditPopSels.flavors).join('/');
     const gn=Object.values(curEditPopSels.groups).flat().map(x=>x.name).join('、');
-    const finalName=`${curEditItem.name}${fn?` [${fn}]`:''}${gn?` (${gn})`:''}`;
-    if(reEditIndex>-1)editCart[reEditIndex]={name:finalName,price:Number(curEditItem.price)};
+    // 保留原本的數量（x2、x3…）
+    let xQty='';
+    if(reEditIndex>-1){
+        const qM=editCart[reEditIndex].name.match(/ x(\d+)/);
+        if(qM) xQty=` x${qM[1]}`;
+    }
+    const finalName=`${curEditItem.name}${xQty}${fn?` [${fn}]`:''}${gn?` (${gn})`:''}`;
+    if(reEditIndex>-1)editCart[reEditIndex]={name:finalName,price:Number(curEditItem.price)*(parseInt(xQty.replace(' x','')||'1'))};
     else editCart.push({name:finalName,price:Number(curEditItem.price)});
     closeEditPop();refreshEditCart();
 }
