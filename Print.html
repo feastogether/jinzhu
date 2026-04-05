@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>真珠 · 列印</title>
+    <link rel="icon" type="image/x-icon" href="https://www.jinzhu.com.tw/favicon.ico">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
@@ -119,36 +120,44 @@ body { font-family:'Noto Sans TC',sans-serif; background:#f8fafc; color:var(--in
 
 /* ══ PRINT STYLES ══ */
 @media print {
-    @page { size:58mm auto; margin:2mm 3mm; }
-    body { background:white; font-size:11px; }
+    @page { size:58mm auto; margin:1mm 2mm; }
+    body { background:white; font-size:16px; -webkit-print-color-adjust:exact; }
     .no-print { display:none !important; }
     .top-bar { display:none; }
     .filter-card,.tabs,.btn-row { display:none; }
     .result-wrap { margin:0; }
 
     /* 備料總表 */
-    .print-header { text-align:center; margin-bottom:6px; }
-    .print-header .shop { font-size:13px; font-weight:900; }
-    .print-header .period { font-size:9px; color:#555; margin-top:2px; }
-    .print-divider { border:none; border-top:1px dashed #aaa; margin:5px 0; }
-    .dish-table { border:none; border-radius:0; }
-    .dish-table th { font-size:9px; padding:4px 6px; }
-    .dish-table td { font-size:11px; padding:4px 6px; }
-    .dish-table .qty { font-size:13px; }
+    .print-header { text-align:center; margin-bottom:8px; }
+    .print-header .shop { font-size:18px; font-weight:900; }
+    .print-header .period { font-size:13px; color:#333; margin-top:3px; }
+    .print-divider { border:none; border-top:1px dashed #aaa; margin:6px 0; }
+    .dish-table { border:none; border-radius:0; width:100%; }
+    .dish-table th { font-size:13px; padding:5px 4px; }
+    .dish-table td { font-size:15px; padding:5px 4px; }
+    .dish-table .qty { font-size:17px; font-weight:900; }
+
+    /* KPI */
+    .kpi-row { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-bottom:10px; }
+    .kpi { padding:6px 4px; }
+    .kpi-val { font-size:20px; font-weight:900; }
+    .kpi-lbl { font-size:11px; }
 
     /* 桌號明細 */
     .order-card { border:none; border-radius:0; margin-bottom:0; page-break-after:always; }
     .order-card:last-child { page-break-after:avoid; }
     .order-head { background:none !important; color:#000 !important;
-        border-bottom:1px solid #000; padding:4px 0; }
-    .order-name { font-size:12px; }
-    .order-meta { font-size:9px; }
-    .order-time { font-size:9px; }
-    .order-items { padding:4px 0; }
-    .item-row { font-size:10px; padding:2px 0; }
-    .order-total { padding:4px 0; font-size:10px; background:none; border-top:1px dashed #aaa; }
-    .kpi-row { display:none; }
-    .section-head { font-size:9px; }
+        border-bottom:2px solid #000; padding:5px 0; }
+    .order-name { font-size:16px; font-weight:900; }
+    .order-meta { font-size:13px; }
+    .order-time { font-size:13px; }
+    .order-items { padding:5px 0; }
+    .item-row { font-size:14px; padding:3px 0; }
+    .item-name { font-size:14px; }
+    .item-qty { font-size:15px; font-weight:900; }
+    .item-price { font-size:13px; }
+    .order-total { padding:5px 0; font-size:15px; font-weight:900; background:none; border-top:1px dashed #aaa; }
+    .section-head { font-size:13px; margin-bottom:5px; }
     .empty-state { display:none; }
 }
 </style>
