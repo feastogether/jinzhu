@@ -221,7 +221,7 @@
         .rpt-preset-btn.on, .rpt-preset-btn:hover { background: var(--gold); border-color: var(--gold); color: white; }
         .rpt-tab { flex: 1; padding: 9px 6px; border-radius: 9px; font-size: 12px; font-weight: 700; border: none; background: transparent; color: #94a3b8; cursor: pointer; transition: all .15s; white-space: nowrap; }
         .rpt-tab.on { background: white; color: var(--pine); box-shadow: 0 1px 6px rgba(0,0,0,.1); }
-        .rpt-spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: rspin .6s linear infinite; vertical-align: middle; }
+        .rpt-quick-btn.on { background: var(--pine) !important; color: white !important; border-color: var(--pine) !important; }
         @keyframes rspin { to { transform: rotate(360deg); } }
 
         /* ── KPI CARDS ── */
@@ -421,6 +421,12 @@
                 <option value="pending">準備中</option>
                 <option value="synced">已完成</option>
             </select>
+            <select id="filter-sort" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700" title="排序方式">
+                <option value="created_desc">下單↓新到舊</option>
+                <option value="created_asc">下單↑舊到新</option>
+                <option value="booking_asc">訂位↑早到晚</option>
+                <option value="booking_desc">訂位↓晚到早</option>
+            </select>
             <button onclick="loadOrders()" class="btn btn-primary btn-sm">篩選</button>
             <button onclick="exportXls()" class="btn btn-ghost btn-sm">📊 Excel</button>
             <button onclick="toggleOrderFilter()" id="filter-toggle-btn" class="btn btn-ghost btn-sm px-2" title="更多篩選">
@@ -562,71 +568,69 @@
 
 <!-- 備料統計報表 -->
 <section id="sec-report" class="hidden space-y-4">
-    <!-- 報表篩選列（摺疊式） -->
-    <div class="rounded-xl overflow-hidden shadow-md" style="background:linear-gradient(135deg,#004d40,#00695c)">
+    <!-- 報表篩選列（白色卡片，與訂單監控同風格） -->
+    <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-2">
         <!-- 常駐列 -->
-        <div class="flex flex-wrap items-center gap-2 px-4 py-2.5">
-            <div class="w-1 h-4 rounded-full bg-amber-400 flex-shrink-0"></div>
-            <span class="font-black text-white text-sm font-serif tracking-widest flex-shrink-0">備料統計</span>
-            <span id="report-period-display" class="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style="background:rgba(184,145,80,.2);color:#d4a85a">尚未查詢</span>
-            <div class="flex gap-1 ml-auto flex-shrink-0">
-                <div class="flex gap-1 mr-1">
-                    <select id="report-date-type-quick" onchange="document.getElementById('report-date-type').value=this.value" class="rpt-f-input text-[10px] px-2 py-1" style="min-width:80px">
-                        <option value="created">下單日</option>
-                        <option value="booking">訂位日</option>
-                    </select>
-                    <button class="rpt-preset-btn text-[10px] px-2 py-1" onclick="syncReportDateType();rptPreset('today');fetchData()">今日</button>
-                    <button class="rpt-preset-btn text-[10px] px-2 py-1" onclick="syncReportDateType();rptPreset('week');fetchData()">本週</button>
-                    <button class="rpt-preset-btn text-[10px] px-2 py-1" onclick="syncReportDateType();rptPreset('month');fetchData()">本月</button>
-                </div>
-                <button onclick="fetchData()" class="btn btn-sm" style="background:var(--gold);color:white;padding:4px 12px">
+        <div class="flex items-center gap-2 px-3 py-2 border-b border-slate-100 flex-wrap">
+            <select id="report-date-type-quick" onchange="document.getElementById('report-date-type').value=this.value" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
+                <option value="created">下單日期</option>
+                <option value="booking">訂位日期</option>
+            </select>
+            <div class="flex gap-1">
+                <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="syncReportDateType();rptPreset('today');fetchData()">今日</button>
+                <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="syncReportDateType();rptPreset('week');fetchData()">本週</button>
+                <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="syncReportDateType();rptPreset('month');fetchData()">本月</button>
+            </div>
+            <span id="report-period-display" class="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style="background:rgba(0,77,64,.08);color:var(--pine)">尚未查詢</span>
+            <div class="flex gap-1 ml-auto">
+                <button onclick="fetchData()" class="btn btn-primary btn-sm">
                     <span id="r-run-lbl">▶ 查詢</span>
                 </button>
-                <button onclick="reportPrint()" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;padding:4px 10px">🖨</button>
-                <button onclick="exportFullData()" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;padding:4px 10px">📊</button>
-                <button onclick="toggleReportFilter()" id="report-filter-toggle" class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:white;padding:4px 10px" title="展開詳細設定">
-                    <svg id="report-chevron" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                <button onclick="reportPrint()" class="btn btn-ghost btn-sm">🖨</button>
+                <button onclick="exportFullData()" class="btn btn-ghost btn-sm">📊</button>
+                <button onclick="toggleReportFilter()" id="report-filter-toggle" class="btn btn-ghost btn-sm px-2" title="展開詳細設定">
+                    <svg id="report-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </button>
             </div>
         </div>
         <!-- 展開區 -->
-        <div id="report-filter-expand" class="hidden border-t border-white/10 px-4 py-3">
+        <div id="report-filter-expand" class="hidden px-3 pb-3 pt-2 space-y-2 bg-slate-50">
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
                 <div>
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">日期類型</span>
-                    <select id="report-date-type" class="rpt-f-input w-full">
+                    <label class="filter-label">日期類型</label>
+                    <select id="report-date-type" class="filter-select" style="width:100%">
                         <option value="created">下單日期</option>
                         <option value="booking">訂位日期</option>
                     </select>
                 </div>
                 <div>
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">開始日期</span>
-                    <input type="date" id="r-s-date" class="rpt-f-input w-full">
+                    <label class="filter-label">開始日期</label>
+                    <input type="date" id="r-s-date" class="filter-input">
                 </div>
                 <div>
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">結束日期</span>
-                    <input type="date" id="r-e-date" class="rpt-f-input w-full">
+                    <label class="filter-label">結束日期</label>
+                    <input type="date" id="r-e-date" class="filter-input">
                 </div>
                 <div>
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">開始時間</span>
-                    <input type="time" id="r-s-time" value="00:00" class="rpt-f-input w-full">
+                    <label class="filter-label">開始時間</label>
+                    <input type="time" id="r-s-time" value="00:00" class="filter-input">
                 </div>
                 <div>
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">結束時間</span>
-                    <input type="time" id="r-e-time" value="23:59" class="rpt-f-input w-full">
+                    <label class="filter-label">結束時間</label>
+                    <input type="time" id="r-e-time" value="23:59" class="filter-input">
                 </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
                 <div>
-                    <span class="block text-[9px] font-bold tracking-widest uppercase mb-1" style="color:rgba(255,255,255,.45)">活動代號</span>
-                    <select id="report-campaign" class="rpt-f-input w-full"><option value="all">全部來源</option><option value="none">一般訂單</option></select>
+                    <label class="filter-label">活動代號</label>
+                    <select id="report-campaign" class="filter-select" style="width:100%"><option value="all">全部來源</option><option value="none">一般訂單</option></select>
                 </div>
             </div>
-            <div class="flex gap-1.5 mt-2">
-                <button class="rpt-preset-btn" onclick="rptPreset('today')">今日</button>
-                <button class="rpt-preset-btn" onclick="rptPreset('yesterday')">昨日</button>
-                <button class="rpt-preset-btn" onclick="rptPreset('week')">本週</button>
-                <button class="rpt-preset-btn" onclick="rptPreset('month')">本月</button>
+            <div class="flex gap-1.5 pt-2 border-t border-slate-200">
+                <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="rptPreset('today')">今日</button>
+                <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="rptPreset('yesterday')">昨日</button>
+                <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="rptPreset('week')">本週</button>
+                <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="rptPreset('month')">本月</button>
             </div>
         </div>
     </div>
@@ -1031,12 +1035,18 @@ async function loadOrders() {
     const preset=document.getElementById('filter-date-preset').value;
     const campaign=document.getElementById('filter-campaign').value;
     const dateType=document.getElementById('filter-date-type')?.value||'created';
+    const sortVal=document.getElementById('filter-sort')?.value||'created_desc';
     // 台灣今日日期字串 (YYYY-MM-DD)
     const twNow=new Date(Date.now()+8*60*60*1000);
     const twToday=twNow.toISOString().split('T')[0];
     const twWeekAgo=new Date(Date.now()-7*864e5+8*60*60*1000).toISOString().split('T')[0];
 
-    let q=_s.from('orders').select('*').order('created_at',{ascending:false});
+    // 決定排序欄位與方向
+    const sortField = sortVal.startsWith('booking') ? 'booking_date' : 'created_at';
+    const sortAsc   = sortVal.endsWith('_asc');
+    let q=_s.from('orders').select('*').order(sortField,{ascending:sortAsc});
+    // booking_asc/desc 時 null 的訂單（沒有訂位日期）排到最後
+    if(sortField==='booking_date') q=q.order('created_at',{ascending:false});
     if (search)           q=q.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
     if (status!=='all')   q=q.eq('status',status);
     if (campaign!=='all') q=q.eq('campaign_code',campaign);
@@ -1332,6 +1342,7 @@ function resetFilters(){
     document.getElementById('filter-campaign').value='all';
     document.getElementById('filter-time-start').value='00:00';
     document.getElementById('filter-time-end').value='23:59';
+    const fs=document.getElementById('filter-sort'); if(fs) fs.value='created_desc';
     const ds=document.getElementById('filter-date-start'); if(ds) ds.value='';
     const de=document.getElementById('filter-date-end');   if(de) de.value='';
     const box=document.getElementById('date-range-box');
@@ -1764,8 +1775,8 @@ function syncReportDateType(){
     if(quick&&full) full.value=quick.value;
 }
 function rptPreset(type){
-    document.querySelectorAll('.rpt-preset-btn').forEach(b=>b.classList.remove('on'));
-    document.querySelector(`.rpt-preset-btn[onclick="rptPreset('${type}')"]`)?.classList.add('on');
+    document.querySelectorAll('.rpt-quick-btn').forEach(b=>b.classList.remove('on'));
+    document.querySelectorAll(`.rpt-quick-btn[onclick*="'${type}'"]`).forEach(b=>b.classList.add('on'));
     const now=new Date(),today=now.toISOString().split('T')[0];
     const sd=document.getElementById('r-s-date'),ed=document.getElementById('r-e-date');
     if(type==='today'){sd.value=ed.value=today;}
