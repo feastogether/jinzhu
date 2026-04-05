@@ -1108,7 +1108,7 @@ async function loadOrders() {
                 <div class="order-amount">$${o.total_price}</div>
                 <div class="ml-1 text-right flex-shrink-0">
                     <div class="order-time-badge">${new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
-                    ${bTime?`<div style="font-size:10px;font-weight:900;color:#dc2626;letter-spacing:0.03em;margin-top:2px">📅 ${bTime.replace('T',' ')}</div>`:''}
+                    ${bTime?`<div style="font-size:10px;font-weight:900;color:#dc2626;letter-spacing:0.03em;margin-top:2px">📅 ${bTime.slice(5).replace('T',' ')}</div>`:''}
                 </div>
                 <svg class="w-4 h-4 text-slate-300 flex-shrink-0 ml-1 transition-transform" id="chevron-${o.id}" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </div>
