@@ -384,6 +384,7 @@
 
     <nav class="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         <button id="btn-orders"     onclick="switchTab('orders')"     class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">📋</span><span class="nav-label">訂單監控</span></button>
+        <button id="btn-calendar"   onclick="switchTab('calendar')"   class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">📅</span><span class="nav-label">日曆模式</span></button>
         <button id="btn-campaigns"  onclick="switchTab('campaigns')"  class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🎗️</span><span class="nav-label">活動代號</span></button>
         <button id="btn-categories" onclick="switchTab('categories')" class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🗂️</span><span class="nav-label">分類管理</span></button>
         <button id="btn-menu"       onclick="switchTab('menu')"       class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🍱</span><span class="nav-label">菜單編輯</span></button>
@@ -482,8 +483,50 @@
     <div id="order-list" class="grid grid-cols-1 xl:grid-cols-2 gap-4"></div>
 </section>
 
+<!-- 日曆模式 -->
+<section id="sec-calendar" class="hidden space-y-4">
+    <!-- 頂部：無訂位日期的訂單橫條 -->
+    <div id="cal-no-date-bar" class="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 hidden">
+        <div class="flex items-center gap-2 mb-2">
+            <span style="font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.1em">⚠ 尚未安排訂位日期</span>
+            <span id="cal-no-date-count" class="text-xs font-bold bg-amber-400 text-white px-2 py-0.5 rounded-full">0</span>
+        </div>
+        <div id="cal-no-date-list" class="flex flex-wrap gap-2"></div>
+    </div>
+    <!-- 日曆控制列 -->
+    <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+            <button onclick="calPrevMonth()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition font-bold text-lg">&#8249;</button>
+            <div class="text-center">
+                <div id="cal-month-label" class="font-serif font-black text-lg" style="color:var(--pine)"></div>
+            </div>
+            <button onclick="calNextMonth()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition font-bold text-lg">&#8250;</button>
+        </div>
+        <div class="grid grid-cols-7 border-b border-slate-100">
+            <div class="text-center py-2 text-[10px] font-bold text-red-400">日</div>
+            <div class="text-center py-2 text-[10px] font-bold text-slate-400">一</div>
+            <div class="text-center py-2 text-[10px] font-bold text-slate-400">二</div>
+            <div class="text-center py-2 text-[10px] font-bold text-slate-400">三</div>
+            <div class="text-center py-2 text-[10px] font-bold text-slate-400">四</div>
+            <div class="text-center py-2 text-[10px] font-bold text-slate-400">五</div>
+            <div class="text-center py-2 text-[10px] font-bold text-blue-400">六</div>
+        </div>
+        <div id="cal-grid" class="grid grid-cols-7"></div>
+    </div>
+</section>
+
+<!-- 日曆：日期訂單 Modal -->
+<div id="cal-day-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="px-6 py-4 flex justify-between items-center flex-shrink-0" style="background:var(--pine)">
+            <h3 class="font-serif font-black text-white text-lg" id="cal-day-modal-title"></h3>
+            <button onclick="document.getElementById('cal-day-modal').classList.add('hidden')" class="text-white/60 hover:text-white text-2xl transition">&#x2715;</button>
+        </div>
+        <div id="cal-day-modal-body" class="overflow-y-auto flex-1 p-5 space-y-4"></div>
+    </div>
+</div>
+
 <!-- 活動代號 -->
-<section id="sec-campaigns" class="hidden space-y-6">
     
     <div class="bg-white p-6 rounded-2xl border max-w-md shadow-sm">
         <div class="flex gap-2 mb-6">
@@ -1004,6 +1047,7 @@ async function switchTab(t) {
     document.getElementById(`sec-${t}`).classList.remove('hidden');
     document.getElementById(`btn-${t}`).classList.add('sidebar-active');
     if (t==='orders')     { await loadCampaignOptions(); loadOrders(); }
+    if (t==='calendar')   { await loadCampaignOptions(); initCalendar(); }
     if (t==='campaigns')  loadCampaigns();
     if (t==='categories') loadCats();
     if (t==='menu')       { await loadCats(); loadMenu(); }
@@ -2115,6 +2159,215 @@ async function doLogin(){
     const{error}=await _s.auth.signInWithPassword({email,password});
     if(error){errEl.classList.remove('hidden');btn.disabled=false;btn.textContent='登入';}
     else{document.getElementById('login-screen').classList.add('hidden');}
+}
+
+// ── CALENDAR ──
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+let calAllOrders=[];
+
+async function initCalendar(){
+    // 抓全部有訂位日期的訂單（不限範圍）
+    const{data}=await _s.from('orders').select('*').order('booking_date',{ascending:true});
+    calAllOrders=data||[];
+    renderCalendar();
+}
+
+function calPrevMonth(){
+    calMonth--;
+    if(calMonth<0){calMonth=11;calYear--;}
+    renderCalendar();
+}
+function calNextMonth(){
+    calMonth++;
+    if(calMonth>11){calMonth=0;calYear++;}
+    renderCalendar();
+}
+
+function renderCalendar(){
+    const monthNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    document.getElementById('cal-month-label').textContent=`${calYear} 年 ${monthNames[calMonth]}`;
+
+    // 無訂位日期的訂單
+    const noDate=calAllOrders.filter(o=>!o.booking_date);
+    const bar=document.getElementById('cal-no-date-bar');
+    const noDateList=document.getElementById('cal-no-date-list');
+    document.getElementById('cal-no-date-count').textContent=noDate.length;
+    if(noDate.length){
+        bar.classList.remove('hidden');
+        noDateList.innerHTML=noDate.map(o=>`
+            <div class="flex items-center gap-1.5 bg-white border border-amber-200 rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer hover:border-amber-400 transition"
+                 onclick="openCalDayModal(null,'${o.id}')" style="color:var(--ink)">
+                <span style="color:var(--stone)">${o.customer_name}</span>
+                <span style="color:var(--gold)">$${o.total_price}</span>
+            </div>`).join('');
+    } else {
+        bar.classList.add('hidden');
+    }
+
+    // 建立當月訂單的 map：YYYY-MM-DD → [orders]
+    const orderMap={};
+    calAllOrders.filter(o=>o.booking_date).forEach(o=>{
+        const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);
+        const key=`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;
+        if(!orderMap[key])orderMap[key]=[];
+        orderMap[key].push(o);
+    });
+
+    // 建立日曆格子
+    const firstDay=new Date(calYear,calMonth,1).getDay(); // 0=日
+    const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+    const today=new Date();
+    const todayStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+    let html='';
+    // 空白格（月初前）
+    for(let i=0;i<firstDay;i++) html+=`<div class="min-h-[90px] border-b border-r border-slate-100 bg-slate-50/30"></div>`;
+
+    for(let d=1;d<=daysInMonth;d++){
+        const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const orders=orderMap[dateStr]||[];
+        const isToday=dateStr===todayStr;
+        const dow=(firstDay+d-1)%7; // 0=日,6=六
+        const numColor=dow===0?'#dc2626':dow===6?'#2563eb':'var(--ink)';
+        const totalPax=orders.reduce((s,o)=>s+(o.adult_count||0)+(o.kid_count||0)+(o.child_count||0),0);
+
+        html+=`<div class="min-h-[90px] border-b border-r border-slate-100 p-1 cursor-pointer hover:bg-slate-50 transition relative ${isToday?'bg-amber-50/60':''}"
+                    onclick="openCalDayModal('${dateStr}')">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-black ${isToday?'w-6 h-6 rounded-full flex items-center justify-center text-white':''}"
+                      style="${isToday?'background:var(--pine);font-size:11px':'color:'+numColor+';font-size:12px'}">${d}</span>
+                ${orders.length?`<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style="background:var(--pine)">${orders.length}</span>`:''}
+            </div>
+            ${orders.length?`<div class="space-y-0.5">
+                ${orders.slice(0,2).map(o=>{
+                    const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);
+                    const hhmm=String(tw.getUTCHours()).padStart(2,'0')+':'+String(tw.getUTCMinutes()).padStart(2,'0');
+                    return`<div class="text-[9px] font-bold truncate px-1.5 py-0.5 rounded-md" style="background:rgba(0,77,64,.07);color:var(--pine)">${hhmm} ${o.customer_name}</div>`;
+                }).join('')}
+                ${orders.length>2?`<div class="text-[9px] text-slate-400 font-bold px-1">+${orders.length-2} 筆</div>`:''}
+            </div>`:''}
+        </div>`;
+    }
+
+    // 填滿最後一行
+    const totalCells=firstDay+daysInMonth;
+    const remain=(7-totalCells%7)%7;
+    for(let i=0;i<remain;i++) html+=`<div class="min-h-[90px] border-b border-r border-slate-100 bg-slate-50/30"></div>`;
+
+    document.getElementById('cal-grid').innerHTML=html;
+}
+
+function openCalDayModal(dateStr, focusOrderId=null){
+    let orders;
+    if(dateStr){
+        orders=calAllOrders.filter(o=>{
+            if(!o.booking_date)return false;
+            const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);
+            const key=`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;
+            return key===dateStr;
+        }).sort((a,b)=>{
+            const ta=new Date(a.booking_date).getTime();
+            const tb=new Date(b.booking_date).getTime();
+            return ta-tb;
+        });
+        const [y,m,d]=dateStr.split('-');
+        document.getElementById('cal-day-modal-title').textContent=`${y}年${parseInt(m)}月${parseInt(d)}日 · ${orders.length} 筆訂單`;
+    } else {
+        // 無日期的單一訂單
+        const o=calAllOrders.find(x=>x.id===focusOrderId);
+        orders=o?[o]:[];
+        document.getElementById('cal-day-modal-title').textContent=`${orders[0]?.customer_name||'—'} · 尚未安排訂位日期`;
+    }
+
+    if(!orders.length){
+        document.getElementById('cal-day-modal-body').innerHTML=`<div class="text-center py-12 text-slate-300 font-bold">當日無訂單</div>`;
+        document.getElementById('cal-day-modal').classList.remove('hidden');
+        return;
+    }
+
+    document.getElementById('cal-day-modal-body').innerHTML=orders.map(o=>{
+        const tw=o.booking_date?new Date(new Date(o.booking_date).getTime()+8*3600000):null;
+        const hhmm=tw?`${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`:'—';
+        const pax=[
+            o.adult_count?`大人 ${o.adult_count}`:'',
+            o.kid_count?`小孩 ${o.kid_count}`:'',
+            o.child_count?`兒童 ${o.child_count}`:''
+        ].filter(Boolean).join('　');
+
+        // 解析套餐/單點
+        const sets=[], singles={};
+        (o.order_content||[]).forEach(item=>{
+            const qM=item.name.match(/ x(\d+)/), qty=qM?parseInt(qM[1]):1;
+            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            const pIdx=clean.indexOf(' ('), inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
+            const isSet=inner&&inner.includes('、');
+            if(isSet){
+                const brand=clean.slice(0,pIdx).trim();
+                const subs={};
+                inner.split('、').forEach(sub=>{
+                    const sM=sub.match(/ x(\d+)/), sq=sM?parseInt(sM[1]):1;
+                    const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                    if(s) subs[s]=(subs[s]||0)+qty*sq;
+                });
+                sets.push({brand,qty,subs});
+            } else {
+                singles[clean]=(singles[clean]||0)+qty;
+            }
+        });
+
+        let itemsHtml='';
+        sets.forEach(set=>{
+            itemsHtml+=`<div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:6px">
+                <div style="background:rgba(184,145,80,0.08);padding:5px 10px;display:flex;justify-content:space-between;border-bottom:1px solid rgba(184,145,80,0.2)">
+                    <span style="font-weight:900;font-size:11px;color:var(--gold)">🍱 ${set.brand}</span>
+                    <span style="font-weight:900;font-size:12px;color:var(--gold)">${set.qty} 套</span>
+                </div>
+                <div style="padding:3px 10px">
+                ${Object.entries(set.subs).map(([name,count])=>`
+                    <div style="display:flex;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:11px">
+                        <div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+                        <span style="flex:1;font-weight:700">${name}</span>
+                        <span style="font-weight:900;color:var(--pine)">${count} 份</span>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        });
+        const singleEntries=Object.entries(singles);
+        if(singleEntries.length){
+            itemsHtml+=`<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
+                <div style="background:#f8fafc;padding:4px 10px;border-bottom:1px solid var(--border)">
+                    <span style="font-size:10px;font-weight:700;color:var(--stone)">單點</span>
+                </div>
+                <div style="padding:3px 10px">
+                ${singleEntries.map(([name,count])=>`
+                    <div style="display:flex;gap:6px;align-items:center;padding:3px 0;border-bottom:1px solid #f1f5f9;font-size:11px">
+                        <div style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+                        <span style="flex:1;font-weight:700">${name}</span>
+                        <span style="font-weight:900;color:var(--pine)">${count} 份</span>
+                    </div>`).join('')}
+                </div>
+            </div>`;
+        }
+
+        return `<div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+            <div style="background:var(--pine);padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                    <div style="font-weight:900;font-size:15px;color:white">${o.customer_name||'—'}${o.table_no?` · 桌${o.table_no}`:''}</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,.65);margin-top:2px">${o.phone||'—'}${pax?'　'+pax:''}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:13px;font-weight:900;color:var(--gold-light)">${hhmm}</div>
+                    <div style="font-size:10px;color:rgba(255,255,255,.5);margin-top:2px">$${o.total_price}</div>
+                </div>
+            </div>
+            <div style="padding:12px 16px">
+                ${itemsHtml}
+                ${o.note?`<div style="margin-top:8px;padding:8px 10px;background:#f0fdf4;border-left:3px solid var(--pine);border-radius:8px;font-size:11px;font-weight:700;color:var(--pine)">📝 ${o.note}</div>`:''}
+            </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('cal-day-modal').classList.remove('hidden');
 }
 
 // ── COLLAPSIBLE FILTERS ──
