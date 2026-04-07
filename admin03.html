@@ -412,37 +412,57 @@
     <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-5">
         <!-- 常駐工具列 -->
         <div class="flex items-center gap-2 px-3 py-2 border-b border-slate-100 flex-wrap">
-            <input type="text" id="filter-search" class="filter-input flex-1 min-w-[140px]" placeholder="搜尋顧客姓名或電話…" style="padding:5px 10px">
-            <select id="filter-date-type" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
-                <option value="created">下單日期</option>
-                <option value="booking">訂位日期</option>
-            </select>
-            <select id="filter-date-preset" onchange="setQuickDate(this.value);loadOrders()" class="filter-select" style="width:auto;padding:5px 8px">
-                <option value="all">不限</option>
-                <option value="today">今日</option>
-                <option value="week">本週</option>
-                <option value="range">區間</option>
-            </select>
-            <select id="filter-status" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px">
-                <option value="all">全部</option>
-                <option value="pending">準備中</option>
-                <option value="synced">已完成</option>
-            </select>
-            <select id="filter-sort" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700" title="排序方式">
-                <option value="created_desc">下單↓新到舊</option>
-                <option value="created_asc">下單↑舊到新</option>
-                <option value="booking_asc">訂位↑早到晚</option>
-                <option value="booking_desc">訂位↓晚到早</option>
-            </select>
-            <button onclick="loadOrders()" class="btn btn-primary btn-sm">篩選</button>
-            <button onclick="exportXls()" class="btn btn-ghost btn-sm">📊 Excel</button>
-            <button onclick="toggleOrderFilter()" id="filter-toggle-btn" class="btn btn-ghost btn-sm px-2" title="更多篩選">
-                <svg id="filter-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-            </button>
+            <!-- 檢視切換 -->
+            <div class="flex bg-slate-100 rounded-lg p-0.5 gap-0.5 flex-shrink-0">
+                <button id="view-btn-list" onclick="switchOrderView('list')"
+                    class="px-3 py-1 rounded-md text-xs font-bold transition-all"
+                    style="background:var(--pine);color:white">
+                    📋
+                </button>
+                <button id="view-btn-calendar" onclick="switchOrderView('calendar')"
+                    class="px-3 py-1 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-slate-600">
+                    📅
+                </button>
+            </div>
+            <!-- 月份導覽（日曆模式才顯示） -->
+            <span id="cal-month-nav" class="hidden items-center gap-1 flex-shrink-0">
+                <button onclick="calPrevMonth()" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 font-bold transition text-sm">‹</button>
+                <span id="cal-month-label" class="font-serif font-black text-sm px-1" style="color:var(--pine)"></span>
+                <button onclick="calNextMonth()" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:bg-slate-100 font-bold transition text-sm">›</button>
+            </span>
+            <!-- 列表篩選（日曆模式時隱藏） -->
+            <div id="list-filters" class="flex items-center gap-2 flex-1 flex-wrap">
+                <input type="text" id="filter-search" class="filter-input flex-1 min-w-[140px]" placeholder="搜尋顧客姓名或電話…" style="padding:5px 10px">
+                <select id="filter-date-type" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
+                    <option value="created">下單日期</option>
+                    <option value="booking">訂位日期</option>
+                </select>
+                <select id="filter-date-preset" onchange="setQuickDate(this.value);loadOrders()" class="filter-select" style="width:auto;padding:5px 8px">
+                    <option value="all">不限</option>
+                    <option value="today">今日</option>
+                    <option value="week">本週</option>
+                    <option value="range">區間</option>
+                </select>
+                <select id="filter-status" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px">
+                    <option value="all">全部</option>
+                    <option value="pending">準備中</option>
+                    <option value="synced">已完成</option>
+                </select>
+                <select id="filter-sort" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700" title="排序方式">
+                    <option value="created_desc">下單↓新到舊</option>
+                    <option value="created_asc">下單↑舊到新</option>
+                    <option value="booking_asc">訂位↑早到晚</option>
+                    <option value="booking_desc">訂位↓晚到早</option>
+                </select>
+                <button onclick="loadOrders()" class="btn btn-primary btn-sm">篩選</button>
+                <button onclick="exportXls()" class="btn btn-ghost btn-sm">📊 Excel</button>
+                <button onclick="toggleOrderFilter()" id="filter-toggle-btn" class="btn btn-ghost btn-sm px-2" title="更多篩選">
+                    <svg id="filter-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
         </div>
-        <!-- 展開區 -->
+        <!-- 展開區（列表模式） -->
         <div id="filter-expand" class="hidden px-3 pb-3 pt-2 space-y-2 bg-slate-50">
-            <!-- 日期區間（選「區間」時顯示） -->
             <div id="date-range-box" class="hidden grid grid-cols-2 gap-2">
                 <div>
                     <label class="filter-label">開始日期</label>
@@ -479,26 +499,6 @@
         </div>
     </div>
 
-    <!-- 檢視模式切換 -->
-    <div class="flex gap-2 items-center">
-        <div class="flex bg-white border border-slate-200 rounded-xl p-1 gap-1">
-            <button id="view-btn-list" onclick="switchOrderView('list')"
-                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all"
-                style="background:var(--pine);color:white">
-                📋 列表
-            </button>
-            <button id="view-btn-calendar" onclick="switchOrderView('calendar')"
-                class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-slate-600">
-                📅 日曆
-            </button>
-        </div>
-        <span id="cal-month-nav" class="hidden items-center gap-2">
-            <button onclick="calPrevMonth()" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 font-bold text-base transition">‹</button>
-            <span id="cal-month-label" class="font-serif font-black text-base px-2" style="color:var(--pine)"></span>
-            <button onclick="calNextMonth()" class="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 font-bold text-base transition">›</button>
-        </span>
-    </div>
-
     <!-- 列表檢視 -->
     <div id="view-list">
         <div id="order-list" class="grid grid-cols-1 xl:grid-cols-2 gap-4"></div>
@@ -525,7 +525,7 @@
                 <div class="text-center py-2.5 text-[11px] font-bold text-slate-500">五</div>
                 <div class="text-center py-2.5 text-[11px] font-bold text-blue-400">六</div>
             </div>
-            <div id="cal-grid" class="grid grid-cols-7" style="min-height:600px"></div>
+            <div id="cal-grid" class="grid grid-cols-7" style="min-height:640px"></div>
         </div>
     </div>
 </section>
@@ -2186,6 +2186,8 @@ function switchOrderView(mode){
     const listEl=document.getElementById('view-list');
     const calEl=document.getElementById('view-calendar');
     const monthNav=document.getElementById('cal-month-nav');
+    const listFilters=document.getElementById('list-filters');
+    const filterExpand=document.getElementById('filter-expand');
     const btnList=document.getElementById('view-btn-list');
     const btnCal=document.getElementById('view-btn-calendar');
 
@@ -2193,6 +2195,7 @@ function switchOrderView(mode){
         listEl.classList.remove('hidden');
         calEl.classList.add('hidden');
         monthNav.classList.remove('flex');monthNav.classList.add('hidden');
+        listFilters.classList.remove('hidden');
         btnList.style.cssText='background:var(--pine);color:white';
         btnCal.style.cssText='color:#64748b';
         loadOrders();
@@ -2200,6 +2203,8 @@ function switchOrderView(mode){
         listEl.classList.add('hidden');
         calEl.classList.remove('hidden');
         monthNav.classList.remove('hidden');monthNav.classList.add('flex');
+        listFilters.classList.add('hidden');
+        filterExpand.classList.add('hidden'); // 收合展開區
         btnCal.style.cssText='background:var(--pine);color:white';
         btnList.style.cssText='color:#64748b';
         renderCalendar();
