@@ -192,18 +192,22 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
       <div class="tsub">Print Station</div>
     </div>
   </div>
-  <span class="tbadge" id="topbar-date"></span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span class="tbadge" id="topbar-date"></span>
+    <button id="topbar-install-btn" onclick="triggerInstall()"
+      style="display:none;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.35);color:white;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.05em;white-space:nowrap">
+      📲 安裝 App
+    </button>
+  </div>
 </div>
 
-<!-- Install Banner -->
-<div id="install-banner" class="show">
+<!-- Install Banner（瀏覽器不支援自動安裝時的說明） -->
+<div id="install-banner">
   <div class="ib-text">
-    📲 加入主畫面，使用更方便
+    📲 加入主畫面
     <small id="ib-sub">點右上角選單 → 「新增至主畫面」</small>
   </div>
-  <button class="ib-btn" id="install-btn" style="display:none">安裝</button>
   <button class="ib-x" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
-</div>
 
 <!-- Main -->
 <div class="main">
@@ -500,44 +504,48 @@ function doPrint(){
 }
 
 // ── PWA Install ──
-// 偵測是否已在 standalone 模式（已安裝）
-const isStandalone=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
-if(isStandalone){
-  // 已是 App 模式，隱藏橫條
-  document.getElementById('install-banner').classList.remove('show');
-} else {
-  // 偵測平台，顯示對應說明
-  const ua=navigator.userAgent.toLowerCase();
-  const isIOS=/iphone|ipad|ipod/.test(ua);
-  const isAndroid=/android/.test(ua);
-  const sub=document.getElementById('ib-sub');
-  if(isIOS){
-    sub.textContent='點底部分享 ⎙ → 加入主畫面';
-  } else if(isAndroid){
-    sub.textContent='點右上角 ⋮ → 新增至主畫面';
-  } else {
-    sub.textContent='在手機上開啟，即可加入主畫面';
-  }
+let deferredPrompt=null;
 
-  // Chrome Android 原生安裝提示
-  let deferredPrompt=null;
-  window.addEventListener('beforeinstallprompt',e=>{
-    e.preventDefault();
-    deferredPrompt=e;
-    const btn=document.getElementById('install-btn');
-    btn.style.display='block';
-    document.getElementById('ib-sub').textContent='點右側按鈕一鍵安裝';
-    btn.onclick=()=>{
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(()=>{
-        deferredPrompt=null;
-        document.getElementById('install-banner').classList.remove('show');
-      });
-    };
-  });
-  window.addEventListener('appinstalled',()=>{
-    document.getElementById('install-banner').classList.remove('show');
-  });
+function triggerInstall(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{
+      deferredPrompt=null;
+      document.getElementById('topbar-install-btn').style.display='none';
+      document.getElementById('install-banner').classList.remove('show');
+    });
+  } else {
+    // 瀏覽器不支援自動安裝，顯示說明橫條
+    document.getElementById('install-banner').classList.add('show');
+  }
+}
+
+// 偵測平台，預設說明文字
+(function(){
+  const ua=navigator.userAgent.toLowerCase();
+  const sub=document.getElementById('ib-sub');
+  if(/iphone|ipad|ipod/.test(ua)) sub.textContent='點底部分享 ⎙ → 加入主畫面';
+  else if(/android/.test(ua)) sub.textContent='點右上角 ⋮ → 新增至主畫面';
+  else sub.textContent='在手機上開啟，即可加入主畫面';
+})();
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  // 有原生安裝支援，顯示頂欄按鈕
+  document.getElementById('topbar-install-btn').style.display='block';
+  document.getElementById('ib-sub').textContent='點右上角「安裝 App」一鍵安裝';
+});
+
+window.addEventListener('appinstalled',()=>{
+  deferredPrompt=null;
+  document.getElementById('topbar-install-btn').style.display='none';
+  document.getElementById('install-banner').classList.remove('show');
+});
+
+// 已是 standalone 模式（已安裝），隱藏按鈕
+if(window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches){
+  document.getElementById('topbar-install-btn').style.display='none';
 }
 </script>
 
