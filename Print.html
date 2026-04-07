@@ -8,11 +8,29 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="真珠列印">
 <meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" id="pwa-manifest">
 <link rel="apple-touch-icon" href="https://www.jinzhu.com.tw/favicon.ico">
 <link rel="icon" type="image/x-icon" href="https://www.jinzhu.com.tw/favicon.ico">
 <title>真珠 · 列印站</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// 動態注入 PWA Manifest
+(function(){
+  const manifest={
+    name:'真珠列印站',short_name:'真珠列印',
+    description:'真珠台灣佳味 · 列印站',
+    start_url:location.href,
+    display:'standalone',
+    background_color:'#004d40',
+    theme_color:'#004d40',
+    orientation:'portrait',
+    icons:[{src:'https://www.jinzhu.com.tw/favicon.ico',sizes:'any',type:'image/x-icon'}]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+  document.getElementById('pwa-manifest').href=URL.createObjectURL(blob);
+})();
+</script>
 <style>
 :root{
   --pine:#004d40;--pine2:#00695c;
@@ -208,6 +226,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <small id="ib-sub">點右上角選單 → 「新增至主畫面」</small>
   </div>
   <button class="ib-x" onclick="document.getElementById('install-banner').classList.remove('show')">✕</button>
+</div>
 
 <!-- Main -->
 <div class="main">
