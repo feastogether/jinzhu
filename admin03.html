@@ -661,6 +661,12 @@
                 <option value="created">下單日期</option>
                 <option value="booking">訂位日期</option>
             </select>
+            <select id="report-sort" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
+                <option value="created_desc">下單↓新到舊</option>
+                <option value="created_asc">下單↑舊到新</option>
+                <option value="booking_asc">訂位↑早到晚</option>
+                <option value="booking_desc">訂位↓晚到早</option>
+            </select>
             <div class="flex gap-1">
                 <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="syncReportDateType();rptPreset('today');fetchData()">今日</button>
                 <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="syncReportDateType();rptPreset('week');fetchData()">本週</button>
@@ -721,15 +727,19 @@
     </div>
     <input type="hidden" id="r-run-btn">
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div class="kpi-card green"><div class="kpi-label">訂單數</div><div class="kpi-value" id="kpi-orders">—</div><div class="kpi-unit">筆</div></div>
-        <div class="kpi-card gold"><div class="kpi-label">大人</div><div class="kpi-value" id="kpi-adult">—</div><div class="kpi-unit">位</div></div>
-        <div class="kpi-card gold"><div class="kpi-label">小孩</div><div class="kpi-value" id="kpi-kid">—</div><div class="kpi-unit">位</div></div>
-        <div class="kpi-card gold"><div class="kpi-label">兒童</div><div class="kpi-value" id="kpi-child">—</div><div class="kpi-unit">位</div></div>
-        <div class="kpi-card blue"><div class="kpi-label">總人數</div><div class="kpi-value" id="kpi-people">—</div><div class="kpi-unit">位</div></div>
-        <div class="kpi-card green"><div class="kpi-label">套餐</div><div class="kpi-value" id="kpi-sets">—</div><div class="kpi-unit">組</div></div>
-        <div class="kpi-card slate"><div class="kpi-label">品項</div><div class="kpi-value" id="kpi-items">—</div><div class="kpi-unit">種</div></div>
-        <div class="kpi-card red"><div class="kpi-label">預估營收</div><div class="kpi-value text-xl" id="kpi-rev">—</div><div class="kpi-unit">元</div></div>
+    <div class="bg-white rounded-2xl border shadow-sm px-4 py-2.5 flex items-center flex-wrap gap-x-5 gap-y-2">
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">訂單</span><span class="font-serif font-black text-base" style="color:var(--pine)" id="kpi-orders">—</span><span class="text-[10px] text-slate-400">筆</span></div>
+        <div style="width:1px;height:14px;background:var(--border)"></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">大人</span><span class="font-serif font-black text-base" style="color:var(--gold)" id="kpi-adult">—</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">小孩</span><span class="font-serif font-black text-base" style="color:var(--gold)" id="kpi-kid">—</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">兒童</span><span class="font-serif font-black text-base" style="color:var(--gold)" id="kpi-child">—</span></div>
+        <div style="width:1px;height:14px;background:var(--border)"></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">總人數</span><span class="font-serif font-black text-base" style="color:#3b82f6" id="kpi-people">—</span><span class="text-[10px] text-slate-400">位</span></div>
+        <div style="width:1px;height:14px;background:var(--border)"></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">套餐</span><span class="font-serif font-black text-base" style="color:var(--pine)" id="kpi-sets">—</span><span class="text-[10px] text-slate-400">組</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">品項</span><span class="font-serif font-black text-base" style="color:var(--stone)" id="kpi-items">—</span><span class="text-[10px] text-slate-400">種</span></div>
+        <div style="width:1px;height:14px;background:var(--border)"></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">預估營收</span><span class="font-serif font-black text-base" style="color:#f43f5e" id="kpi-rev">—</span></div>
     </div>
 
     <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
@@ -1887,16 +1897,18 @@ async function fetchData(){
     const st=document.getElementById('r-s-time').value||'00:00',et=document.getElementById('r-e-time').value||'23:59';
     const cam=document.getElementById('report-campaign').value;
     const dateType=document.getElementById('report-date-type')?.value||'created';
+    const sortVal=document.getElementById('report-sort')?.value||'created_desc';
     if(!sd||!ed){toast('請選擇日期區間','warn');return;}
     const lbl=document.getElementById('r-run-lbl');
     if(lbl) lbl.innerHTML='<span class="rpt-spin"></span>';
-    let q=_s.from('orders').select('*').order('created_at',{ascending:true});
+    const sortField=sortVal.startsWith('booking')?'booking_date':'created_at';
+    const sortAsc=sortVal.endsWith('_asc');
+    let q=_s.from('orders').select('*').order(sortField,{ascending:sortAsc});
+    if(sortField==='booking_date') q=q.order('created_at',{ascending:false});
     if(cam==='none')q=q.is('campaign_code',null);else if(cam!=='all')q=q.eq('campaign_code',cam);
     if(dateType==='booking'){
-        // 訂位日期篩選（台灣時間 +08:00）
         q=q.gte('booking_date',`${sd}T${st}:00+08:00`).lte('booking_date',`${ed}T${et}:59+08:00`);
     } else {
-        // 下單日期篩選（UTC）
         q=q.gte('created_at',`${sd}T${st}:00`).lte('created_at',`${ed}T${et}:59`);
     }
     const{data:orders,error}=await q;
@@ -1936,7 +1948,82 @@ function renderReports(orders){
     document.getElementById('order-count-tag').textContent=`${orders.length} 筆`;
     document.getElementById('dish-summary-body').innerHTML=sorted.length===0?`<tr><td colspan="4" class="text-center py-10 text-slate-300 font-bold text-sm">查無資料</td></tr>`:sorted.map(([name,count],i)=>`<tr class="hover:bg-slate-50 transition"><td class="px-5 py-3 text-xs font-bold text-slate-300">${i+1}</td><td class="px-5 py-3 font-bold text-slate-700">${name}</td><td class="px-5 py-3 text-right"><span class="font-serif font-black text-xl" style="color:var(--pine)">${count}</span><span class="text-xs text-slate-300 ml-1">份</span></td><td class="px-5 py-3"><div style="background:#f1f5f9;border-radius:999px;height:5px;overflow:hidden"><div style="background:var(--gold);height:100%;width:${Math.round(count/maxQty*100)}%;border-radius:999px;transition:width .4s"></div></div></td></tr>`).join('');
     document.getElementById('set-menu-body').innerHTML=Object.keys(setMenuCount).length===0?`<p class="text-center py-8 text-slate-300 font-bold text-sm">查無套餐訂單</p>`:Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`<div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border"><div><div class="font-bold" style="color:var(--pine)">${name}</div><div class="text-xs text-slate-400 mt-0.5">套餐組合</div></div><div class="flex items-baseline gap-1"><span class="font-serif font-black text-2xl text-amber-600">${count}</span><span class="text-xs text-slate-300 font-bold">組</span></div></div>`).join('');
-    document.getElementById('order-detail-container').innerHTML=orders.length===0?`<div class="text-center py-16 text-slate-300 font-bold">查無訂單資料</div>`:orders.map((o,idx)=>`<div class="bg-white rounded-2xl border shadow-sm overflow-hidden"><div class="flex justify-between items-start p-4" style="background:linear-gradient(135deg,#004d40,#00695c)"><div><div class="text-xs font-bold" style="color:rgba(255,255,255,.4)">#${String(idx+1).padStart(3,'0')}</div><div class="text-lg font-black text-white font-serif">${o.customer_name||'—'}</div><div class="text-xs font-bold" style="color:#d4a85a">${o.phone||'—'}</div></div><div class="text-right"><div class="text-xs" style="color:rgba(255,255,255,.4)">${new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>${o.campaign_code?`<span class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(184,145,80,.3);color:#d4a85a">${o.campaign_code}</span>`:''}</div></div><div class="px-4 py-3 border-b border-slate-50 flex flex-wrap gap-2">${o.table_no?`<span class="bg-slate-50 rounded-lg px-3 py-1 text-xs font-bold text-slate-500">桌 <span style="color:var(--pine)">${o.table_no}</span></span>`:''}<span class="bg-slate-50 rounded-lg px-3 py-1 text-xs font-bold text-slate-500">大人 <span style="color:var(--pine)">${o.adult_count||0}</span></span><span class="bg-slate-50 rounded-lg px-3 py-1 text-xs font-bold text-slate-500">小孩 <span style="color:var(--pine)">${o.kid_count||0}</span></span><span class="bg-slate-50 rounded-lg px-3 py-1 text-xs font-bold text-slate-500">兒童 <span style="color:var(--pine)">${o.child_count||0}</span></span><span class="bg-slate-50 rounded-lg px-3 py-1 text-xs font-bold text-slate-500">合計 <span class="text-amber-600">$${o.total_price||0}</span></span></div><div class="px-4 py-2">${(o.order_content||[]).map(item=>`<div class="flex justify-between py-2 border-b border-slate-50 last:border-0 text-xs"><span class="text-slate-600">• ${item.name}</span><span class="font-bold text-amber-600 ml-3">$${item.price}</span></div>`).join('')}</div>${o.note?`<div class="mx-4 mb-3 px-3 py-2 text-xs font-bold rounded-lg" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}</div>`).join('');
+    document.getElementById('order-detail-container').innerHTML=orders.length===0
+        ?`<div class="text-center py-16 text-slate-300 font-bold">查無訂單資料</div>`
+        :orders.map((o,idx)=>{
+        let bTime='';
+        if(o.booking_date){
+            const utc=new Date(o.booking_date);
+            const tw=new Date(utc.getTime()+8*60*60*1000);
+            bTime=`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}T${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`;
+        }
+        const synced=o.status==='synced';
+        // 解析套餐/單點
+        const sets=[],singles={};
+        (o.order_content||[]).forEach(item=>{
+            const qM=item.name.match(/ x(\d+)/),qty=qM?parseInt(qM[1]):1;
+            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
+            if(inner&&inner.includes('、')){
+                const brand=clean.slice(0,pIdx).trim(),subs={};
+                inner.split('、').forEach(sub=>{const sM=sub.match(/ x(\d+)/),sq=sM?parseInt(sM[1]):1;const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();if(s)subs[s]=(subs[s]||0)+qty*sq;});
+                sets.push({brand,qty,subs});
+            } else {singles[clean]=(singles[clean]||0)+qty;}
+        });
+        let itemsHtml='';
+        sets.forEach(set=>{
+            itemsHtml+=`<div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:8px">
+                <div style="background:rgba(184,145,80,0.08);padding:6px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(184,145,80,0.2)">
+                    <span style="font-weight:900;font-size:12px;color:var(--gold)">🍱 ${set.brand}</span>
+                    <span style="font-weight:900;font-size:13px;color:var(--gold)">${set.qty} 套</span>
+                </div>
+                <div style="padding:4px 12px">
+                ${Object.entries(set.subs).map(([n,c])=>`<div class="order-item-row"><div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><div class="order-item-name" style="font-size:11px">${n}</div><div style="font-weight:900;color:var(--pine);font-size:12px">${c}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
+                </div>
+            </div>`;
+        });
+        const singleEntries=Object.entries(singles);
+        if(singleEntries.length){
+            itemsHtml+=`<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
+                <div style="background:#f8fafc;padding:6px 12px;border-bottom:1px solid var(--border)">
+                    <span style="font-weight:900;font-size:11px;color:var(--stone);text-transform:uppercase;letter-spacing:.1em">單點</span>
+                </div>
+                <div style="padding:4px 12px">
+                ${singleEntries.map(([n,c])=>`<div class="order-item-row"><div class="order-item-dot"></div><div class="order-item-name">${n}</div><div style="font-weight:900;color:var(--pine);font-size:13px">${c}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
+                </div>
+            </div>`;
+        }
+        return`<div class="order-card collapsed">
+            <div class="order-header" onclick="this.parentElement.classList.toggle('collapsed');const cv=document.getElementById('rpt-chevron-${o.id}');if(cv)cv.style.transform=this.parentElement.classList.contains('collapsed')?'':'rotate(180deg)'">
+                <div class="order-status-dot ${synced?'synced':'pending'}"></div>
+                <div class="order-name">${o.customer_name||'—'}</div>
+                <span class="text-xs font-bold" style="color:var(--stone);flex-shrink:0">${o.phone||'—'}</span>
+                <span class="order-badge ${synced?'synced':'pending'}">${synced?'已完成':'準備中'}</span>
+                <div class="order-amount">$${o.total_price}</div>
+                <div class="ml-1 text-right flex-shrink-0">
+                    <div class="order-time-badge">${new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+                    ${bTime?`<div style="font-size:10px;font-weight:900;color:#dc2626;margin-top:2px">📅 ${bTime.slice(5).replace('T',' ')}</div>`:''}
+                </div>
+                <svg id="rpt-chevron-${o.id}" class="w-4 h-4 text-slate-300 flex-shrink-0 ml-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+            <div class="order-body">
+                <div class="order-section">
+                    <div class="order-section-label">🍱 餐點明細</div>
+                    ${itemsHtml}
+                    ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
+                </div>
+                <div class="order-section" style="background:#f8fafc;border-radius:12px;padding:12px 14px">
+                    <div class="flex flex-wrap gap-2 text-xs">
+                        ${o.table_no?`<span class="font-bold" style="color:var(--pine)">桌號：${o.table_no}</span><span style="color:var(--border)">·</span>`:''}
+                        ${o.adult_count?`<span>大人 <b style="color:var(--pine)">${o.adult_count}</b></span>`:''}
+                        ${o.kid_count?`<span>小孩 <b style="color:var(--pine)">${o.kid_count}</b></span>`:''}
+                        ${o.child_count?`<span>兒童 <b style="color:var(--pine)">${o.child_count}</b></span>`:''}
+                        ${o.campaign_code?`<span class="font-bold px-2 py-0.5 rounded-full text-[10px]" style="background:rgba(184,145,80,.12);color:var(--gold)">${o.campaign_code}</span>`:''}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
     window.lastData={dishCount,setMenuCount,sorted,orders,totalAdult,totalKid,totalChild,totalRev,totalSets};
 }
 function rptTab(name){
