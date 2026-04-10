@@ -696,14 +696,14 @@
     <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-2">
         <!-- 常駐列 -->
         <div class="flex items-center gap-2 px-3 py-2 border-b border-slate-100 flex-wrap">
-            <select id="report-date-type-quick" onchange="document.getElementById('report-date-type').value=this.value" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
+            <select id="report-date-type-quick" onchange="document.getElementById('report-date-type').value=this.value;document.getElementById('report-sort').value=this.value==='booking'?'booking_asc':'created_desc'" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
                 <option value="created">下單日期</option>
-                <option value="booking">訂位日期</option>
+                <option value="booking" selected>訂位日期</option>
             </select>
             <select id="report-sort" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
                 <option value="created_desc">下單↓新到舊</option>
                 <option value="created_asc">下單↑舊到新</option>
-                <option value="booking_asc">訂位↑早到晚</option>
+                <option value="booking_asc" selected>訂位↑早到晚</option>
                 <option value="booking_desc">訂位↓晚到早</option>
             </select>
             <div class="flex gap-1">
@@ -730,7 +730,7 @@
                     <label class="filter-label">日期類型</label>
                     <select id="report-date-type" class="filter-select" style="width:100%">
                         <option value="created">下單日期</option>
-                        <option value="booking">訂位日期</option>
+                        <option value="booking" selected>訂位日期</option>
                     </select>
                 </div>
                 <div>
@@ -1932,17 +1932,9 @@ function copyEventLink(code){const url=`https://jinzhu.vercel.app/event.html?cod
 
 // ── REPORT ──
 async function initReport(){
-    // 只有第一次進入才設定預設日期，避免每次切換都重置
+    // 只有第一次進入才設定預設日期
     if(!document.getElementById('r-s-date').value){
         rptPreset('today');
-    }
-    // 預設下單日期（created）
-    const quick=document.getElementById('report-date-type-quick');
-    const full=document.getElementById('report-date-type');
-    if(quick&&!quick.dataset.init){
-        quick.value='created';
-        if(full) full.value='created';
-        quick.dataset.init='1';
     }
     const{data}=await _s.from('campaign_settings').select('*');
     const sel=document.getElementById('report-campaign');
