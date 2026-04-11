@@ -574,16 +574,30 @@
 
 <!-- 分類管理 -->
 <section id="sec-categories" class="hidden space-y-6">
-    
-    <div class="bg-white p-6 rounded-2xl border max-w-2xl shadow-sm">
+    <div class="bg-white p-6 rounded-2xl border shadow-sm">
         <div class="flex gap-2 mb-6">
             <input id="new-cat" class="filter-input flex-1" placeholder="新分類名稱">
             <button onclick="addCat()" class="btn btn-primary">新增</button>
         </div>
-        <table class="w-full text-sm text-left">
-            <thead><tr class="text-slate-400 border-b text-xs uppercase tracking-widest"><th class="p-3">排序</th><th class="p-3">名稱（中）</th><th class="p-3">EN</th><th class="p-3">日本語</th><th class="p-3">한국어</th><th class="p-3">顯示</th><th class="p-3">操作</th></tr></thead>
-            <tbody id="cat-list-table"></tbody>
-        </table>
+        <div class="text-xs text-slate-400 font-bold mb-3 flex items-center gap-2">
+            <span>⠿</span><span>可拖曳列調整順序，放開後自動儲存</span>
+        </div>
+        <div class="overflow-x-auto rounded-xl border border-slate-100">
+            <table class="w-full text-sm text-left" style="min-width:700px">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-400 border-b text-xs uppercase tracking-widest">
+                        <th class="p-3 w-8"></th>
+                        <th class="p-3 whitespace-nowrap">名稱（中文）</th>
+                        <th class="p-3 whitespace-nowrap">English</th>
+                        <th class="p-3 whitespace-nowrap">日本語</th>
+                        <th class="p-3 whitespace-nowrap">한국어</th>
+                        <th class="p-3 whitespace-nowrap text-center">顯示</th>
+                        <th class="p-3 whitespace-nowrap">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="cat-list-table"></tbody>
+            </table>
+        </div>
     </div>
 </section>
 
@@ -1615,20 +1629,59 @@ async function delCampaign(id){const ok=await confirm2({icon:'🗑',title:'刪�
 async function loadCats(){
     const{data}=await _s.from('categories').select('*').order('sort_order');
     allCategories=data||[];
-    document.getElementById('cat-list-table').innerHTML=data.map(c=>`<tr class="border-b hover:bg-slate-50 transition text-sm text-left">
-        <td class="p-3"><input type="number" value="${c.sort_order||0}" onchange="updateCatSort('${c.id}',this.value)" class="w-14 border rounded-lg text-xs p-1 text-center"></td>
-        <td class="p-3 font-bold" style="color:var(--pine)">${c.name}</td>
-        <td class="p-3"><input type="text" value="${c.name_en||''}" onchange="updateCatLang('${c.id}','name_en',this.value)" placeholder="English" class="border rounded-lg text-xs p-1 w-24"></td>
-        <td class="p-3"><input type="text" value="${c.name_ja||''}" onchange="updateCatLang('${c.id}','name_ja',this.value)" placeholder="日本語" class="border rounded-lg text-xs p-1 w-24"></td>
-        <td class="p-3"><input type="text" value="${c.name_ko||''}" onchange="updateCatLang('${c.id}','name_ko',this.value)" placeholder="한국어" class="border rounded-lg text-xs p-1 w-24"></td>
-        <td class="p-3"><input type="checkbox" ${c.is_visible?'checked':''} onchange="updateCatVis('${c.id}',this.checked)" class="accent-green-700 w-4 h-4"></td>
-        <td class="p-3"><button onclick="delCat('${c.id}')" class="btn btn-danger btn-sm">刪除</button></td>
-    </tr>`).join('');
+    document.getElementById('cat-list-table').innerHTML=data.map(c=>`
+        <tr class="border-b hover:bg-slate-50 transition text-sm text-left cat-drag-row"
+            draggable="true" data-cat-id="${c.id}"
+            ondragstart="catDragStart(event)"
+            ondragover="catDragOver(event)"
+            ondrop="catDrop(event)"
+            ondragend="catDragEnd(event)">
+            <td class="p-3 cursor-grab text-slate-300 text-base select-none">⠿</td>
+            <td class="p-3 font-bold whitespace-nowrap" style="color:var(--pine)">${c.name}</td>
+            <td class="p-3"><input type="text" value="${c.name_en||''}" onchange="updateCatLang('${c.id}','name_en',this.value)" placeholder="English" class="border rounded-lg text-xs p-1.5 w-28 outline-none focus:border-green-700"></td>
+            <td class="p-3"><input type="text" value="${c.name_ja||''}" onchange="updateCatLang('${c.id}','name_ja',this.value)" placeholder="日本語" class="border rounded-lg text-xs p-1.5 w-28 outline-none focus:border-green-700"></td>
+            <td class="p-3"><input type="text" value="${c.name_ko||''}" onchange="updateCatLang('${c.id}','name_ko',this.value)" placeholder="한국어" class="border rounded-lg text-xs p-1.5 w-28 outline-none focus:border-green-700"></td>
+            <td class="p-3 text-center"><input type="checkbox" ${c.is_visible?'checked':''} onchange="updateCatVis('${c.id}',this.checked)" class="accent-green-700 w-4 h-4"></td>
+            <td class="p-3"><button onclick="delCat('${c.id}')" class="btn btn-danger btn-sm">刪除</button></td>
+        </tr>`).join('');
     document.getElementById('m-cat').innerHTML=(data||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
     document.getElementById('menu-cat-filter').innerHTML='<option value="all">所有分類</option>'+(data||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
 }
+
+// ── 分類拖曳排序 ──
+let catDragSrcId=null;
+function catDragStart(e){
+    catDragSrcId=e.currentTarget.dataset.catId;
+    e.currentTarget.style.opacity='0.4';
+    e.dataTransfer.effectAllowed='move';
+}
+function catDragEnd(e){
+    e.currentTarget.style.opacity='1';
+    document.querySelectorAll('.cat-drag-row').forEach(r=>r.classList.remove('bg-amber-50','ring-2','ring-amber-300'));
+}
+function catDragOver(e){
+    e.preventDefault();
+    e.dataTransfer.dropEffect='move';
+    e.currentTarget.classList.add('bg-amber-50');
+}
+async function catDrop(e){
+    e.preventDefault();
+    const targetId=e.currentTarget.dataset.catId;
+    e.currentTarget.classList.remove('bg-amber-50');
+    if(!catDragSrcId||catDragSrcId===targetId)return;
+    const tbody=document.getElementById('cat-list-table');
+    const rows=Array.from(tbody.querySelectorAll('tr'));
+    const si=rows.findIndex(r=>r.dataset.catId===catDragSrcId);
+    const ti=rows.findIndex(r=>r.dataset.catId===targetId);
+    if(si<ti) tbody.insertBefore(rows[si],rows[ti].nextSibling);
+    else tbody.insertBefore(rows[si],rows[ti]);
+    // 儲存新順序
+    const newOrder=Array.from(tbody.querySelectorAll('tr')).map((r,i)=>({id:r.dataset.catId,sort_order:i}));
+    for(const o of newOrder) await _s.from('categories').update({sort_order:o.sort_order}).eq('id',o.id);
+    toast('分類順序已儲存 ✓');
+    await loadCats();
+}
 async function updateCatVis(id,b){await _s.from('categories').update({is_visible:b}).eq('id',id);toast(b?'分類已顯示':'分類已隱藏');}
-async function updateCatSort(id,v){await _s.from('categories').update({sort_order:parseInt(v)}).eq('id',id);toast('排序已更新');}
 async function updateCatLang(id,field,val){await _s.from('categories').update({[field]:val||null}).eq('id',id);toast('已更新');}
 async function addCat(){const n=document.getElementById('new-cat').value.trim();if(!n)return;await _s.from('categories').insert([{name:n,sort_order:99,is_visible:true}]);loadCats();toast(`分類「${n}」已新增`);}
 async function delCat(id){const ok=await confirm2({icon:'🗑',title:'刪除分類',msg:'確定刪除此分類？',okText:'刪除',danger:true});if(ok){await _s.from('categories').delete().eq('id',id);loadCats();toast('已刪除');}}
