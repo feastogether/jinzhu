@@ -313,20 +313,61 @@
 
 <!-- ── FLAVOR GROUP MODAL ── -->
 <div id="flavor-modal">
-    <div id="flavor-modal-box">
-        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:var(--pine);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)">新增口味選項組</h3>
-        <div style="margin-bottom:16px">
-            <label style="display:block;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--stone);margin-bottom:8px">組名稱</label>
-            <input id="flv-modal-name" type="text" placeholder="例：辣度、湯底、口味" class="filter-input" style="font-size:14px">
+    <div id="flavor-modal-box" style="max-width:500px;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+            <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:var(--pine)" id="flv-modal-title">口味選項組</h3>
+            <button onclick="closeFlavorModal()" style="color:#94a3b8;font-size:1.3rem;background:none;border:none;cursor:pointer">✕</button>
         </div>
-        <div style="margin-bottom:24px">
-            <label style="display:block;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--stone);margin-bottom:8px">選項（逗號隔開）</label>
-            <input id="flv-modal-opts" type="text" placeholder="例：不辣、小辣、中辣、大辣" class="filter-input" style="font-size:14px">
-            <p style="font-size:10px;color:#94a3b8;margin-top:6px">輸入後用逗號「,」分隔，可多個</p>
+
+        <!-- STEP 1：後台標籤名稱 -->
+        <div id="flv-step-1">
+            <div style="background:#f0fdf4;border-radius:12px;padding:14px 16px;margin-bottom:20px;border-left:3px solid var(--pine)">
+                <p style="font-size:11px;font-weight:700;color:var(--pine);margin-bottom:4px">① 後台標籤名稱</p>
+                <p style="font-size:11px;color:var(--stone)">只有後台看得到，用來讓自己辨識這個口味選項組是給哪個品項用的</p>
+            </div>
+            <label style="display:block;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--stone);margin-bottom:8px">後台標籤（備忘用）</label>
+            <input id="flv-admin-label" type="text" placeholder="例：A套餐-辣度、滷肉飯-口味" class="filter-input" style="font-size:14px;margin-bottom:24px">
+            <div class="confirm-actions">
+                <button class="confirm-cancel" onclick="closeFlavorModal()">取消</button>
+                <button class="confirm-ok primary" onclick="flvNextStep(1)">下一步 →</button>
+            </div>
         </div>
-        <div class="confirm-actions">
-            <button class="confirm-cancel" onclick="closeFlavorModal()">取消</button>
-            <button class="confirm-ok primary" onclick="saveFlvGroup()">建立選項組</button>
+
+        <!-- STEP 2：口味名稱（顯示給客人，四語言）-->
+        <div id="flv-step-2" style="display:none">
+            <div style="background:#fffbeb;border-radius:12px;padding:14px 16px;margin-bottom:20px;border-left:3px solid var(--gold)">
+                <p style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:4px">② 口味組名稱（客人看到的）</p>
+                <p style="font-size:11px;color:var(--stone)">例如「辣度」、「Spice Level」，顯示在菜單選項的標題</p>
+            </div>
+            <!-- 語言 tab -->
+            <div class="flex bg-slate-100 rounded-xl p-1 gap-0.5 mb-4">
+                <button onclick="flvLangTab('zh')" id="flvtab-zh" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-700 shadow-sm">🇹🇼 中文</button>
+                <button onclick="flvLangTab('en')" id="flvtab-en" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇺🇸 EN</button>
+                <button onclick="flvLangTab('ja')" id="flvtab-ja" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇯🇵 日本語</button>
+                <button onclick="flvLangTab('ko')" id="flvtab-ko" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇰🇷 한국어</button>
+            </div>
+            <div id="flvname-zh"><input id="flv-display-name" type="text" placeholder="例：辣度" class="filter-input" style="font-size:14px"></div>
+            <div id="flvname-en" style="display:none"><input id="flv-display-name-en" type="text" placeholder="e.g. Spice Level" class="filter-input" style="font-size:14px"></div>
+            <div id="flvname-ja" style="display:none"><input id="flv-display-name-ja" type="text" placeholder="例：辛さ" class="filter-input" style="font-size:14px"></div>
+            <div id="flvname-ko" style="display:none"><input id="flv-display-name-ko" type="text" placeholder="예：맵기" class="filter-input" style="font-size:14px"></div>
+            <div class="confirm-actions" style="margin-top:24px">
+                <button class="confirm-cancel" onclick="flvPrevStep(2)">← 上一步</button>
+                <button class="confirm-ok primary" onclick="flvNextStep(2)">下一步 →</button>
+            </div>
+        </div>
+
+        <!-- STEP 3：選項列表（四語言）-->
+        <div id="flv-step-3" style="display:none">
+            <div style="background:#f0f9ff;border-radius:12px;padding:14px 16px;margin-bottom:20px;border-left:3px solid #3b82f6">
+                <p style="font-size:11px;font-weight:700;color:#1e40af;margin-bottom:4px">③ 選項（客人可選的內容）</p>
+                <p style="font-size:11px;color:var(--stone)">每個選項可填四種語言，點「＋ 新增選項」逐一新增</p>
+            </div>
+            <div id="flv-opts-list" class="space-y-3 mb-4"></div>
+            <button onclick="addFlvOptRow()" class="btn btn-ghost btn-sm w-full justify-center" style="border-style:dashed">＋ 新增選項</button>
+            <div class="confirm-actions" style="margin-top:24px">
+                <button class="confirm-cancel" onclick="flvPrevStep(3)">← 上一步</button>
+                <button class="confirm-ok primary" onclick="saveFlvGroup()">✓ 儲存</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1687,31 +1728,202 @@ async function addCat(){const n=document.getElementById('new-cat').value.trim();
 async function delCat(id){const ok=await confirm2({icon:'🗑',title:'刪除分類',msg:'確定刪除此分類？',okText:'刪除',danger:true});if(ok){await _s.from('categories').delete().eq('id',id);loadCats();toast('已刪除');}}
 
 // ── FLAVORS ──
+let flvEditId=null; // 編輯中的 group id（null = 新增）
+
 async function loadFlvs(){
     const{data}=await _s.from('flavor_groups').select('*,flavor_options(*)');
     const grid=document.getElementById('flv-grid');
-    if(!data?.length){grid.innerHTML=`<div class="col-span-2 empty-state"><div class="empty-state-icon">🌶️</div><div class="empty-state-title">尚無口味選項組</div><div class="empty-state-sub">點右上角「新增選項組」開始設定</div></div>`;return;}
-    grid.innerHTML=data.map(g=>`<div class="bg-white p-5 rounded-2xl border shadow-sm"><div class="flex justify-between items-start mb-3"><b class="text-sm" style="color:var(--pine)">🌶️ ${g.name}</b><button onclick="delFlv('${g.id}')" class="text-red-300 hover:text-red-500 font-bold text-xl transition">✕</button></div><div class="flex flex-wrap gap-1">${(g.flavor_options||[]).map(o=>`<span class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(184,145,80,.1);color:var(--gold)">${o.option_name}</span>`).join('')}</div></div>`).join('');
+    if(!data?.length){
+        grid.innerHTML=`<div class="col-span-2 empty-state"><div class="empty-state-icon">🌶️</div><div class="empty-state-title">尚無口味選項組</div><div class="empty-state-sub">點右上角「新增選項組」開始設定</div></div>`;
+        return;
+    }
+    grid.innerHTML=data.map(g=>`
+        <div class="bg-white p-5 rounded-2xl border shadow-sm">
+            <div class="flex justify-between items-start mb-1">
+                <div>
+                    <div class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">後台標籤</div>
+                    <b class="text-sm" style="color:var(--pine)">🌶️ ${g.admin_label||g.name}</b>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="editFlv('${g.id}')" class="btn btn-ghost btn-sm">編輯</button>
+                    <button onclick="delFlv('${g.id}')" class="text-red-300 hover:text-red-500 font-bold text-xl transition px-1">✕</button>
+                </div>
+            </div>
+            ${g.display_name?`<div class="text-xs text-slate-500 mb-3">顯示名稱：${g.display_name}${g.display_name_en?' / '+g.display_name_en:''}${g.display_name_ja?' / '+g.display_name_ja:''}${g.display_name_ko?' / '+g.display_name_ko:''}</div>`:''}
+            <div class="flex flex-wrap gap-1">
+                ${(g.flavor_options||[]).map(o=>`
+                    <span class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(184,145,80,.1);color:var(--gold)">
+                        ${o.option_name}${o.option_name_en?' / '+o.option_name_en:''}
+                    </span>`).join('')}
+            </div>
+        </div>`).join('');
 }
-function addFlvGroup(){
-    document.getElementById('flv-modal-name').value='';
-    document.getElementById('flv-modal-opts').value='';
-    document.getElementById('flavor-modal').classList.add('visible');
-    setTimeout(()=>document.getElementById('flv-modal-name').focus(),100);
-}
-function closeFlavorModal(){ document.getElementById('flavor-modal').classList.remove('visible'); }
-async function saveFlvGroup(){
-    const n=document.getElementById('flv-modal-name').value.trim();
-    const o=document.getElementById('flv-modal-opts').value.trim();
-    if(!n){toast('請輸入組名','warn');return;}
-    if(!o){toast('請輸入至少一個選項','warn');return;}
-    const{data:g}=await _s.from('flavor_groups').insert([{name:n}]).select();
-    if(g)await _s.from('flavor_options').insert(o.split(',').map(nm=>({group_id:g[0].id,option_name:nm.trim()})).filter(x=>x.option_name));
-    closeFlavorModal();loadFlvs();toast(`口味組「${n}」已新增`);
-}
-async function delFlv(id){const ok=await confirm2({icon:'🌶️',title:'刪除口味組',msg:'確定刪除此口味組？',okText:'刪除',danger:true});if(ok){await _s.from('flavor_groups').delete().eq('id',id);loadFlvs();toast('已刪除');}}
 
-// ── SETTINGS ──
+function flvLangTab(lang){
+    ['zh','en','ja','ko'].forEach(l=>{
+        const d=document.getElementById(`flvname-${l}`);
+        const b=document.getElementById(`flvtab-${l}`);
+        if(d) d.style.display=l===lang?'block':'none';
+        if(b) b.className=`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${l===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+    });
+    // 同步更新選項列中的語言 tab
+    document.querySelectorAll('.opt-lang-tab').forEach(btn=>{
+        const l=btn.dataset.lang;
+        btn.className=`opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition ${l===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+        btn.closest('.opt-row')?.querySelectorAll('.opt-lang-field').forEach(f=>{
+            f.style.display=f.dataset.lang===lang?'block':'none';
+        });
+    });
+    document.querySelectorAll('.opt-lang-bg').forEach(bg=>bg.style.background=lang==='zh'?'#f8fafc':'#fffbeb');
+}
+
+function addFlvOptRow(zhVal='',enVal='',jaVal='',koVal=''){
+    const list=document.getElementById('flv-opts-list');
+    const idx=list.children.length;
+    const row=document.createElement('div');
+    row.className='opt-row';
+    row.style.cssText='background:#f8fafc;border-radius:12px;padding:12px;border:1px solid var(--border);position:relative';
+    row.innerHTML=`
+        <button onclick="this.closest('.opt-row').remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;font-weight:700">✕</button>
+        <div class="opt-lang-bg" style="display:flex;gap:4px;margin-bottom:8px;background:#f8fafc;padding:3px;border-radius:8px;width:fit-content">
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition bg-white text-slate-700 shadow-sm" data-lang="zh" onclick="syncOptLang(this,'zh')">🇹🇼</button>
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition text-slate-400" data-lang="en" onclick="syncOptLang(this,'en')">🇺🇸</button>
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition text-slate-400" data-lang="ja" onclick="syncOptLang(this,'ja')">🇯🇵</button>
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition text-slate-400" data-lang="ko" onclick="syncOptLang(this,'ko')">🇰🇷</button>
+        </div>
+        <div class="opt-lang-field" data-lang="zh"><input class="filter-input opt-zh" placeholder="中文選項名（例：不辣）" value="${zhVal}" style="font-size:13px"></div>
+        <div class="opt-lang-field" data-lang="en" style="display:none"><input class="filter-input opt-en" placeholder="English (e.g. No Spice)" value="${enVal}" style="font-size:13px"></div>
+        <div class="opt-lang-field" data-lang="ja" style="display:none"><input class="filter-input opt-ja" placeholder="日本語（例：辛くない）" value="${jaVal}" style="font-size:13px"></div>
+        <div class="opt-lang-field" data-lang="ko" style="display:none"><input class="filter-input opt-ko" placeholder="한국어（예：안맵게）" value="${koVal}" style="font-size:13px"></div>
+    `;
+    list.appendChild(row);
+}
+
+function syncOptLang(btn, lang){
+    // 只更新這個 row 的 tab 狀態
+    const row=btn.closest('.opt-row');
+    row.querySelectorAll('.opt-lang-tab').forEach(b=>{
+        b.className=`opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition ${b.dataset.lang===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+    });
+    row.querySelectorAll('.opt-lang-field').forEach(f=>{
+        f.style.display=f.dataset.lang===lang?'block':'none';
+    });
+}
+
+function flvNextStep(current){
+    if(current===1){
+        const label=document.getElementById('flv-admin-label').value.trim();
+        if(!label){toast('請填寫後台標籤名稱','warn');return;}
+        document.getElementById('flv-step-1').style.display='none';
+        document.getElementById('flv-step-2').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組 — 顯示名稱';
+    } else if(current===2){
+        const name=document.getElementById('flv-display-name').value.trim();
+        if(!name){toast('請填寫中文顯示名稱','warn');return;}
+        document.getElementById('flv-step-2').style.display='none';
+        document.getElementById('flv-step-3').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組 — 選項設定';
+        if(document.getElementById('flv-opts-list').children.length===0) addFlvOptRow();
+    }
+}
+
+function flvPrevStep(current){
+    if(current===2){
+        document.getElementById('flv-step-2').style.display='none';
+        document.getElementById('flv-step-1').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組';
+    } else if(current===3){
+        document.getElementById('flv-step-3').style.display='none';
+        document.getElementById('flv-step-2').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組 — 顯示名稱';
+    }
+}
+
+function addFlvGroup(){
+    flvEditId=null;
+    // 清空所有欄位
+    document.getElementById('flv-admin-label').value='';
+    document.getElementById('flv-display-name').value='';
+    document.getElementById('flv-display-name-en').value='';
+    document.getElementById('flv-display-name-ja').value='';
+    document.getElementById('flv-display-name-ko').value='';
+    document.getElementById('flv-opts-list').innerHTML='';
+    // 重置 step
+    document.getElementById('flv-step-1').style.display='block';
+    document.getElementById('flv-step-2').style.display='none';
+    document.getElementById('flv-step-3').style.display='none';
+    document.getElementById('flv-modal-title').textContent='新增口味選項組';
+    flvLangTab('zh');
+    document.getElementById('flavor-modal').classList.add('visible');
+    setTimeout(()=>document.getElementById('flv-admin-label').focus(),100);
+}
+
+async function editFlv(id){
+    const{data:g}=await _s.from('flavor_groups').select('*,flavor_options(*)').eq('id',id).single();
+    if(!g)return;
+    flvEditId=id;
+    document.getElementById('flv-admin-label').value=g.admin_label||g.name||'';
+    document.getElementById('flv-display-name').value=g.display_name||g.name||'';
+    document.getElementById('flv-display-name-en').value=g.display_name_en||'';
+    document.getElementById('flv-display-name-ja').value=g.display_name_ja||'';
+    document.getElementById('flv-display-name-ko').value=g.display_name_ko||'';
+    document.getElementById('flv-opts-list').innerHTML='';
+    (g.flavor_options||[]).forEach(o=>{
+        addFlvOptRow(o.option_name||'',o.option_name_en||'',o.option_name_ja||'',o.option_name_ko||'');
+    });
+    // 跳到 step 3（直接全部顯示）
+    document.getElementById('flv-step-1').style.display='none';
+    document.getElementById('flv-step-2').style.display='none';
+    document.getElementById('flv-step-3').style.display='block';
+    document.getElementById('flv-modal-title').textContent='編輯口味選項組';
+    flvLangTab('zh');
+    document.getElementById('flavor-modal').classList.add('visible');
+}
+
+async function saveFlvGroup(){
+    const adminLabel=document.getElementById('flv-admin-label').value.trim()||document.getElementById('flv-display-name').value.trim();
+    const displayName=document.getElementById('flv-display-name').value.trim();
+    if(!displayName){toast('請先填寫顯示名稱','warn');flvPrevStep(3);return;}
+    const opts=Array.from(document.querySelectorAll('#flv-opts-list .opt-row')).map(row=>({
+        zh:row.querySelector('.opt-zh')?.value.trim()||'',
+        en:row.querySelector('.opt-en')?.value.trim()||'',
+        ja:row.querySelector('.opt-ja')?.value.trim()||'',
+        ko:row.querySelector('.opt-ko')?.value.trim()||'',
+    })).filter(o=>o.zh);
+    if(!opts.length){toast('請至少新增一個中文選項','warn');return;}
+
+    const payload={
+        name:displayName, // 向後相容
+        admin_label:adminLabel,
+        display_name:displayName,
+        display_name_en:document.getElementById('flv-display-name-en').value.trim()||null,
+        display_name_ja:document.getElementById('flv-display-name-ja').value.trim()||null,
+        display_name_ko:document.getElementById('flv-display-name-ko').value.trim()||null,
+    };
+
+    let gid=flvEditId;
+    if(gid){
+        await _s.from('flavor_groups').update(payload).eq('id',gid);
+        await _s.from('flavor_options').delete().eq('group_id',gid);
+    } else {
+        const{data:g}=await _s.from('flavor_groups').insert([payload]).select();
+        if(g) gid=g[0].id;
+    }
+    if(gid){
+        await _s.from('flavor_options').insert(opts.map(o=>({
+            group_id:gid,
+            option_name:o.zh,
+            option_name_en:o.en||null,
+            option_name_ja:o.ja||null,
+            option_name_ko:o.ko||null,
+        })));
+        closeFlavorModal();loadFlvs();
+        toast(flvEditId?'口味組已更新':'口味組已新增');
+    }
+}
+
+function closeFlavorModal(){document.getElementById('flavor-modal').classList.remove('visible');}
+async function delFlv(id){const ok=await confirm2({icon:'🌶️',title:'刪除口味組',msg:'確定刪除此口味組？',okText:'刪除',danger:true});if(ok){await _s.from('flavor_groups').delete().eq('id',id);loadFlvs();toast('已刪除');}}
 async function loadSettings(){const{data}=await _s.from('store_settings').select('*').eq('id',1).single();if(data?.logo_url){document.getElementById('current-logo-preview').classList.remove('hidden');document.getElementById('admin-logo-img').src=`${data.logo_url}?t=${Date.now()}`;}}
 async function uploadLogo(){
     const f=document.getElementById('logo-file').files[0];
