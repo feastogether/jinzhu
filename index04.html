@@ -20,6 +20,7 @@
 
         /* NAVBAR */
         .navbar{position:fixed;top:0;left:0;right:0;height:58px;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(250,248,244,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);transition:all 0.4s;}
+        .navbar-logo-wrap{position:absolute;left:50%;transform:translateX(-50%);}
         .navbar.scrolled{box-shadow:0 4px 24px rgba(0,77,64,0.08);}
         .nav-logo{height:32px;object-fit:contain;}
         .menu-btn{background:none;border:none;cursor:pointer;width:36px;height:36px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;}
@@ -29,9 +30,17 @@
         .menu-btn.active span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
 
         /* LANG */
-        .lang-switcher{display:flex;align-items:center;gap:2px;background:rgba(0,77,64,0.07);border-radius:10px;padding:3px;}
-        .lang-btn{padding:5px 9px;border-radius:7px;border:none;background:none;font-size:11px;font-weight:700;color:var(--stone);cursor:pointer;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;}
-        .lang-btn.active{background:var(--pine);color:white;}
+        .lang-switcher{position:relative;}
+        .lang-trigger{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:10px;border:none;background:rgba(0,77,64,0.07);font-size:12px;font-weight:700;color:var(--pine);cursor:pointer;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;transition:background 0.2s;}
+        .lang-trigger:hover{background:rgba(0,77,64,0.12);}
+        .lang-trigger svg{width:12px;height:12px;transition:transform 0.2s;}
+        .lang-trigger.open svg{transform:rotate(180deg);}
+        .lang-dropdown{position:absolute;top:calc(100% + 8px);left:0;background:white;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.12);border:1px solid rgba(0,0,0,0.06);overflow:hidden;z-index:600;display:none;min-width:120px;}
+        .lang-dropdown.open{display:block;animation:fadeUp 0.2s ease both;}
+        .lang-option{display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:12px;font-weight:700;color:var(--stone);cursor:pointer;transition:background 0.15s;border:none;background:none;width:100%;font-family:'Noto Sans TC',sans-serif;white-space:nowrap;}
+        .lang-option:hover{background:rgba(0,77,64,0.06);color:var(--pine);}
+        .lang-option.active{color:var(--pine);background:rgba(0,77,64,0.06);}
+        .lang-option .lang-flag{font-size:14px;}
 
         /* SIDE MENU */
         .overlay{position:fixed;inset:0;background:rgba(20,30,25,0.6);z-index:800;opacity:0;visibility:hidden;transition:all 0.35s;backdrop-filter:blur(4px);}
@@ -231,13 +240,20 @@
 <body>
 
 <header class="navbar" id="navbar">
-    <div class="lang-switcher">
-        <button class="lang-btn active" id="lb-zh" onclick="setLang('zh')">中</button>
-        <button class="lang-btn" id="lb-en" onclick="setLang('en')">EN</button>
-        <button class="lang-btn" id="lb-ja" onclick="setLang('ja')">日</button>
-        <button class="lang-btn" id="lb-ko" onclick="setLang('ko')">한</button>
+    <div class="lang-switcher" id="lang-switcher">
+        <button class="lang-trigger" id="lang-trigger" onclick="toggleLangMenu(event)">
+            <span id="lang-current-flag">🌐</span>
+            <span id="lang-current-label">中文</span>
+            <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown">
+            <button class="lang-option active" id="lb-zh" onclick="setLang('zh')"><span class="lang-flag">🇹🇼</span>中文</button>
+            <button class="lang-option" id="lb-en" onclick="setLang('en')"><span class="lang-flag">🇺🇸</span>English</button>
+            <button class="lang-option" id="lb-ja" onclick="setLang('ja')"><span class="lang-flag">🇯🇵</span>日本語</button>
+            <button class="lang-option" id="lb-ko" onclick="setLang('ko')"><span class="lang-flag">🇰🇷</span>한국어</button>
+        </div>
     </div>
-    <a href="index.html"><img id="main-logo" class="nav-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠"></a>
+    <div class="navbar-logo-wrap"><a href="index.html"><img id="main-logo" class="nav-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠"></a></div>
     <button class="menu-btn" id="menu-btn" onclick="toggleMenu()"><span></span><span></span><span></span></button>
 </header>
 
@@ -518,14 +534,46 @@ function setLang(lang){
     localStorage.setItem('jinzhu_lang',lang);
     applyLang();
     if(allCats.length) reRenderMenu();
+    // 關閉下拉
+    document.getElementById('lang-dropdown')?.classList.remove('open');
+    document.getElementById('lang-trigger')?.classList.remove('open');
 }
 
+const LANG_META={
+    zh:{flag:'🇹🇼',label:'中文'},
+    en:{flag:'🇺🇸',label:'EN'},
+    ja:{flag:'🇯🇵',label:'日本語'},
+    ko:{flag:'🇰🇷',label:'한국어'},
+};
+
+function toggleLangMenu(e){
+    e.stopPropagation();
+    const dd=document.getElementById('lang-dropdown');
+    const tr=document.getElementById('lang-trigger');
+    const open=dd.classList.toggle('open');
+    tr.classList.toggle('open',open);
+}
+// 點外面關掉
+document.addEventListener('click',()=>{
+    document.getElementById('lang-dropdown')?.classList.remove('open');
+    document.getElementById('lang-trigger')?.classList.remove('open');
+});
+
 function applyLang(){
-    // 更新語言按鈕
+    // 更新觸發按鈕顯示
+    const meta=LANG_META[curLang]||LANG_META.zh;
+    const flagEl=document.getElementById('lang-current-flag');
+    const labelEl=document.getElementById('lang-current-label');
+    if(flagEl) flagEl.textContent=meta.flag;
+    if(labelEl) labelEl.textContent=meta.label;
+    // 更新下拉選項 active 狀態
     ['zh','en','ja','ko'].forEach(l=>{
         const b=document.getElementById('lb-'+l);
-        if(b) b.className='lang-btn'+(l===curLang?' active':'');
+        if(b) b.className='lang-option'+(l===curLang?' active':'');
     });
+    // 關閉下拉
+    document.getElementById('lang-dropdown')?.classList.remove('open');
+    document.getElementById('lang-trigger')?.classList.remove('open');
     // data-i18n → textContent
     document.querySelectorAll('[data-i18n]').forEach(el=>{
         const key=el.getAttribute('data-i18n');
@@ -773,12 +821,17 @@ function confirmAdd(){
                 if(!isInclude&&c.dataset.hasFlv==='true'&&!c.dataset.selectedFlv){showToast(`${t('noteFlavor')}【${c.dataset.name}】`);return;}
                 const chosenQty=parseInt(c.dataset.chosenQty)||1;
                 const qtyStr=chosenQty>1?` x${chosenQty}`:'';
-                sn.push(c.dataset.name+qtyStr+(c.dataset.selectedFlv?` [${c.dataset.selectedFlv}]`:''));
+                const subItem=menuData.find(m=>m.id===c.dataset.id);
+                const subName=subItem?getLangName(subItem,'name'):c.dataset.name;
+                sn.push(subName+qtyStr+(c.dataset.selectedFlv?` [${c.dataset.selectedFlv}]`:''));
             }
         }
     }
-    const name=`${tempItem.name}${currentQty>1?' x'+currentQty:''}${mn}${sn.length?' ('+sn.join('、')+')'  :''}`;
-    cart.push({name,price:tempItem.price*currentQty});
+    const displayName=getLangName(tempItem,'name');
+    const name=`${displayName}${currentQty>1?' x'+currentQty:''}${mn}${sn.length?' ('+sn.join('、')+')'  :''}`;
+    // 同時儲存中文名給後台識別
+    const nameCN=`${tempItem.name}${currentQty>1?' x'+currentQty:''}${mn}${sn.length?' ('+sn.map(s=>s).join('、')+')'  :''}`;
+    cart.push({name, nameCN, price:tempItem.price*currentQty});
     const badge=document.getElementById('cart-count');
     badge.textContent=cart.length;badge.classList.remove('badge-pop');void badge.offsetWidth;badge.classList.add('badge-pop');
     closeDetail();showToast(t('toastAdded'));
