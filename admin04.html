@@ -2284,7 +2284,7 @@ async function fetchData(){
     renderReports(orders||[]);
 }
 function renderReports(orders){
-    const dishCount={},setMenuCount={};
+    const dishCount={},setMenuCount={},setMenuDetail={};
     let totalAdult=0,totalKid=0,totalChild=0,totalRev=0;
     orders.forEach(o=>{
         totalAdult+=(o.adult_count||0);totalKid+=(o.kid_count||0);totalChild+=(o.child_count||0);totalRev+=(o.total_price||0);
@@ -2292,7 +2292,19 @@ function renderReports(orders){
             const qtyM=item.name.match(/ x(\d+)/),qty=qtyM?parseInt(qtyM[1]):1;
             let cleanName=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
             const pIdx=cleanName.indexOf(' ('),inner=pIdx>-1?cleanName.slice(pIdx+2,-1):null,isSet=inner&&inner.includes('、');
-            if(isSet){const brand=cleanName.slice(0,pIdx).trim();setMenuCount[brand]=(setMenuCount[brand]||0)+qty;inner.split('、').forEach(sub=>{const subQtyM=sub.match(/ x(\d+)/);const subQty=subQtyM?parseInt(subQtyM[1]):1;const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();if(s)dishCount[s]=(dishCount[s]||0)+qty*subQty;});}
+            if(isSet){
+                const brand=cleanName.slice(0,pIdx).trim();
+                setMenuCount[brand]=(setMenuCount[brand]||0)+qty;
+                if(!setMenuDetail[brand]) setMenuDetail[brand]={};
+                inner.split('、').forEach(sub=>{
+                    const subQtyM=sub.match(/ x(\d+)/);const subQty=subQtyM?parseInt(subQtyM[1]):1;
+                    const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                    if(s){
+                        dishCount[s]=(dishCount[s]||0)+qty*subQty;
+                        setMenuDetail[brand][s]=(setMenuDetail[brand][s]||0)+qty*subQty;
+                    }
+                });
+            }
             else{dishCount[cleanName]=(dishCount[cleanName]||0)+qty;}
         });
     });
@@ -2311,7 +2323,31 @@ function renderReports(orders){
     document.getElementById('set-menu-total').textContent=`${totalSets} 套`;
     document.getElementById('order-count-tag').textContent=`${orders.length} 筆`;
     document.getElementById('dish-summary-body').innerHTML=sorted.length===0?`<tr><td colspan="4" class="text-center py-10 text-slate-300 font-bold text-sm">查無資料</td></tr>`:sorted.map(([name,count],i)=>`<tr class="hover:bg-slate-50 transition"><td class="px-5 py-3 text-xs font-bold text-slate-300">${i+1}</td><td class="px-5 py-3 font-bold text-slate-700">${name}</td><td class="px-5 py-3 text-right"><span class="font-serif font-black text-xl" style="color:var(--pine)">${count}</span><span class="text-xs text-slate-300 ml-1">份</span></td><td class="px-5 py-3"><div style="background:#f1f5f9;border-radius:999px;height:5px;overflow:hidden"><div style="background:var(--gold);height:100%;width:${Math.round(count/maxQty*100)}%;border-radius:999px;transition:width .4s"></div></div></td></tr>`).join('');
-    document.getElementById('set-menu-body').innerHTML=Object.keys(setMenuCount).length===0?`<p class="text-center py-8 text-slate-300 font-bold text-sm">查無套餐訂單</p>`:Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`<div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border"><div><div class="font-bold" style="color:var(--pine)">${name}</div><div class="text-xs text-slate-400 mt-0.5">套餐組合</div></div><div class="flex items-baseline gap-1"><span class="font-serif font-black text-2xl text-amber-600">${count}</span><span class="text-xs text-slate-300 font-bold">組</span></div></div>`).join('');
+    document.getElementById('set-menu-body').innerHTML=Object.keys(setMenuCount).length===0
+        ?`<p class="text-center py-8 text-slate-300 font-bold text-sm">查無套餐訂單</p>`
+        :Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>{
+            const subs=setMenuDetail[name]||{};
+            const subsHtml=Object.entries(subs).map(([subName,subCount])=>`
+                <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px">
+                    <div style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+                    <div style="flex:1;color:var(--ink)">${subName}</div>
+                    <div style="font-weight:900;color:var(--pine);font-size:13px">${subCount}</div>
+                    <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
+                </div>`).join('');
+            return`<div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:14px;overflow:hidden">
+                <div style="background:rgba(184,145,80,0.08);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(184,145,80,0.2)">
+                    <div>
+                        <div class="font-bold" style="color:var(--pine)">${name}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">套餐組合</div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="font-serif font-black text-2xl text-amber-600">${count}</span>
+                        <span class="text-xs text-slate-300 font-bold">套</span>
+                    </div>
+                </div>
+                ${subsHtml?`<div style="padding:4px 16px 8px">${subsHtml}</div>`:''}
+            </div>`;
+        }).join('');
     document.getElementById('order-detail-container').innerHTML=orders.length===0
         ?`<div class="text-center py-16 text-slate-300 font-bold">查無訂單資料</div>`
         :orders.map((o,idx)=>{
@@ -2388,7 +2424,7 @@ function renderReports(orders){
             </div>
         </div>`;
     }).join('');
-    window.lastData={dishCount,setMenuCount,sorted,orders,totalAdult,totalKid,totalChild,totalRev,totalSets};
+    window.lastData={dishCount,setMenuCount,setMenuDetail,sorted,orders,totalAdult,totalKid,totalChild,totalRev,totalSets};
 }
 function rptTab(name){
     ['prepare','setmenu','orders'].forEach(t=>document.getElementById(`rtab-${t}`).classList.toggle('hidden',t!==name));
@@ -2397,7 +2433,7 @@ function rptTab(name){
 function reportPrint(){['prepare','setmenu','orders'].forEach(t=>document.getElementById(`rtab-${t}`).classList.remove('hidden'));window.print();setTimeout(()=>rptTab('prepare'),500);}
 function exportFullData(){
     if(!window.lastData){toast('請先查詢數據','warn');return;}
-    const{orders,dishCount,setMenuCount,sorted,totalAdult,totalKid,totalChild,totalRev,totalSets}=window.lastData;
+    const{orders,dishCount,setMenuCount,setMenuDetail,sorted,totalAdult,totalKid,totalChild,totalRev,totalSets}=window.lastData;
     const wb=XLSX.utils.book_new();
 
     // ── 逐桌明細 ──
