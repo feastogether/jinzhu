@@ -459,7 +459,7 @@ const I18N={
         photoDownload:'⬇ Download Photo',
         s1Title:'Pre-Order',s1Sub:'Wenxin Branch',
         nameLabel:'Name',namePh:'Your name for reservation',
-        phoneLabel:'Phone',phonePh:'Your contact number',
+        phoneLabel:'Phone',phonePh:'Enter 0 is fine',
         enterBtn:'Browse Menu',
         cartBtn:'View My Order',addBtn:'Add to Order',cancelBtn:'Cancel',
         previewTitle:'Order Summary',totalLabel:'Total Amount',
@@ -484,7 +484,7 @@ const I18N={
         photoDownload:'⬇ 写真をダウンロード',
         s1Title:'事前注文',s1Sub:'文心店',
         nameLabel:'お名前',namePh:'予約のお名前をご入力ください',
-        phoneLabel:'電話番号',phonePh:'連絡先電話番号をご入力ください',
+        phoneLabel:'電話番号',phonePh:'0と入力してもOKです',
         enterBtn:'メニューを見る',
         cartBtn:'注文内容を確認',addBtn:'カートに追加',cancelBtn:'キャンセル',
         previewTitle:'注文内容',totalLabel:'合計金額',
@@ -509,7 +509,7 @@ const I18N={
         photoDownload:'⬇ 사진 다운로드',
         s1Title:'사전 주문',s1Sub:'원신점',
         nameLabel:'이름',namePh:'예약 이름을 입력해 주세요',
-        phoneLabel:'전화번호',phonePh:'연락처를 입력해 주세요',
+        phoneLabel:'전화번호',phonePh:'0을 입력해도 됩니다',
         enterBtn:'메뉴 보기',
         cartBtn:'주문 내역 보기',addBtn:'추가하기',cancelBtn:'취소',
         previewTitle:'주문 내역',totalLabel:'합계 금액',
@@ -933,8 +933,13 @@ async function doPhotoSearch(){
 async function loadAnnouncement(){
     const{data}=await _s.from('announcements').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1);
     if(!data||data.length===0)return;
-    document.getElementById('popup-title').textContent=data[0].title;
-    document.getElementById('popup-content').textContent=data[0].content||'';
+    const a=data[0];
+    // 依當前語言顯示對應公告內容，無翻譯則 fallback 中文
+    const title=curLang!=='zh'?(a['title_'+curLang]||a.title):a.title;
+    const content=curLang!=='zh'?(a['content_'+curLang]||a.content):a.content;
+    document.getElementById('popup-title').textContent=title||a.title;
+    document.getElementById('popup-content').textContent=content||a.content||'';
+    document.getElementById('announce-close-btn').textContent=t('announcClose');
     document.getElementById('announce-popup').classList.add('visible');
 }
 function closeAnnouncePopup(){document.getElementById('announce-popup').classList.remove('visible');}
