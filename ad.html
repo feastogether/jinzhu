@@ -313,20 +313,61 @@
 
 <!-- ── FLAVOR GROUP MODAL ── -->
 <div id="flavor-modal">
-    <div id="flavor-modal-box">
-        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:var(--pine);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)">新增口味選項組</h3>
-        <div style="margin-bottom:16px">
-            <label style="display:block;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--stone);margin-bottom:8px">組名稱</label>
-            <input id="flv-modal-name" type="text" placeholder="例：辣度、湯底、口味" class="filter-input" style="font-size:14px">
+    <div id="flavor-modal-box" style="max-width:500px;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+            <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:var(--pine)" id="flv-modal-title">口味選項組</h3>
+            <button onclick="closeFlavorModal()" style="color:#94a3b8;font-size:1.3rem;background:none;border:none;cursor:pointer">✕</button>
         </div>
-        <div style="margin-bottom:24px">
-            <label style="display:block;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--stone);margin-bottom:8px">選項（逗號隔開）</label>
-            <input id="flv-modal-opts" type="text" placeholder="例：不辣、小辣、中辣、大辣" class="filter-input" style="font-size:14px">
-            <p style="font-size:10px;color:#94a3b8;margin-top:6px">輸入後用逗號「,」分隔，可多個</p>
+
+        <!-- STEP 1：後台標籤名稱 -->
+        <div id="flv-step-1">
+            <div style="background:#f0fdf4;border-radius:12px;padding:14px 16px;margin-bottom:20px;border-left:3px solid var(--pine)">
+                <p style="font-size:11px;font-weight:700;color:var(--pine);margin-bottom:4px">① 後台標籤名稱</p>
+                <p style="font-size:11px;color:var(--stone)">只有後台看得到，用來讓自己辨識這個口味選項組是給哪個品項用的</p>
+            </div>
+            <label style="display:block;font-size:9px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--stone);margin-bottom:8px">後台標籤（備忘用）</label>
+            <input id="flv-admin-label" type="text" placeholder="例：A套餐-辣度、滷肉飯-口味" class="filter-input" style="font-size:14px;margin-bottom:24px">
+            <div class="confirm-actions">
+                <button class="confirm-cancel" onclick="closeFlavorModal()">取消</button>
+                <button class="confirm-ok primary" onclick="flvNextStep(1)">下一步 →</button>
+            </div>
         </div>
-        <div class="confirm-actions">
-            <button class="confirm-cancel" onclick="closeFlavorModal()">取消</button>
-            <button class="confirm-ok primary" onclick="saveFlvGroup()">建立選項組</button>
+
+        <!-- STEP 2：口味名稱（顯示給客人，四語言）-->
+        <div id="flv-step-2" style="display:none">
+            <div style="background:#fffbeb;border-radius:12px;padding:14px 16px;margin-bottom:20px;border-left:3px solid var(--gold)">
+                <p style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:4px">② 口味組名稱（客人看到的）</p>
+                <p style="font-size:11px;color:var(--stone)">例如「辣度」、「Spice Level」，顯示在菜單選項的標題</p>
+            </div>
+            <!-- 語言 tab -->
+            <div class="flex bg-slate-100 rounded-xl p-1 gap-0.5 mb-4">
+                <button onclick="flvLangTab('zh')" id="flvtab-zh" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-700 shadow-sm">🇹🇼 中文</button>
+                <button onclick="flvLangTab('en')" id="flvtab-en" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇺🇸 EN</button>
+                <button onclick="flvLangTab('ja')" id="flvtab-ja" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇯🇵 日本語</button>
+                <button onclick="flvLangTab('ko')" id="flvtab-ko" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇰🇷 한국어</button>
+            </div>
+            <div id="flvname-zh"><input id="flv-display-name" type="text" placeholder="例：辣度" class="filter-input" style="font-size:14px"></div>
+            <div id="flvname-en" style="display:none"><input id="flv-display-name-en" type="text" placeholder="e.g. Spice Level" class="filter-input" style="font-size:14px"></div>
+            <div id="flvname-ja" style="display:none"><input id="flv-display-name-ja" type="text" placeholder="例：辛さ" class="filter-input" style="font-size:14px"></div>
+            <div id="flvname-ko" style="display:none"><input id="flv-display-name-ko" type="text" placeholder="예：맵기" class="filter-input" style="font-size:14px"></div>
+            <div class="confirm-actions" style="margin-top:24px">
+                <button class="confirm-cancel" onclick="flvPrevStep(2)">← 上一步</button>
+                <button class="confirm-ok primary" onclick="flvNextStep(2)">下一步 →</button>
+            </div>
+        </div>
+
+        <!-- STEP 3：選項列表（四語言）-->
+        <div id="flv-step-3" style="display:none">
+            <div style="background:#f0f9ff;border-radius:12px;padding:14px 16px;margin-bottom:20px;border-left:3px solid #3b82f6">
+                <p style="font-size:11px;font-weight:700;color:#1e40af;margin-bottom:4px">③ 選項（客人可選的內容）</p>
+                <p style="font-size:11px;color:var(--stone)">每個選項可填四種語言，點「＋ 新增選項」逐一新增</p>
+            </div>
+            <div id="flv-opts-list" class="space-y-3 mb-4"></div>
+            <button onclick="addFlvOptRow()" class="btn btn-ghost btn-sm w-full justify-center" style="border-style:dashed">＋ 新增選項</button>
+            <div class="confirm-actions" style="margin-top:24px">
+                <button class="confirm-cancel" onclick="flvPrevStep(3)">← 上一步</button>
+                <button class="confirm-ok primary" onclick="saveFlvGroup()">✓ 儲存</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1061,11 +1102,36 @@
 
 <!-- 公告 -->
 <div id="announce-modal" class="fixed inset-0 bg-black/70 hidden flex items-center justify-center p-4 z-[500] backdrop-blur-sm">
-    <div class="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl space-y-5">
+    <div class="bg-white w-full max-w-lg rounded-3xl p-8 shadow-2xl space-y-5" style="max-height:90vh;overflow-y:auto">
         <h3 class="text-xl font-bold font-serif border-b pb-3" style="color:var(--pine)">公告內容</h3>
         <input type="hidden" id="ann-id">
-        <div><label class="filter-label">公告標題</label><input type="text" id="ann-title" class="filter-input mt-1" placeholder="母親節活動公告"></div>
-        <div><label class="filter-label">公告內容</label><textarea id="ann-content" rows="5" class="filter-input mt-1 resize-none" placeholder="輸入公告內容…"></textarea></div>
+        <!-- 語言 tab -->
+        <div class="flex bg-slate-100 rounded-xl p-1 gap-0.5">
+            <button onclick="switchAnnTab('zh')" id="anntab-zh" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-700 shadow-sm">🇹🇼 中文</button>
+            <button onclick="switchAnnTab('en')" id="anntab-en" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇺🇸 EN</button>
+            <button onclick="switchAnnTab('ja')" id="anntab-ja" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇯🇵 日本語</button>
+            <button onclick="switchAnnTab('ko')" id="anntab-ko" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇰🇷 한국어</button>
+        </div>
+        <!-- 中文 -->
+        <div id="annlang-zh">
+            <div class="mb-3"><label class="filter-label">公告標題（中文）</label><input type="text" id="ann-title" class="filter-input mt-1" placeholder="母親節活動公告"></div>
+            <div><label class="filter-label">公告內容（中文）</label><textarea id="ann-content" rows="4" class="filter-input mt-1 resize-none" placeholder="輸入公告內容…"></textarea></div>
+        </div>
+        <!-- 英文 -->
+        <div id="annlang-en" class="hidden">
+            <div class="mb-3"><label class="filter-label">Title (English)</label><input type="text" id="ann-title-en" class="filter-input mt-1" placeholder="Mother's Day Announcement"></div>
+            <div><label class="filter-label">Content (English)</label><textarea id="ann-content-en" rows="4" class="filter-input mt-1 resize-none" placeholder="Enter announcement content…"></textarea></div>
+        </div>
+        <!-- 日文 -->
+        <div id="annlang-ja" class="hidden">
+            <div class="mb-3"><label class="filter-label">タイトル（日本語）</label><input type="text" id="ann-title-ja" class="filter-input mt-1" placeholder="母の日のお知らせ"></div>
+            <div><label class="filter-label">内容（日本語）</label><textarea id="ann-content-ja" rows="4" class="filter-input mt-1 resize-none" placeholder="お知らせ内容を入力…"></textarea></div>
+        </div>
+        <!-- 韓文 -->
+        <div id="annlang-ko" class="hidden">
+            <div class="mb-3"><label class="filter-label">제목（한국어）</label><input type="text" id="ann-title-ko" class="filter-input mt-1" placeholder="어버이날 공지"></div>
+            <div><label class="filter-label">내용（한국어）</label><textarea id="ann-content-ko" rows="4" class="filter-input mt-1 resize-none" placeholder="공지 내용을 입력하세요…"></textarea></div>
+        </div>
         <label class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer">
             <input type="checkbox" id="ann-active" checked class="accent-green-700 w-4 h-4">
             <span class="font-bold text-sm">立即啟用</span>
@@ -1687,31 +1753,202 @@ async function addCat(){const n=document.getElementById('new-cat').value.trim();
 async function delCat(id){const ok=await confirm2({icon:'🗑',title:'刪除分類',msg:'確定刪除此分類？',okText:'刪除',danger:true});if(ok){await _s.from('categories').delete().eq('id',id);loadCats();toast('已刪除');}}
 
 // ── FLAVORS ──
+let flvEditId=null; // 編輯中的 group id（null = 新增）
+
 async function loadFlvs(){
     const{data}=await _s.from('flavor_groups').select('*,flavor_options(*)');
     const grid=document.getElementById('flv-grid');
-    if(!data?.length){grid.innerHTML=`<div class="col-span-2 empty-state"><div class="empty-state-icon">🌶️</div><div class="empty-state-title">尚無口味選項組</div><div class="empty-state-sub">點右上角「新增選項組」開始設定</div></div>`;return;}
-    grid.innerHTML=data.map(g=>`<div class="bg-white p-5 rounded-2xl border shadow-sm"><div class="flex justify-between items-start mb-3"><b class="text-sm" style="color:var(--pine)">🌶️ ${g.name}</b><button onclick="delFlv('${g.id}')" class="text-red-300 hover:text-red-500 font-bold text-xl transition">✕</button></div><div class="flex flex-wrap gap-1">${(g.flavor_options||[]).map(o=>`<span class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(184,145,80,.1);color:var(--gold)">${o.option_name}</span>`).join('')}</div></div>`).join('');
+    if(!data?.length){
+        grid.innerHTML=`<div class="col-span-2 empty-state"><div class="empty-state-icon">🌶️</div><div class="empty-state-title">尚無口味選項組</div><div class="empty-state-sub">點右上角「新增選項組」開始設定</div></div>`;
+        return;
+    }
+    grid.innerHTML=data.map(g=>`
+        <div class="bg-white p-5 rounded-2xl border shadow-sm">
+            <div class="flex justify-between items-start mb-1">
+                <div>
+                    <div class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mb-1">後台標籤</div>
+                    <b class="text-sm" style="color:var(--pine)">🌶️ ${g.admin_label||g.name}</b>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="editFlv('${g.id}')" class="btn btn-ghost btn-sm">編輯</button>
+                    <button onclick="delFlv('${g.id}')" class="text-red-300 hover:text-red-500 font-bold text-xl transition px-1">✕</button>
+                </div>
+            </div>
+            ${g.display_name?`<div class="text-xs text-slate-500 mb-3">顯示名稱：${g.display_name}${g.display_name_en?' / '+g.display_name_en:''}${g.display_name_ja?' / '+g.display_name_ja:''}${g.display_name_ko?' / '+g.display_name_ko:''}</div>`:''}
+            <div class="flex flex-wrap gap-1">
+                ${(g.flavor_options||[]).map(o=>`
+                    <span class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(184,145,80,.1);color:var(--gold)">
+                        ${o.option_name}${o.option_name_en?' / '+o.option_name_en:''}
+                    </span>`).join('')}
+            </div>
+        </div>`).join('');
 }
-function addFlvGroup(){
-    document.getElementById('flv-modal-name').value='';
-    document.getElementById('flv-modal-opts').value='';
-    document.getElementById('flavor-modal').classList.add('visible');
-    setTimeout(()=>document.getElementById('flv-modal-name').focus(),100);
-}
-function closeFlavorModal(){ document.getElementById('flavor-modal').classList.remove('visible'); }
-async function saveFlvGroup(){
-    const n=document.getElementById('flv-modal-name').value.trim();
-    const o=document.getElementById('flv-modal-opts').value.trim();
-    if(!n){toast('請輸入組名','warn');return;}
-    if(!o){toast('請輸入至少一個選項','warn');return;}
-    const{data:g}=await _s.from('flavor_groups').insert([{name:n}]).select();
-    if(g)await _s.from('flavor_options').insert(o.split(',').map(nm=>({group_id:g[0].id,option_name:nm.trim()})).filter(x=>x.option_name));
-    closeFlavorModal();loadFlvs();toast(`口味組「${n}」已新增`);
-}
-async function delFlv(id){const ok=await confirm2({icon:'🌶️',title:'刪除口味組',msg:'確定刪除此口味組？',okText:'刪除',danger:true});if(ok){await _s.from('flavor_groups').delete().eq('id',id);loadFlvs();toast('已刪除');}}
 
-// ── SETTINGS ──
+function flvLangTab(lang){
+    ['zh','en','ja','ko'].forEach(l=>{
+        const d=document.getElementById(`flvname-${l}`);
+        const b=document.getElementById(`flvtab-${l}`);
+        if(d) d.style.display=l===lang?'block':'none';
+        if(b) b.className=`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${l===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+    });
+    // 同步更新選項列中的語言 tab
+    document.querySelectorAll('.opt-lang-tab').forEach(btn=>{
+        const l=btn.dataset.lang;
+        btn.className=`opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition ${l===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+        btn.closest('.opt-row')?.querySelectorAll('.opt-lang-field').forEach(f=>{
+            f.style.display=f.dataset.lang===lang?'block':'none';
+        });
+    });
+    document.querySelectorAll('.opt-lang-bg').forEach(bg=>bg.style.background=lang==='zh'?'#f8fafc':'#fffbeb');
+}
+
+function addFlvOptRow(zhVal='',enVal='',jaVal='',koVal=''){
+    const list=document.getElementById('flv-opts-list');
+    const idx=list.children.length;
+    const row=document.createElement('div');
+    row.className='opt-row';
+    row.style.cssText='background:#f8fafc;border-radius:12px;padding:12px;border:1px solid var(--border);position:relative';
+    row.innerHTML=`
+        <button onclick="this.closest('.opt-row').remove()" style="position:absolute;top:8px;right:8px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;font-weight:700">✕</button>
+        <div class="opt-lang-bg" style="display:flex;gap:4px;margin-bottom:8px;background:#f8fafc;padding:3px;border-radius:8px;width:fit-content">
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition bg-white text-slate-700 shadow-sm" data-lang="zh" onclick="syncOptLang(this,'zh')">🇹🇼</button>
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition text-slate-400" data-lang="en" onclick="syncOptLang(this,'en')">🇺🇸</button>
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition text-slate-400" data-lang="ja" onclick="syncOptLang(this,'ja')">🇯🇵</button>
+            <button class="opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition text-slate-400" data-lang="ko" onclick="syncOptLang(this,'ko')">🇰🇷</button>
+        </div>
+        <div class="opt-lang-field" data-lang="zh"><input class="filter-input opt-zh" placeholder="中文選項名（例：不辣）" value="${zhVal}" style="font-size:13px"></div>
+        <div class="opt-lang-field" data-lang="en" style="display:none"><input class="filter-input opt-en" placeholder="English (e.g. No Spice)" value="${enVal}" style="font-size:13px"></div>
+        <div class="opt-lang-field" data-lang="ja" style="display:none"><input class="filter-input opt-ja" placeholder="日本語（例：辛くない）" value="${jaVal}" style="font-size:13px"></div>
+        <div class="opt-lang-field" data-lang="ko" style="display:none"><input class="filter-input opt-ko" placeholder="한국어（예：안맵게）" value="${koVal}" style="font-size:13px"></div>
+    `;
+    list.appendChild(row);
+}
+
+function syncOptLang(btn, lang){
+    // 只更新這個 row 的 tab 狀態
+    const row=btn.closest('.opt-row');
+    row.querySelectorAll('.opt-lang-tab').forEach(b=>{
+        b.className=`opt-lang-tab text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer transition ${b.dataset.lang===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+    });
+    row.querySelectorAll('.opt-lang-field').forEach(f=>{
+        f.style.display=f.dataset.lang===lang?'block':'none';
+    });
+}
+
+function flvNextStep(current){
+    if(current===1){
+        const label=document.getElementById('flv-admin-label').value.trim();
+        if(!label){toast('請填寫後台標籤名稱','warn');return;}
+        document.getElementById('flv-step-1').style.display='none';
+        document.getElementById('flv-step-2').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組 — 顯示名稱';
+    } else if(current===2){
+        const name=document.getElementById('flv-display-name').value.trim();
+        if(!name){toast('請填寫中文顯示名稱','warn');return;}
+        document.getElementById('flv-step-2').style.display='none';
+        document.getElementById('flv-step-3').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組 — 選項設定';
+        if(document.getElementById('flv-opts-list').children.length===0) addFlvOptRow();
+    }
+}
+
+function flvPrevStep(current){
+    if(current===2){
+        document.getElementById('flv-step-2').style.display='none';
+        document.getElementById('flv-step-1').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組';
+    } else if(current===3){
+        document.getElementById('flv-step-3').style.display='none';
+        document.getElementById('flv-step-2').style.display='block';
+        document.getElementById('flv-modal-title').textContent='口味選項組 — 顯示名稱';
+    }
+}
+
+function addFlvGroup(){
+    flvEditId=null;
+    // 清空所有欄位
+    document.getElementById('flv-admin-label').value='';
+    document.getElementById('flv-display-name').value='';
+    document.getElementById('flv-display-name-en').value='';
+    document.getElementById('flv-display-name-ja').value='';
+    document.getElementById('flv-display-name-ko').value='';
+    document.getElementById('flv-opts-list').innerHTML='';
+    // 重置 step
+    document.getElementById('flv-step-1').style.display='block';
+    document.getElementById('flv-step-2').style.display='none';
+    document.getElementById('flv-step-3').style.display='none';
+    document.getElementById('flv-modal-title').textContent='新增口味選項組';
+    flvLangTab('zh');
+    document.getElementById('flavor-modal').classList.add('visible');
+    setTimeout(()=>document.getElementById('flv-admin-label').focus(),100);
+}
+
+async function editFlv(id){
+    const{data:g}=await _s.from('flavor_groups').select('*,flavor_options(*)').eq('id',id).single();
+    if(!g)return;
+    flvEditId=id;
+    document.getElementById('flv-admin-label').value=g.admin_label||g.name||'';
+    document.getElementById('flv-display-name').value=g.display_name||g.name||'';
+    document.getElementById('flv-display-name-en').value=g.display_name_en||'';
+    document.getElementById('flv-display-name-ja').value=g.display_name_ja||'';
+    document.getElementById('flv-display-name-ko').value=g.display_name_ko||'';
+    document.getElementById('flv-opts-list').innerHTML='';
+    (g.flavor_options||[]).forEach(o=>{
+        addFlvOptRow(o.option_name||'',o.option_name_en||'',o.option_name_ja||'',o.option_name_ko||'');
+    });
+    // 跳到 step 3（直接全部顯示）
+    document.getElementById('flv-step-1').style.display='none';
+    document.getElementById('flv-step-2').style.display='none';
+    document.getElementById('flv-step-3').style.display='block';
+    document.getElementById('flv-modal-title').textContent='編輯口味選項組';
+    flvLangTab('zh');
+    document.getElementById('flavor-modal').classList.add('visible');
+}
+
+async function saveFlvGroup(){
+    const adminLabel=document.getElementById('flv-admin-label').value.trim()||document.getElementById('flv-display-name').value.trim();
+    const displayName=document.getElementById('flv-display-name').value.trim();
+    if(!displayName){toast('請先填寫顯示名稱','warn');flvPrevStep(3);return;}
+    const opts=Array.from(document.querySelectorAll('#flv-opts-list .opt-row')).map(row=>({
+        zh:row.querySelector('.opt-zh')?.value.trim()||'',
+        en:row.querySelector('.opt-en')?.value.trim()||'',
+        ja:row.querySelector('.opt-ja')?.value.trim()||'',
+        ko:row.querySelector('.opt-ko')?.value.trim()||'',
+    })).filter(o=>o.zh);
+    if(!opts.length){toast('請至少新增一個中文選項','warn');return;}
+
+    const payload={
+        name:displayName, // 向後相容
+        admin_label:adminLabel,
+        display_name:displayName,
+        display_name_en:document.getElementById('flv-display-name-en').value.trim()||null,
+        display_name_ja:document.getElementById('flv-display-name-ja').value.trim()||null,
+        display_name_ko:document.getElementById('flv-display-name-ko').value.trim()||null,
+    };
+
+    let gid=flvEditId;
+    if(gid){
+        await _s.from('flavor_groups').update(payload).eq('id',gid);
+        await _s.from('flavor_options').delete().eq('group_id',gid);
+    } else {
+        const{data:g}=await _s.from('flavor_groups').insert([payload]).select();
+        if(g) gid=g[0].id;
+    }
+    if(gid){
+        await _s.from('flavor_options').insert(opts.map(o=>({
+            group_id:gid,
+            option_name:o.zh,
+            option_name_en:o.en||null,
+            option_name_ja:o.ja||null,
+            option_name_ko:o.ko||null,
+        })));
+        closeFlavorModal();loadFlvs();
+        toast(flvEditId?'口味組已更新':'口味組已新增');
+    }
+}
+
+function closeFlavorModal(){document.getElementById('flavor-modal').classList.remove('visible');}
+async function delFlv(id){const ok=await confirm2({icon:'🌶️',title:'刪除口味組',msg:'確定刪除此口味組？',okText:'刪除',danger:true});if(ok){await _s.from('flavor_groups').delete().eq('id',id);loadFlvs();toast('已刪除');}}
 async function loadSettings(){const{data}=await _s.from('store_settings').select('*').eq('id',1).single();if(data?.logo_url){document.getElementById('current-logo-preview').classList.remove('hidden');document.getElementById('admin-logo-img').src=`${data.logo_url}?t=${Date.now()}`;}}
 async function uploadLogo(){
     const f=document.getElementById('logo-file').files[0];
@@ -2047,7 +2284,7 @@ async function fetchData(){
     renderReports(orders||[]);
 }
 function renderReports(orders){
-    const dishCount={},setMenuCount={};
+    const dishCount={},setMenuCount={},setMenuDetail={};
     let totalAdult=0,totalKid=0,totalChild=0,totalRev=0;
     orders.forEach(o=>{
         totalAdult+=(o.adult_count||0);totalKid+=(o.kid_count||0);totalChild+=(o.child_count||0);totalRev+=(o.total_price||0);
@@ -2055,8 +2292,23 @@ function renderReports(orders){
             const qtyM=item.name.match(/ x(\d+)/),qty=qtyM?parseInt(qtyM[1]):1;
             let cleanName=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
             const pIdx=cleanName.indexOf(' ('),inner=pIdx>-1?cleanName.slice(pIdx+2,-1):null,isSet=inner&&inner.includes('、');
-            if(isSet){const brand=cleanName.slice(0,pIdx).trim();setMenuCount[brand]=(setMenuCount[brand]||0)+qty;inner.split('、').forEach(sub=>{const subQtyM=sub.match(/ x(\d+)/);const subQty=subQtyM?parseInt(subQtyM[1]):1;const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();if(s)dishCount[s]=(dishCount[s]||0)+qty*subQty;});}
-            else{dishCount[cleanName]=(dishCount[cleanName]||0)+qty;}
+            if(isSet){
+                const brand=cleanName.slice(0,pIdx).trim();
+                setMenuCount[brand]=(setMenuCount[brand]||0)+qty;
+                if(!setMenuDetail[brand]) setMenuDetail[brand]={};
+                const subNames=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);
+                const subCnt={};
+                subNames.forEach(s=>{subCnt[s]=(subCnt[s]||0)+1;});
+                Object.entries(subCnt).forEach(([s,cnt])=>{
+                    // key 格式：「套餐名稱／子品項名」方便顯示
+                    const key=`${brand}／${s}`;
+                    dishCount[key]=(dishCount[key]||0)+qty*cnt;
+                    setMenuDetail[brand][s]=(setMenuDetail[brand][s]||0)+qty*cnt;
+                });
+            }
+            else{
+                dishCount[cleanName]=(dishCount[cleanName]||0)+qty;
+            }
         });
     });
     const sorted=Object.entries(dishCount).sort((a,b)=>b[1]-a[1]);
@@ -2073,8 +2325,46 @@ function renderReports(orders){
     document.getElementById('ingredient-total').textContent=`${sorted.length} 項`;
     document.getElementById('set-menu-total').textContent=`${totalSets} 套`;
     document.getElementById('order-count-tag').textContent=`${orders.length} 筆`;
-    document.getElementById('dish-summary-body').innerHTML=sorted.length===0?`<tr><td colspan="4" class="text-center py-10 text-slate-300 font-bold text-sm">查無資料</td></tr>`:sorted.map(([name,count],i)=>`<tr class="hover:bg-slate-50 transition"><td class="px-5 py-3 text-xs font-bold text-slate-300">${i+1}</td><td class="px-5 py-3 font-bold text-slate-700">${name}</td><td class="px-5 py-3 text-right"><span class="font-serif font-black text-xl" style="color:var(--pine)">${count}</span><span class="text-xs text-slate-300 ml-1">份</span></td><td class="px-5 py-3"><div style="background:#f1f5f9;border-radius:999px;height:5px;overflow:hidden"><div style="background:var(--gold);height:100%;width:${Math.round(count/maxQty*100)}%;border-radius:999px;transition:width .4s"></div></div></td></tr>`).join('');
-    document.getElementById('set-menu-body').innerHTML=Object.keys(setMenuCount).length===0?`<p class="text-center py-8 text-slate-300 font-bold text-sm">查無套餐訂單</p>`:Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`<div class="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border"><div><div class="font-bold" style="color:var(--pine)">${name}</div><div class="text-xs text-slate-400 mt-0.5">套餐組合</div></div><div class="flex items-baseline gap-1"><span class="font-serif font-black text-2xl text-amber-600">${count}</span><span class="text-xs text-slate-300 font-bold">組</span></div></div>`).join('');
+    document.getElementById('dish-summary-body').innerHTML=sorted.length===0
+        ?`<tr><td colspan="4" class="text-center py-10 text-slate-300 font-bold text-sm">查無資料</td></tr>`
+        :sorted.map(([key,count],i)=>{
+            const isSet=key.includes('／');
+            const [setName,itemName]=isSet?key.split('／'):[null,key];
+            const displayName=isSet
+                ?`<span style="font-size:9px;font-weight:700;color:var(--gold);background:rgba(184,145,80,0.1);padding:1px 6px;border-radius:4px;margin-right:6px;white-space:nowrap">${setName}</span>${itemName}`
+                :key;
+            return`<tr class="hover:bg-slate-50 transition">
+                <td class="px-5 py-3 text-xs font-bold text-slate-300">${i+1}</td>
+                <td class="px-5 py-3 font-bold text-slate-700">${displayName}</td>
+                <td class="px-5 py-3 text-right"><span class="font-serif font-black text-xl" style="color:var(--pine)">${count}</span><span class="text-xs text-slate-300 ml-1">份</span></td>
+                <td class="px-5 py-3"><div style="background:#f1f5f9;border-radius:999px;height:5px;overflow:hidden"><div style="background:${isSet?'var(--gold)':'var(--pine)'};height:100%;width:${Math.round(count/maxQty*100)}%;border-radius:999px;transition:width .4s"></div></div></td>
+            </tr>`;
+        }).join('');
+    document.getElementById('set-menu-body').innerHTML=Object.keys(setMenuCount).length===0
+        ?`<p class="text-center py-8 text-slate-300 font-bold text-sm">查無套餐訂單</p>`
+        :Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>{
+            const subs=setMenuDetail[name]||{};
+            const subsHtml=Object.entries(subs).map(([subName,subCount])=>`
+                <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.04);font-size:12px">
+                    <div style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+                    <div style="flex:1;color:var(--ink)">${subName}</div>
+                    <div style="font-weight:900;color:var(--pine);font-size:13px">${subCount}</div>
+                    <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
+                </div>`).join('');
+            return`<div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:14px;overflow:hidden">
+                <div style="background:rgba(184,145,80,0.08);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(184,145,80,0.2)">
+                    <div>
+                        <div class="font-bold" style="color:var(--pine)">${name}</div>
+                        <div class="text-xs text-slate-400 mt-0.5">套餐組合</div>
+                    </div>
+                    <div class="flex items-baseline gap-1">
+                        <span class="font-serif font-black text-2xl text-amber-600">${count}</span>
+                        <span class="text-xs text-slate-300 font-bold">套</span>
+                    </div>
+                </div>
+                ${subsHtml?`<div style="padding:4px 16px 8px">${subsHtml}</div>`:''}
+            </div>`;
+        }).join('');
     document.getElementById('order-detail-container').innerHTML=orders.length===0
         ?`<div class="text-center py-16 text-slate-300 font-bold">查無訂單資料</div>`
         :orders.map((o,idx)=>{
@@ -2093,7 +2383,7 @@ function renderReports(orders){
             const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             if(inner&&inner.includes('、')){
                 const brand=clean.slice(0,pIdx).trim(),subs={};
-                inner.split('、').forEach(sub=>{const sM=sub.match(/ x(\d+)/),sq=sM?parseInt(sM[1]):1;const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();if(s)subs[s]=(subs[s]||0)+qty*sq;});
+                const _subs=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
                 sets.push({brand,qty,subs});
             } else {singles[clean]=(singles[clean]||0)+qty;}
         });
@@ -2151,7 +2441,7 @@ function renderReports(orders){
             </div>
         </div>`;
     }).join('');
-    window.lastData={dishCount,setMenuCount,sorted,orders,totalAdult,totalKid,totalChild,totalRev,totalSets};
+    window.lastData={dishCount,setMenuCount,setMenuDetail,sorted,orders,totalAdult,totalKid,totalChild,totalRev,totalSets};
 }
 function rptTab(name){
     ['prepare','setmenu','orders'].forEach(t=>document.getElementById(`rtab-${t}`).classList.toggle('hidden',t!==name));
@@ -2160,45 +2450,55 @@ function rptTab(name){
 function reportPrint(){['prepare','setmenu','orders'].forEach(t=>document.getElementById(`rtab-${t}`).classList.remove('hidden'));window.print();setTimeout(()=>rptTab('prepare'),500);}
 function exportFullData(){
     if(!window.lastData){toast('請先查詢數據','warn');return;}
-    const{orders,dishCount,setMenuCount,sorted,totalAdult,totalKid,totalChild,totalRev,totalSets}=window.lastData;
+    const{orders,setMenuCount,setMenuDetail,sorted,totalAdult,totalKid,totalChild,totalRev,totalSets}=window.lastData;
     const wb=XLSX.utils.book_new();
 
-    // ── 逐桌明細 ──
-    const tableRows=[];
-    [...orders].sort((a,b)=>(a.table_no||'zzz').localeCompare(b.table_no||'zzz','zh-TW',{numeric:true})).forEach(o=>{
-        const items=o.order_content||[];
-        const timeStr=new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
-        const displayRows=[];
+    // ── 共用：解析單筆 order_content 成展開列 ──
+    function parseOrderItems(items){
+        const out=[];
         items.forEach(item=>{
-            // 取出數量（x2 → 2，沒有則為 1）
             const qtyM=item.name.match(/ x(\d+)/);
             const qty=qtyM?parseInt(qtyM[1]):1;
-            const nameNoQty=item.name.replace(/ x\d+/g,'');
-            const clean=nameNoQty.replace(/\s*\[.*?\]/g,'').trim();
+            const clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
             const pIdx=clean.indexOf(' (');
             const inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             const isSet=inner&&inner.includes('、');
             if(isSet){
                 const brand=clean.slice(0,pIdx).trim();
-                inner.split('、').forEach((sub,si)=>{
-                    const subQtyM=sub.match(/ x(\d+)/);
-                    const subQty=subQtyM?parseInt(subQtyM[1]):1;
-                    const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                    if(s)displayRows.push({dish:brand+(si===0?'':` ‣${s}`),qty:si===0?qty*subQty:subQty,price:si===0?item.price:''});
+                // 數重複出現次數
+                const subNames=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);
+                const subCnt={};
+                subNames.forEach(s=>{subCnt[s]=(subCnt[s]||0)+1;});
+                let first=true;
+                Object.entries(subCnt).forEach(([s,cnt])=>{
+                    out.push({isSet:true,brand,sub:s,qty:qty*cnt,price:first?item.price:'',first});
+                    first=false;
                 });
             } else {
-                displayRows.push({dish:clean,qty,price:item.price});
+                out.push({isSet:false,brand:'',sub:'',name:clean,qty,price:item.price,first:true});
             }
         });
-        // 訂位日期時間（台灣時間）
-        let bkDate='', bkTime='';
-        if(o.booking_date){
-            const utc=new Date(o.booking_date);
-            const tw=new Date(utc.getTime()+8*60*60*1000);
-            bkDate=`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;
-            bkTime=`${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`;
-        }
-        displayRows.forEach((row,i)=>{
+        return out;
+    }
+
+    // 台灣時間格式化
+    function twTime(booking_date){
+        if(!booking_date) return{d:'',t:''};
+        const tw=new Date(new Date(booking_date).getTime()+8*3600000);
+        return{
+            d:`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`,
+            t:`${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`
+        };
+    }
+
+    // ── 逐桌明細 ──
+    const tableRows=[];
+    [...orders].sort((a,b)=>(a.table_no||'zzz').localeCompare(b.table_no||'zzz','zh-TW',{numeric:true})).forEach(o=>{
+        const{d:bkDate,t:bkTime}=twTime(o.booking_date);
+        const timeStr=new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+        const parsed=parseOrderItems(o.order_content||[]);
+        parsed.forEach((row,i)=>{
+            const dishName=row.isSet?`【${row.brand}】${row.sub}`:row.name;
             tableRows.push({
                 '桌號':i===0?(o.table_no||'—'):'',
                 '姓名':i===0?(o.customer_name||'—'):'',
@@ -2209,69 +2509,74 @@ function exportFullData(){
                 '小孩':i===0?(o.kid_count||0):'',
                 '兒童':i===0?(o.child_count||0):'',
                 '活動':i===0?(o.campaign_code||'—'):'',
-                '餐點':row.dish,
+                '餐點':dishName,
                 '數量':row.qty,
                 '金額':row.price,
                 '訂單合計':i===0?(o.total_price||0):'',
                 '下單時間':i===0?timeStr:'',
-                '備註':i===0?(o.note||''):''
+                '備註':i===0?(o.note||''):'',
             });
         });
-        tableRows.push({'桌號':'','姓名':'','手機':'','訂位日期':'','訂位時間':'','大人':'','小孩':'','兒童':'','活動':'','餐點':'','數量':'','金額':'','訂單合計':'','下單時間':'','備註':''});
+        tableRows.push({});
     });
     const wsT=XLSX.utils.json_to_sheet(tableRows);
-    wsT['!cols']=[{wch:8},{wch:12},{wch:14},{wch:12},{wch:10},{wch:6},{wch:6},{wch:6},{wch:10},{wch:30},{wch:6},{wch:8},{wch:10},{wch:16},{wch:20}];
+    wsT['!cols']=[{wch:8},{wch:12},{wch:14},{wch:12},{wch:10},{wch:6},{wch:6},{wch:6},{wch:10},{wch:32},{wch:6},{wch:8},{wch:10},{wch:16},{wch:20}];
     XLSX.utils.book_append_sheet(wb,wsT,'🪑 逐桌明細');
 
     // ── 摘要 ──
-    // dishCount 是拆解後子品項；setMenuCount 是套餐本身
-    // 合計品項種數 = 子品項 + 套餐種數
-    const allItemKinds = sorted.length + Object.keys(setMenuCount).length;
     XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([
         {項目:'訂單數',數值:orders.length},
         {項目:'大人',數值:totalAdult},{項目:'小孩',數值:totalKid},{項目:'兒童',數值:totalChild},
         {項目:'總人數',數值:totalAdult+totalKid+totalChild},
         {項目:'套餐種數',數值:Object.keys(setMenuCount).length},
         {項目:'套餐總組數',數值:totalSets},
-        {項目:'品項種數（含套餐子品項）',數值:allItemKinds},
-        {項目:'預估營收',數值:totalRev}
+        {項目:'品項種數',數值:sorted.length},
+        {項目:'預估營收',數值:totalRev},
     ]),'📊 摘要');
 
-    // ── 備料總表（套餐名稱 + 子品項）──
+    // ── 備料總表 ──
     const prepRows=[];
-    // 先列套餐本身
+    // 套餐彙總
     Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).forEach(([name,count])=>{
-        prepRows.push({排名:'',類型:'套餐',品名:name,備料數量:count});
+        prepRows.push({類型:'套餐',套餐:'',品名:name,數量:count});
     });
-    // 再列所有子品項（已含套餐拆解）
-    sorted.forEach(([name,count],i)=>{
-        prepRows.push({排名:i+1,類型:'品項',品名:name,備料數量:count});
+    // 各品項（套餐子品項加套餐名稱，單點直接顯示）
+    sorted.forEach(([key,count])=>{
+        const isSet=key.includes('／');
+        const[setName,itemName]=isSet?key.split('／'):[null,key];
+        prepRows.push({類型:isSet?'套餐品項':'單點',套餐:isSet?setName:'',品名:isSet?itemName:key,數量:count});
     });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(prepRows),'🍳 備料總表');
+    const wsP=XLSX.utils.json_to_sheet(prepRows);
+    wsP['!cols']=[{wch:10},{wch:16},{wch:28},{wch:8}];
+    XLSX.utils.book_append_sheet(wb,wsP,'🍳 備料總表');
 
     // ── 套餐明細 ──
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(
-        Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).map(([name,count])=>({套餐名稱:name,銷售組數:count}))
-    ),'🍱 套餐明細');
+    const setRows=[];
+    Object.entries(setMenuDetail).forEach(([brand,subs])=>{
+        const total=setMenuCount[brand]||0;
+        let first=true;
+        Object.entries(subs).forEach(([subName,subCount])=>{
+            setRows.push({套餐名稱:first?brand:'',銷售組數:first?total:'',子品項:subName,份數:subCount});
+            first=false;
+        });
+        setRows.push({});
+    });
+    const wsS=XLSX.utils.json_to_sheet(setRows);
+    wsS['!cols']=[{wch:18},{wch:10},{wch:28},{wch:8}];
+    XLSX.utils.book_append_sheet(wb,wsS,'🍱 套餐明細');
 
-    // ── 流水帳（含數量欄） ──
-    const rows=[];
+    // ── 流水帳 ──
+    const ledgerRows=[];
     orders.forEach((o,idx)=>{
-        (o.order_content||[]).forEach((item,li)=>{
-            const qtyM=item.name.match(/ x(\d+)/);
-            const qty=qtyM?parseInt(qtyM[1]):1;
-            // 訂位日期時間
-            let bkD2='',bkT2='';
-            if(li===0&&o.booking_date){
-                const u=new Date(o.booking_date),tw2=new Date(u.getTime()+8*60*60*1000);
-                bkD2=`${tw2.getUTCFullYear()}-${String(tw2.getUTCMonth()+1).padStart(2,'0')}-${String(tw2.getUTCDate()).padStart(2,'0')}`;
-                bkT2=`${String(tw2.getUTCHours()).padStart(2,'0')}:${String(tw2.getUTCMinutes()).padStart(2,'0')}`;
-            }
-            rows.push({
+        const{d:bkD,t:bkT}=twTime(o.booking_date);
+        const parsed=parseOrderItems(o.order_content||[]);
+        parsed.forEach((row,li)=>{
+            const dishName=row.isSet?`【${row.brand}】${row.sub}`:row.name;
+            ledgerRows.push({
                 序號:li===0?idx+1:'',
                 下單時間:li===0?new Date(o.created_at).toLocaleString('zh-TW'):'',
-                訂位日期:li===0?bkD2:'',
-                訂位時間:li===0?bkT2:'',
+                訂位日期:li===0?bkD:'',
+                訂位時間:li===0?bkT:'',
                 姓名:li===0?(o.customer_name||''):'',
                 電話:li===0?(o.phone||''):'',
                 桌號:li===0?(o.table_no||''):'',
@@ -2279,15 +2584,18 @@ function exportFullData(){
                 小孩:li===0?(o.kid_count||0):'',
                 兒童:li===0?(o.child_count||0):'',
                 活動:li===0?(o.campaign_code||'一般'):'',
-                品項:item.name,
-                數量:qty,
-                金額:item.price,
+                品項:dishName,
+                數量:row.qty,
+                金額:row.price,
                 合計:li===0?(o.total_price||0):'',
-                備註:li===0?(o.note||''):''
+                備註:li===0?(o.note||''):'',
             });
         });
+        ledgerRows.push({});
     });
-    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'📋 流水帳');
+    const wsL=XLSX.utils.json_to_sheet(ledgerRows);
+    wsL['!cols']=[{wch:6},{wch:18},{wch:12},{wch:8},{wch:12},{wch:14},{wch:8},{wch:6},{wch:6},{wch:6},{wch:10},{wch:32},{wch:6},{wch:8},{wch:10},{wch:20}];
+    XLSX.utils.book_append_sheet(wb,wsL,'📋 流水帳');
 
     XLSX.writeFile(wb,`真珠備料統計_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.xlsx`);
     toast('Excel 已匯出 📊');
@@ -2402,19 +2710,81 @@ async function loadAnnouncements(){
     const container=document.getElementById('announce-list');
     if(error){container.innerHTML=`<p class="text-red-400 text-sm font-bold">${error.message}</p>`;return;}
     if(!data?.length){container.innerHTML='<div class="empty-state"><div class="empty-state-icon">📢</div><div class="empty-state-title">尚無公告</div><div class="empty-state-sub">點右上角「新增公告」讓顧客在點餐時看到訊息</div></div>';return;}
-    container.innerHTML=data.map(a=>`<div class="bg-white rounded-2xl border shadow-sm p-5 ${a.is_active?'border-emerald-200':''}"><div class="flex justify-between items-start gap-4"><div class="flex-1"><div class="flex items-center gap-2 mb-2">${a.is_active?`<span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">✅ 啟用</span>`:`<span class="text-[10px] font-bold bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">⏸ 停用</span>`}<span class="font-black" style="color:var(--pine)">${a.title}</span></div><p class="text-sm text-slate-500 whitespace-pre-line leading-relaxed">${a.content||''}</p><p class="text-[10px] text-slate-300 mt-2">${new Date(a.created_at).toLocaleString('zh-TW')}</p></div><div class="flex gap-2 flex-shrink-0"><button onclick="editAnnouncement(${a.id})" class="btn btn-ghost btn-sm">編輯</button><button onclick="toggleAnnouncement(${a.id},${a.is_active})" class="btn btn-sm ${a.is_active?'btn-ghost':'btn-primary'}">${a.is_active?'停用':'啟用'}</button><button onclick="deleteAnnouncement(${a.id})" class="btn btn-danger btn-sm">刪除</button></div></div></div>`).join('');
+    container.innerHTML=data.map(a=>`<div class="bg-white rounded-2xl border shadow-sm p-5 ${a.is_active?'border-emerald-200':''}">
+        <div class="flex justify-between items-start gap-4">
+            <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                    ${a.is_active?`<span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">✅ 啟用</span>`:`<span class="text-[10px] font-bold bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">⏸ 停用</span>`}
+                    <span class="font-black" style="color:var(--pine)">${a.title}</span>
+                </div>
+                <p class="text-sm text-slate-500 whitespace-pre-line leading-relaxed">${a.content||''}</p>
+                ${a.title_en||a.title_ja||a.title_ko?`<div class="mt-2 flex flex-wrap gap-1">
+                    ${a.title_en?`<span class="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-500 font-bold rounded-full">🇺🇸 ${a.title_en}</span>`:''}
+                    ${a.title_ja?`<span class="text-[10px] px-2 py-0.5 bg-rose-50 text-rose-500 font-bold rounded-full">🇯🇵 ${a.title_ja}</span>`:''}
+                    ${a.title_ko?`<span class="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-500 font-bold rounded-full">🇰🇷 ${a.title_ko}</span>`:''}
+                </div>`:''}
+                <p class="text-[10px] text-slate-300 mt-2">${new Date(a.created_at).toLocaleString('zh-TW')}</p>
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+                <button onclick="editAnnouncement(${a.id})" class="btn btn-ghost btn-sm">編輯</button>
+                <button onclick="toggleAnnouncement(${a.id},${a.is_active})" class="btn btn-sm ${a.is_active?'btn-ghost':'btn-primary'}">${a.is_active?'停用':'啟用'}</button>
+                <button onclick="deleteAnnouncement(${a.id})" class="btn btn-danger btn-sm">刪除</button>
+            </div>
+        </div>
+    </div>`).join('');
 }
+
+function switchAnnTab(lang){
+    ['zh','en','ja','ko'].forEach(l=>{
+        document.getElementById(`annlang-${l}`)?.classList.toggle('hidden',l!==lang);
+        const btn=document.getElementById(`anntab-${l}`);
+        if(btn) btn.className=`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${l===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+    });
+}
+
 function openAnnounceModal(isEdit){
-    if(!isEdit){['ann-id','ann-title','ann-content'].forEach(id=>document.getElementById(id).value='');document.getElementById('ann-active').checked=true;}
+    if(!isEdit){
+        ['ann-id','ann-title','ann-content','ann-title-en','ann-content-en','ann-title-ja','ann-content-ja','ann-title-ko','ann-content-ko']
+            .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+        document.getElementById('ann-active').checked=true;
+    }
+    switchAnnTab('zh');
     document.getElementById('announce-modal').classList.remove('hidden');
 }
 function closeAnnounceModal(){document.getElementById('announce-modal').classList.add('hidden');}
-async function editAnnouncement(id){const{data}=await _s.from('announcements').select('*').eq('id',id).single();if(!data)return;document.getElementById('ann-id').value=data.id;document.getElementById('ann-title').value=data.title;document.getElementById('ann-content').value=data.content||'';document.getElementById('ann-active').checked=data.is_active;openAnnounceModal(true);}
+
+async function editAnnouncement(id){
+    const{data}=await _s.from('announcements').select('*').eq('id',id).single();
+    if(!data)return;
+    document.getElementById('ann-id').value=data.id;
+    document.getElementById('ann-title').value=data.title;
+    document.getElementById('ann-content').value=data.content||'';
+    document.getElementById('ann-title-en').value=data.title_en||'';
+    document.getElementById('ann-content-en').value=data.content_en||'';
+    document.getElementById('ann-title-ja').value=data.title_ja||'';
+    document.getElementById('ann-content-ja').value=data.content_ja||'';
+    document.getElementById('ann-title-ko').value=data.title_ko||'';
+    document.getElementById('ann-content-ko').value=data.content_ko||'';
+    document.getElementById('ann-active').checked=data.is_active;
+    openAnnounceModal(true);
+}
+
 async function saveAnnouncement(){
     const id=document.getElementById('ann-id').value;
-    const payload={title:document.getElementById('ann-title').value.trim(),content:document.getElementById('ann-content').value.trim(),is_active:document.getElementById('ann-active').checked};
-    if(!payload.title){toast('請輸入公告標題','warn');return;}
-    if(id)await _s.from('announcements').update(payload).eq('id',id);else await _s.from('announcements').insert([payload]);
+    const payload={
+        title:document.getElementById('ann-title').value.trim(),
+        content:document.getElementById('ann-content').value.trim(),
+        title_en:document.getElementById('ann-title-en').value.trim()||null,
+        content_en:document.getElementById('ann-content-en').value.trim()||null,
+        title_ja:document.getElementById('ann-title-ja').value.trim()||null,
+        content_ja:document.getElementById('ann-content-ja').value.trim()||null,
+        title_ko:document.getElementById('ann-title-ko').value.trim()||null,
+        content_ko:document.getElementById('ann-content-ko').value.trim()||null,
+        is_active:document.getElementById('ann-active').checked
+    };
+    if(!payload.title){toast('請輸入中文公告標題','warn');switchAnnTab('zh');return;}
+    if(id) await _s.from('announcements').update(payload).eq('id',id);
+    else await _s.from('announcements').insert([payload]);
     closeAnnounceModal();loadAnnouncements();toast('公告已儲存');
 }
 async function toggleAnnouncement(id,current){await _s.from('announcements').update({is_active:!current}).eq('id',id);loadAnnouncements();}
@@ -2723,7 +3093,7 @@ function renderCalDayBody(orders){
             const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             if(inner&&inner.includes('、')){
                 const brand=clean.slice(0,pIdx).trim(),subs={};
-                inner.split('、').forEach(sub=>{const sM=sub.match(/ x(\d+)/),sq=sM?parseInt(sM[1]):1;const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();if(s)subs[s]=(subs[s]||0)+qty*sq;});
+                const _subs=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
                 sets.push({brand,qty,subs});
             } else { singles[clean]=(singles[clean]||0)+qty; }
         });
@@ -2797,9 +3167,15 @@ function toggleReportFilter() {
 }
 
 // ── INIT ──
-switchTab('orders');
 loadSidebarLogo();
-checkLogin();
+(async()=>{
+    const{data:{session}}=await _s.auth.getSession();
+    if(session){
+        document.getElementById('login-screen').classList.add('hidden');
+        switchTab('orders');
+    }
+    // 若無 session，login-screen 維持顯示，等使用者登入
+})();
 
 // ── REALTIME：新訂單自動通知 ──
 _s.channel('orders-realtime')
