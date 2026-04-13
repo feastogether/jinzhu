@@ -535,6 +535,8 @@ function setLang(lang){
     localStorage.setItem('jinzhu_lang',lang);
     applyLang();
     if(allCats.length) reRenderMenu();
+    // 語言切換時同步更新公告內容
+    if(cachedAnnouncement) showAnnouncement();
     // 關閉下拉
     document.getElementById('lang-dropdown')?.classList.remove('open');
     document.getElementById('lang-trigger')?.classList.remove('open');
@@ -930,16 +932,22 @@ async function doPhotoSearch(){
     document.getElementById('photo-result-card').style.display='block';
 }
 
+let cachedAnnouncement=null;
+
 async function loadAnnouncement(){
     const{data}=await _s.from('announcements').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1);
     if(!data||data.length===0)return;
-    const a=data[0];
-    // 依當前語言顯示對應公告內容，無翻譯則 fallback 中文
+    cachedAnnouncement=data[0];
+    showAnnouncement();
+}
+
+function showAnnouncement(){
+    if(!cachedAnnouncement)return;
+    const a=cachedAnnouncement;
     const title=curLang!=='zh'?(a['title_'+curLang]||a.title):a.title;
     const content=curLang!=='zh'?(a['content_'+curLang]||a.content):a.content;
     document.getElementById('popup-title').textContent=title||a.title;
     document.getElementById('popup-content').textContent=content||a.content||'';
-    document.getElementById('announce-close-btn').textContent=t('announcClose');
     document.getElementById('announce-popup').classList.add('visible');
 }
 function closeAnnouncePopup(){document.getElementById('announce-popup').classList.remove('visible');}
