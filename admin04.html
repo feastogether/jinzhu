@@ -1162,6 +1162,19 @@
             <button onclick="switchAnnTab('ko')" id="anntab-ko" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇰🇷 한국어</button>
         </div>
         <!-- 中文 -->
+        <!-- 圖片上傳 -->
+        <div class="mb-2">
+            <label class="filter-label">公告圖片（選填）</label>
+            <div id="ann-img-preview" class="hidden mb-2 relative">
+                <img id="ann-img-preview-img" src="" class="w-full rounded-xl object-cover max-h-48">
+                <button onclick="clearAnnImg()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px">✕</button>
+            </div>
+            <div id="ann-img-placeholder" class="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition" onclick="document.getElementById('ann-img-file').click()">
+                <p class="text-xs text-slate-400 font-bold">📷 點擊上傳公告圖片</p>
+            </div>
+            <input type="file" id="ann-img-file" class="hidden" accept="image/*" onchange="previewAnnImg(this)">
+            <input type="hidden" id="ann-image-url">
+        </div>
         <div id="annlang-zh">
             <div class="mb-3"><label class="filter-label">公告標題（中文）</label><input type="text" id="ann-title" class="filter-input mt-1" placeholder="母親節活動公告"></div>
             <div><label class="filter-label">公告內容（中文）</label><textarea id="ann-content" rows="4" class="filter-input mt-1 resize-none" placeholder="輸入公告內容…"></textarea></div>
@@ -2886,14 +2899,34 @@ function switchAnnTab(lang){
 
 function openAnnounceModal(isEdit){
     if(!isEdit){
-        ['ann-id','ann-title','ann-content','ann-title-en','ann-content-en','ann-title-ja','ann-content-ja','ann-title-ko','ann-content-ko']
+        ['ann-id','ann-title','ann-content','ann-title-en','ann-content-en','ann-title-ja','ann-content-ja','ann-title-ko','ann-content-ko','ann-image-url']
             .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
         document.getElementById('ann-active').checked=true;
+        document.getElementById('ann-img-file').value='';
+        document.getElementById('ann-img-preview').classList.add('hidden');
+        document.getElementById('ann-img-placeholder').classList.remove('hidden');
     }
     switchAnnTab('zh');
     document.getElementById('announce-modal').classList.remove('hidden');
 }
 function closeAnnounceModal(){document.getElementById('announce-modal').classList.add('hidden');}
+
+function previewAnnImg(input){
+    const file=input.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=e=>{
+        document.getElementById('ann-img-preview-img').src=e.target.result;
+        document.getElementById('ann-img-preview').classList.remove('hidden');
+        document.getElementById('ann-img-placeholder').classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+function clearAnnImg(){
+    document.getElementById('ann-img-file').value='';
+    document.getElementById('ann-image-url').value='';
+    document.getElementById('ann-img-preview').classList.add('hidden');
+    document.getElementById('ann-img-placeholder').classList.remove('hidden');
+}
 
 async function editAnnouncement(id){
     const{data}=await _s.from('announcements').select('*').eq('id',id).single();
@@ -2908,13 +2941,42 @@ async function editAnnouncement(id){
     document.getElementById('ann-title-ko').value=data.title_ko||'';
     document.getElementById('ann-content-ko').value=data.content_ko||'';
     document.getElementById('ann-active').checked=data.is_active;
+    document.getElementById('ann-image-url').value=data.image_url||'';
+    document.getElementById('ann-img-file').value='';
+    // 顯示既有圖片
+    if(data.image_url){
+        document.getElementById('ann-img-preview-img').src=data.image_url;
+        document.getElementById('ann-img-preview').classList.remove('hidden');
+        document.getElementById('ann-img-placeholder').classList.add('hidden');
+    } else {
+        document.getElementById('ann-img-preview').classList.add('hidden');
+        document.getElementById('ann-img-placeholder').classList.remove('hidden');
+    }
     openAnnounceModal(true);
 }
 
 async function saveAnnouncement(){
     const id=document.getElementById('ann-id').value;
+    const title=document.getElementById('ann-title').value.trim();
+    if(!title){toast('請輸入中文公告標題','warn');switchAnnTab('zh');return;}
+
+    // 上傳圖片（如果有選新的）
+    let imageUrl=document.getElementById('ann-image-url').value||null;
+    const file=document.getElementById('ann-img-file').files[0];
+    if(file){
+        const ext=file.name.split('.').pop().toLowerCase();
+        const path=`announce/${Date.now()}.${ext}`;
+        const{error:upErr}=await _s.storage.from('assets').upload(path,file,{contentType:file.type,upsert:true});
+        if(!upErr){
+            const{data:urlData}=_s.storage.from('assets').getPublicUrl(path);
+            imageUrl=urlData.publicUrl;
+        } else {
+            toast('圖片上傳失敗','error');
+        }
+    }
+
     const payload={
-        title:document.getElementById('ann-title').value.trim(),
+        title,
         content:document.getElementById('ann-content').value.trim(),
         title_en:document.getElementById('ann-title-en').value.trim()||null,
         content_en:document.getElementById('ann-content-en').value.trim()||null,
@@ -2922,9 +2984,9 @@ async function saveAnnouncement(){
         content_ja:document.getElementById('ann-content-ja').value.trim()||null,
         title_ko:document.getElementById('ann-title-ko').value.trim()||null,
         content_ko:document.getElementById('ann-content-ko').value.trim()||null,
+        image_url:imageUrl,
         is_active:document.getElementById('ann-active').checked
     };
-    if(!payload.title){toast('請輸入中文公告標題','warn');switchAnnTab('zh');return;}
     if(id) await _s.from('announcements').update(payload).eq('id',id);
     else await _s.from('announcements').insert([payload]);
     closeAnnounceModal();loadAnnouncements();toast('公告已儲存');
