@@ -2838,15 +2838,11 @@ function copyCronSql(){
 async function testSummaryNotify(){
     toast('📤 正在發送測試彙整...','info',2000);
     try{
-        const res=await fetch(`https://pydlnqriztpzgxbjuohm.supabase.co/functions/v1/daily-summary`,{
-            method:'POST',
-            headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_KEY}`},
-            body:'{}'
-        });
-        const text=await res.text();
-        toast(res.ok?`✓ 發送成功：${text}`:'發送失敗，請檢查 Edge Function',res.ok?'success':'error',4000);
+        const{data,error}=await _s.functions.invoke('daily-summary',{body:{}});
+        if(error) throw error;
+        toast('✓ 發送成功，請查看 LINE','success',4000);
     }catch(e){
-        toast('發送失敗：'+e.message,'error',4000);
+        toast('發送失敗：'+( e?.message||e),'error',4000);
     }
 }
 
