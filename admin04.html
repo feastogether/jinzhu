@@ -2953,7 +2953,7 @@ async function loadUpsell(){
 function renderUpsellPicker(){
     const kw=document.getElementById('upsell-search').value.toLowerCase();
     const catF=document.getElementById('upsell-cat-filter').value;
-    const selectedIds=upsellData.item_ids||[];
+    const selectedIds=(upsellData.item_ids||[]).map(String);
 
     const filtered=upsellAllItems.filter(i=>
         i.name.toLowerCase().includes(kw) &&
@@ -2961,7 +2961,7 @@ function renderUpsellPicker(){
     );
 
     document.getElementById('upsell-picker-grid').innerHTML=filtered.map(i=>{
-        const sel=selectedIds.includes(i.id);
+        const sel=selectedIds.includes(String(i.id));
         return`<div onclick="toggleUpsellItem('${i.id}')"
             class="border-2 rounded-2xl overflow-hidden cursor-pointer transition-all select-none"
             style="${sel?'border-color:var(--pine);background:rgba(0,77,64,0.03)':'border-color:var(--border)'}"
@@ -2986,10 +2986,10 @@ function renderUpsellPicker(){
 }
 
 function toggleUpsellItem(id){
-    const ids=upsellData.item_ids||[];
-    const idx=ids.indexOf(id);
+    const ids=(upsellData.item_ids||[]).map(String);
+    const idx=ids.indexOf(String(id));
     if(idx>-1) ids.splice(idx,1);
-    else ids.push(id);
+    else ids.push(String(id));
     upsellData.item_ids=[...ids];
     saveUpsellItems();
     renderUpsellPicker();
@@ -2997,15 +2997,18 @@ function toggleUpsellItem(id){
 }
 
 function updateUpsellCount(){
-    document.getElementById('upsell-selected-count').textContent=`已選 ${(upsellData.item_ids||[]).length} 項`;
+    const n=(upsellData.item_ids||[]).length;
+    document.getElementById('upsell-selected-count').textContent=`已選 ${n} 項`;
 }
 
 async function saveUpsellItems(){
-    await _s.from('upsell_settings').upsert({
+    const{error}=await _s.from('upsell_settings').upsert({
         id:1,
         item_ids:upsellData.item_ids,
         updated_at:new Date().toISOString()
     });
+    if(error) toast('儲存失敗','error');
+    else toast(`已儲存 ${(upsellData.item_ids||[]).length} 項加購品項`);
 }
 
 async function saveUpsellSettings(){
