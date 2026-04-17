@@ -233,6 +233,17 @@
         .badge-pop{animation:badgePop 0.3s ease;}
         .img-skeleton{width:100%;height:100%;background:linear-gradient(90deg,var(--cream) 25%,#f0ebe2 50%,var(--cream) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:10px;}
 
+        /* UPSELL */
+        #upsell-modal{position:fixed;inset:0;background:rgba(10,20,15,0.75);z-index:750;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);}
+        #upsell-modal.visible{display:flex;}
+        .upsell-sheet{background:white;width:100%;max-width:500px;max-height:80svh;border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:slideUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94) both;}
+        .upsell-item-card{display:flex;gap:12px;align-items:center;background:var(--paper);border-radius:16px;padding:12px;border:2px solid transparent;cursor:pointer;transition:all 0.2s;}
+        .upsell-item-card.selected{border-color:var(--pine);background:rgba(0,77,64,0.04);}
+        .upsell-item-img{width:56px;height:56px;border-radius:10px;background:var(--cream);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+        .upsell-item-img img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
+        .upsell-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:white;}
+        .upsell-item-card.selected .upsell-check{background:var(--pine);border-color:var(--pine);}
+
         /* TOAST */
         .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:white;padding:12px 24px;border-radius:999px;font-size:12px;font-weight:700;z-index:9000;white-space:nowrap;animation:fadeUp 0.3s ease both;pointer-events:none;}
     </style>
@@ -396,6 +407,21 @@
     </div>
 </div>
 
+<div id="upsell-modal">
+    <div class="upsell-sheet">
+        <div class="sheet-handle"></div>
+        <div style="padding:16px 20px 8px;flex-shrink:0">
+            <div id="upsell-modal-title" style="font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:900;color:var(--pine);text-align:center;letter-spacing:0.1em">加購推薦</div>
+            <div style="font-size:11px;color:var(--stone);text-align:center;margin-top:4px">點選品項後一起加入訂單</div>
+        </div>
+        <div id="upsell-list" style="flex:1;overflow-y:auto;padding:8px 16px 8px;display:flex;flex-direction:column;gap:10px"></div>
+        <div style="padding:12px 16px;border-top:1px solid rgba(0,0,0,0.06);display:flex;gap:10px;flex-shrink:0;background:white">
+            <button onclick="skipUpsell()" style="flex:1;padding:14px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:var(--stone);font-weight:700;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif" data-i18n="upsellSkip">不用了，直接送出</button>
+            <button onclick="confirmUpsell()" style="flex:2;padding:14px;border-radius:12px;border:none;background:var(--pine);color:white;font-weight:700;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif" data-i18n="upsellConfirm">加入並送出</button>
+        </div>
+    </div>
+</div>
+
 <div id="announce-popup">
     <div class="announce-card">
         <div class="announce-header">
@@ -452,7 +478,7 @@ const I18N={
         toastFill:'請填寫姓名與電話',toastAdded:'已加入預點清單 ✓',
         toastFlv:'請選取客製口味',toastSetFull:'本區上限為',toastSetItem:'尚未選滿',
         noteFlavor:'請選擇',noteDesc:'真心款待，誠摯滋味。',
-        selectCta:'選擇',setChoose:'任選',setInclude:'含',
+        selectCta:'選擇',setChoose:'任選',setInclude:'含',upsellSkip:'不用了，直接送出',upsellConfirm:'加入並送出',
     },
     en:{
         subtitle:'Heartfelt Hospitality · Playful Flavors',
@@ -479,7 +505,7 @@ const I18N={
         toastFlv:'Please select flavor options',toastSetFull:'Max items in this section:',
         toastSetItem:'Please complete your selection',
         noteFlavor:'Please select',noteDesc:'Heartfelt flavors, crafted with care.',
-        selectCta:'Select',setChoose:'Choose',setInclude:'Includes',
+        selectCta:'Select',setChoose:'Choose',setInclude:'Includes',upsellSkip:'Skip, just submit',upsellConfirm:'Add & Submit',
     },
     ja:{
         subtitle:'心を込めて · 新しい美味しさ',
@@ -506,7 +532,7 @@ const I18N={
         toastFlv:'フレーバーを選択してください',toastSetFull:'このセクションの上限：',
         toastSetItem:'まだ選択が完了していません',
         noteFlavor:'選択してください',noteDesc:'心を込めた味わい。',
-        selectCta:'選ぶ',setChoose:'選択',setInclude:'含む',
+        selectCta:'選ぶ',setChoose:'選択',setInclude:'含む',upsellSkip:'スキップして送信',upsellConfirm:'追加して送信',
     },
     ko:{
         subtitle:'마음을 담아 · 새로운 맛의 즐거움',
@@ -533,7 +559,7 @@ const I18N={
         toastFlv:'맛 옵션을 선택해 주세요',toastSetFull:'이 섹션의 최대 수량：',
         toastSetItem:'선택을 완료해 주세요',
         noteFlavor:'선택하세요',noteDesc:'마음을 담은 맛.',
-        selectCta:'선택',setChoose:'선택',setInclude:'포함',
+        selectCta:'선택',setChoose:'선택',setInclude:'포함',upsellSkip:'건너뛰고 주문하기',upsellConfirm:'추가하고 주문',
     },
 };
 
@@ -910,16 +936,107 @@ function removeItem(idx){
     if(!cart.length){closePreview();return;}openPreview();
 }
 
+// ── UPSELL ──
+let upsellSettings=null, upsellSelectedIds=new Set();
+
+async function loadUpsellSettings(){
+    const{data}=await _s.from('upsell_settings').select('*').eq('id',1).single();
+    upsellSettings=data||null;
+}
+
+async function openUpsellModal(){
+    if(!upsellSettings?.enabled||!upsellSettings?.item_ids?.length){
+        await doFinalSubmit();return;
+    }
+    // 載入加購品項
+    const ids=upsellSettings.item_ids;
+    const{data:items}=await _s.from('menu_items').select('*').in('id',ids).eq('is_hidden',false);
+    if(!items||!items.length){await doFinalSubmit();return;}
+
+    upsellSelectedIds=new Set();
+
+    // 標題多語言
+    const titleKey='title'+(curLang!=='zh'?'_'+curLang:'');
+    const title=upsellSettings[titleKey]||upsellSettings.title||'加購推薦';
+    document.getElementById('upsell-modal-title').textContent=title;
+
+    // 更新按鈕文字
+    document.querySelectorAll('[data-i18n="upsellSkip"]').forEach(el=>el.textContent=t('upsellSkip'));
+    document.querySelectorAll('[data-i18n="upsellConfirm"]').forEach(el=>el.textContent=t('upsellConfirm'));
+
+    // 渲染品項
+    document.getElementById('upsell-list').innerHTML=items.map(i=>`
+        <div class="upsell-item-card" id="upsell-item-${i.id}" onclick="toggleUpsellSelect('${i.id}','${i.price}')">
+            <div class="upsell-item-img">
+                ${i.image_url?`<img src="${i.image_url}" loading="lazy">`:`<span style="font-size:1.4rem;opacity:.3">🍽</span>`}
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13px;color:var(--pine)">${getLangName(i,'name')}</div>
+                ${getLangName(i,'description')?`<div style="font-size:11px;color:var(--stone);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${getLangName(i,'description')}</div>`:''}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+                <div style="font-family:'Noto Serif TC',serif;font-weight:900;color:var(--gold);font-size:1rem">$${i.price}</div>
+                <div class="upsell-check" id="upsell-check-${i.id}"></div>
+            </div>
+        </div>`).join('');
+
+    document.getElementById('upsell-modal').classList.add('visible');
+    closePreview();
+}
+
+function toggleUpsellSelect(id,price){
+    const card=document.getElementById('upsell-item-'+id);
+    const check=document.getElementById('upsell-check-'+id);
+    if(upsellSelectedIds.has(id)){
+        upsellSelectedIds.delete(id);
+        card.classList.remove('selected');
+        check.innerHTML='';
+    } else {
+        upsellSelectedIds.add(id);
+        card.classList.add('selected');
+        check.innerHTML='<svg style="width:11px;height:11px" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+}
+
+function skipUpsell(){
+    document.getElementById('upsell-modal').classList.remove('visible');
+    doFinalSubmit();
+}
+
+async function confirmUpsell(){
+    document.getElementById('upsell-modal').classList.remove('visible');
+    // 把選到的加購品項加入 cart
+    if(upsellSelectedIds.size>0){
+        const ids=upsellSettings.item_ids;
+        const{data:items}=await _s.from('menu_items').select('*').in('id',[...upsellSelectedIds]);
+        (items||[]).forEach(i=>{
+            const displayName=getLangName(i,'name');
+            cart.push({name:displayName,nameCN:i.name,price:i.price});
+        });
+    }
+    doFinalSubmit();
+}
+
 let isSubmitting=false;
 async function finalSubmit(){
-    if(isSubmitting)return;isSubmitting=true;
+    if(isSubmitting)return;
+    // 先載入加購設定（如果還沒載入）
+    if(!upsellSettings) await loadUpsellSettings();
+    openUpsellModal();
+}
+
+async function doFinalSubmit(){
+    if(isSubmitting)return;
+    isSubmitting=true;
     const btn=document.querySelector('.submit-btn');if(btn){btn.disabled=true;btn.textContent='...';}
     const{error}=await _s.from('orders').insert([{
         customer_name:guest.name,phone:guest.phone,
-        order_content:cart.map(i=>({name:i.nameCN||i.name, price:i.price})),total_price:cart.reduce((s,i)=>s+i.price,0),
+        order_content:cart.map(i=>({name:i.nameCN||i.name,price:i.price})),
+        total_price:cart.reduce((s,i)=>s+i.price,0),
         note:document.getElementById('order-note').value
     }]);
     if(!error){
+        document.getElementById('upsell-modal').classList.remove('visible');
         closePreview();
         document.getElementById('step-2').classList.remove('visible');
         document.getElementById('cart-bar').classList.remove('visible');
