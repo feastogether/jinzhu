@@ -1255,8 +1255,21 @@ function parseItemDisplay(rawName){
     const clean=rawName.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
     return{qty,flv,clean};
 }
-function formatItemName(clean,flv){
-    return flv?`${clean}<span style="font-size:10px;color:var(--gold);margin-left:4px;font-weight:500">[${flv}]</span>`:clean;
+// 解析套餐子品項（含口味），回傳 [{name, flv, qty}]
+function parseSetSubs(inner){
+    const items=inner.split('、');
+    const map={};
+    items.forEach(raw=>{
+        const{clean,flv,qty}=parseItemDisplay(raw.trim());
+        if(!clean) return;
+        const key=flv?clean+'｜'+flv:clean;
+        if(!map[key]) map[key]={name:clean,flv,qty:0};
+        map[key].qty+=qty||1;
+    });
+    return Object.values(map);
+}
+function flvTag(flv){
+    return flv?`<span style="font-size:10px;color:var(--gold);margin-left:3px;font-weight:500">[${flv}]</span>`:'';
 }
 
 const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
@@ -1495,22 +1508,15 @@ async function loadOrders() {
                             const isSet=inner&&inner.includes('、');
                             if(isSet){
                                 const brand=clean.slice(0,pIdx).trim();
-                                const subs={};
-                                inner.split('、').forEach(sub=>{
-                                    const sM=sub.match(/ x(\d+)/), sq=sM?parseInt(sM[1]):1;
-                                    const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                                    if(s) subs[s]=(subs[s]||0)+qty*sq;
-                                });
-                                sets.push({brand,qty,subs,flvTag});
+                                const subList=parseSetSubs(inner);
+                                sets.push({brand,qty,subList});
                             } else {
-                                // key 含口味以便區分同品項不同口味
                                 const key=flvTag?`${clean}｜${flvTag}`:clean;
                                 if(!singles[key]) singles[key]={name:clean,flv:flvTag,qty:0};
                                 singles[key].qty+=qty;
                             }
                         });
                         let html='';
-                        // 套餐區塊
                         if(sets.length){
                             html+=sets.map(set=>`
                             <div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:8px">
@@ -1519,11 +1525,11 @@ async function loadOrders() {
                                     <span style="font-weight:900;font-size:13px;color:var(--gold)">${set.qty} 套</span>
                                 </div>
                                 <div style="padding:4px 12px">
-                                    ${Object.entries(set.subs).map(([name,count])=>`
+                                    ${set.subList.map(({name,flv,qty:sq})=>`
                                     <div class="order-item-row">
                                         <div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
-                                        <div class="order-item-name" style="font-size:11px">${name}</div>
-                                        <div style="font-weight:900;color:var(--pine);font-size:12px">${count}</div>
+                                        <div class="order-item-name" style="font-size:11px">${name}${flv?`<span style="color:var(--gold);margin-left:3px;font-size:10px">[${flv}]</span>`:''}</div>
+                                        <div style="font-weight:900;color:var(--pine);font-size:12px">${set.qty*sq}</div>
                                         <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
                                     </div>`).join('')}
                                 </div>
@@ -2449,21 +2455,18 @@ function renderReports(orders){
     orders.forEach(o=>{
         totalAdult+=(o.adult_count||0);totalKid+=(o.kid_count||0);totalChild+=(o.child_count||0);totalRev+=(o.total_price||0);
         (o.order_content||[]).forEach(item=>{
-            const qtyM=item.name.match(/ x(\d+)/),qty=qtyM?parseInt(qtyM[1]):1;
-            let cleanName=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            const{qty,flv,clean:cleanName}=parseItemDisplay(item.name);
             const pIdx=cleanName.indexOf(' ('),inner=pIdx>-1?cleanName.slice(pIdx+2,-1):null,isSet=inner&&inner.includes('、');
             if(isSet){
                 const brand=cleanName.slice(0,pIdx).trim();
                 setMenuCount[brand]=(setMenuCount[brand]||0)+qty;
                 if(!setMenuDetail[brand]) setMenuDetail[brand]={};
-                const subNames=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);
-                const subCnt={};
-                subNames.forEach(s=>{subCnt[s]=(subCnt[s]||0)+1;});
-                Object.entries(subCnt).forEach(([s,cnt])=>{
-                    // key 格式：「套餐名稱／子品項名」方便顯示
-                    const key=`${brand}／${s}`;
-                    dishCount[key]=(dishCount[key]||0)+qty*cnt;
-                    setMenuDetail[brand][s]=(setMenuDetail[brand][s]||0)+qty*cnt;
+                const subs=parseSetSubs(inner);
+                subs.forEach(({name,flv:sFlv,qty:sQty})=>{
+                    const dispName=sFlv?`${name} [${sFlv}]`:name;
+                    const key=`${brand}／${dispName}`;
+                    dishCount[key]=(dishCount[key]||0)+qty*sQty;
+                    setMenuDetail[brand][dispName]=(setMenuDetail[brand][dispName]||0)+qty*sQty;
                 });
             }
             else{
@@ -2542,9 +2545,8 @@ function renderReports(orders){
             const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             if(inner&&inner.includes('、')){
                 const brand=clean.slice(0,pIdx).trim(),subs={};
-                const _subs=inner.split('、').map(s=>parseItemDisplay(s).clean).filter(Boolean);
-                const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
-                sets.push({brand,qty,subs,flv});
+                const subList=parseSetSubs(inner);
+                sets.push({brand,qty,subList});
             } else {
                 const key=flv?clean+'｜'+flv:clean;
                 if(!singles[key])singles[key]={name:clean,flv,qty:0};
@@ -2555,11 +2557,11 @@ function renderReports(orders){
         sets.forEach(set=>{
             itemsHtml+=`<div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:8px">
                 <div style="background:rgba(184,145,80,0.08);padding:6px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(184,145,80,0.2)">
-                    <span style="font-weight:900;font-size:12px;color:var(--gold)">🍱 ${set.brand}${set.flv?` <span style="font-size:10px;font-weight:500">[${set.flv}]</span>`:''}</span>
+                    <span style="font-weight:900;font-size:12px;color:var(--gold)">🍱 ${set.brand}</span>
                     <span style="font-weight:900;font-size:13px;color:var(--gold)">${set.qty} 套</span>
                 </div>
                 <div style="padding:4px 12px">
-                ${Object.entries(set.subs).map(([n,c])=>`<div class="order-item-row"><div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><div class="order-item-name" style="font-size:11px">${n}</div><div style="font-weight:900;color:var(--pine);font-size:12px">${c}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
+                ${set.subList.map(({name,flv,qty:sq})=>`<div class="order-item-row"><div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><div class="order-item-name" style="font-size:11px">${name}${flv?`<span style="color:var(--gold);margin-left:3px;font-size:10px">[${flv}]</span>`:''}</div><div style="font-weight:900;color:var(--pine);font-size:12px">${set.qty*sq}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
                 </div>
             </div>`;
         });
@@ -2628,12 +2630,11 @@ function exportFullData(){
             if(isSet){
                 const brand=clean.slice(0,pIdx).trim()+(_flv?` [${_flv}]`:'');
                 // 數重複出現次數
-                const subNames=inner.split('、').map(s=>parseItemDisplay(s).clean).filter(Boolean);
-                const subCnt={};
-                subNames.forEach(s=>{subCnt[s]=(subCnt[s]||0)+1;});
+                const subList=parseSetSubs(inner);
                 let first=true;
-                Object.entries(subCnt).forEach(([s,cnt])=>{
-                    out.push({isSet:true,brand,sub:s,qty:qty*cnt,price:first?item.price:'',first});
+                subList.forEach(({name,flv,qty:sq})=>{
+                    const dispName=flv?`${name} [${flv}]`:name;
+                    out.push({isSet:true,brand,sub:dispName,qty:qty*sq,price:first?item.price:'',first});
                     first=false;
                 });
             } else {
@@ -3579,8 +3580,8 @@ function renderCalDayBody(orders){
             const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             if(inner&&inner.includes('、')){
                 const brand=clean.slice(0,pIdx).trim(),subs={};
-                const _subs=inner.split('、').map(s=>parseItemDisplay(s).clean).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
-                sets.push({brand,qty,subs,flv});
+                const subList=parseSetSubs(inner);
+                sets.push({brand,qty,subList});
             } else {
                 const key=flv?clean+'｜'+flv:clean;
                 if(!singles[key])singles[key]={name:clean,flv,qty:0};
@@ -3596,7 +3597,7 @@ function renderCalDayBody(orders){
                     <span style="font-size:11px;font-weight:900;color:var(--gold)">${set.qty} 套</span>
                 </div>
                 <div style="padding:4px 12px">
-                ${Object.entries(set.subs).map(([n,c])=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${n}</span><span style="font-weight:900;color:var(--pine)">${c} 份</span></div>`).join('')}
+                ${set.subList.map(({name,flv,qty:sq})=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${name}${flv?` <span style="font-size:10px;color:var(--gold)">[${flv}]</span>`:''}</span><span style="font-weight:900;color:var(--pine)">${set.qty*sq} 份</span></div>`).join('')}
                 </div>
             </div>`).join('')}
             ${Object.entries(singles).length?`
