@@ -1245,6 +1245,20 @@
 
 <!-- ── SCRIPTS ── -->
 <script>
+
+// ── 品項名稱解析 helper（保留口味標籤） ──
+function parseItemDisplay(rawName){
+    const qM=rawName.match(/ x(\d+)/);
+    const qty=qM?parseInt(qM[1]):1;
+    const flvM=rawName.match(/\[([^\]]+)\]/);
+    const flv=flvM?flvM[1]:'';
+    const clean=rawName.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+    return{qty,flv,clean};
+}
+function formatItemName(clean,flv){
+    return flv?`${clean}<span style="font-size:10px;color:var(--gold);margin-left:4px;font-weight:500">[${flv}]</span>`:clean;
+}
+
 const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
 const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -2524,20 +2538,24 @@ function renderReports(orders){
         // 解析套餐/單點
         const sets=[],singles={};
         (o.order_content||[]).forEach(item=>{
-            const qM=item.name.match(/ x(\d+)/),qty=qM?parseInt(qM[1]):1;
-            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            const{qty,flv,clean}=parseItemDisplay(item.name);
             const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             if(inner&&inner.includes('、')){
                 const brand=clean.slice(0,pIdx).trim(),subs={};
-                const _subs=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
-                sets.push({brand,qty,subs});
-            } else {singles[clean]=(singles[clean]||0)+qty;}
+                const _subs=inner.split('、').map(s=>parseItemDisplay(s).clean).filter(Boolean);
+                const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
+                sets.push({brand,qty,subs,flv});
+            } else {
+                const key=flv?clean+'｜'+flv:clean;
+                if(!singles[key])singles[key]={name:clean,flv,qty:0};
+                singles[key].qty+=qty;
+            }
         });
         let itemsHtml='';
         sets.forEach(set=>{
             itemsHtml+=`<div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:8px">
                 <div style="background:rgba(184,145,80,0.08);padding:6px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(184,145,80,0.2)">
-                    <span style="font-weight:900;font-size:12px;color:var(--gold)">🍱 ${set.brand}</span>
+                    <span style="font-weight:900;font-size:12px;color:var(--gold)">🍱 ${set.brand}${set.flv?` <span style="font-size:10px;font-weight:500">[${set.flv}]</span>`:''}</span>
                     <span style="font-weight:900;font-size:13px;color:var(--gold)">${set.qty} 套</span>
                 </div>
                 <div style="padding:4px 12px">
@@ -2545,14 +2563,14 @@ function renderReports(orders){
                 </div>
             </div>`;
         });
-        const singleEntries=Object.entries(singles);
+        const singleEntries=Object.values(singles);
         if(singleEntries.length){
             itemsHtml+=`<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
                 <div style="background:#f8fafc;padding:6px 12px;border-bottom:1px solid var(--border)">
                     <span style="font-weight:900;font-size:11px;color:var(--stone);text-transform:uppercase;letter-spacing:.1em">單點</span>
                 </div>
                 <div style="padding:4px 12px">
-                ${singleEntries.map(([n,c])=>`<div class="order-item-row"><div class="order-item-dot"></div><div class="order-item-name">${n}</div><div style="font-weight:900;color:var(--pine);font-size:13px">${c}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
+                ${singleEntries.map(({name,flv,qty})=>`<div class="order-item-row"><div class="order-item-dot"></div><div class="order-item-name">${name}${flv?`<span style="font-size:10px;color:var(--gold);margin-left:4px;font-weight:500">[${flv}]</span>`:''}</div><div style="font-weight:900;color:var(--pine);font-size:13px">${qty}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
                 </div>
             </div>`;
         }
@@ -2603,16 +2621,14 @@ function exportFullData(){
     function parseOrderItems(items){
         const out=[];
         items.forEach(item=>{
-            const qtyM=item.name.match(/ x(\d+)/);
-            const qty=qtyM?parseInt(qtyM[1]):1;
-            const clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            const{qty:_qty,flv:_flv,clean}=parseItemDisplay(item.name);
             const pIdx=clean.indexOf(' (');
             const inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             const isSet=inner&&inner.includes('、');
             if(isSet){
-                const brand=clean.slice(0,pIdx).trim();
+                const brand=clean.slice(0,pIdx).trim()+(_flv?` [${_flv}]`:'');
                 // 數重複出現次數
-                const subNames=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);
+                const subNames=inner.split('、').map(s=>parseItemDisplay(s).clean).filter(Boolean);
                 const subCnt={};
                 subNames.forEach(s=>{subCnt[s]=(subCnt[s]||0)+1;});
                 let first=true;
@@ -3559,14 +3575,17 @@ function renderCalDayBody(orders){
         // 解析套餐/單點
         const sets=[], singles={};
         (o.order_content||[]).forEach(item=>{
-            const qM=item.name.match(/ x(\d+)/),qty=qM?parseInt(qM[1]):1;
-            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            const{qty,flv,clean}=parseItemDisplay(item.name);
             const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
             if(inner&&inner.includes('、')){
                 const brand=clean.slice(0,pIdx).trim(),subs={};
-                const _subs=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
-                sets.push({brand,qty,subs});
-            } else { singles[clean]=(singles[clean]||0)+qty; }
+                const _subs=inner.split('、').map(s=>parseItemDisplay(s).clean).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
+                sets.push({brand,qty,subs,flv});
+            } else {
+                const key=flv?clean+'｜'+flv:clean;
+                if(!singles[key])singles[key]={name:clean,flv,qty:0};
+                singles[key].qty+=qty;
+            }
         });
 
         const detailHtml=`
@@ -3584,7 +3603,7 @@ function renderCalDayBody(orders){
             <div style="border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden">
                 <div style="background:#f8fafc;padding:5px 12px;border-bottom:1px solid #e2e8f0"><span style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.1em">單點</span></div>
                 <div style="padding:4px 12px">
-                ${Object.entries(singles).map(([n,c])=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${n}</span><span style="font-weight:900;color:var(--pine)">${c} 份</span></div>`).join('')}
+                ${Object.values(singles).map(({name,flv,qty})=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${name}${flv?` <span style="font-size:10px;color:var(--gold)">[${flv}]</span>`:''}</span><span style="font-weight:900;color:var(--pine)">${qty} 份</span></div>`).join('')}
                 </div>
             </div>`:''}
             ${o.note?`<div style="margin-top:8px;padding:8px 12px;background:#f0fdf4;border-left:3px solid var(--pine);border-radius:8px;font-size:11px;font-weight:700;color:var(--pine)">📝 ${o.note}</div>`:''}`;
