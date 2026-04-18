@@ -1248,16 +1248,27 @@
 
 // ── 品項名稱解析 helper（保留口味標籤） ──
 function parseItemDisplay(rawName){
-    const qM=rawName.match(/ x(\d+)/);
+    // qty 只匹配品名層級的 x數量（括號前），不誤抓子品項的 x數量
+    const qM=rawName.match(/^[^(]* x(\d+)/);
     const qty=qM?parseInt(qM[1]):1;
-    const flvM=rawName.match(/\[([^\]]+)\]/);
+    // 先從原始名稱取括號內容（保留口味），再取品名本身的 flv
+    const noQty=rawName.replace(/ x\d+/g,'').trim();
+    const pI=noQty.indexOf(' (');
+    const inner=pI>-1?noQty.slice(pI+2,-1):null;
+    const isSet=!!(inner&&inner.includes('、'));
+    // flv 只從品名部分取（括號前），套餐的 flv 為空
+    const namePart=pI>-1?noQty.slice(0,pI):noQty;
+    const flvM=namePart.match(/\[([^\]]+)\]/);
     const flv=flvM?flvM[1]:'';
     const clean=rawName.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-    return{qty,flv,clean};
+    const brand=isSet?clean.replace(/ \(.*$/,'').trim():null;
+    return{qty,flv,clean,inner,isSet,brand};
 }
 // 解析套餐子品項（含口味），回傳 [{name, flv, qty}]
-function parseSetSubs(inner){
-    const items=inner.split('、');
+// inner 必須來自原始名稱（未移除口味的版本）
+function parseSetSubs(innerRaw){
+    if(!innerRaw) return[];
+    const items=innerRaw.split('、');
     const map={};
     items.forEach(raw=>{
         const{clean,flv,qty}=parseItemDisplay(raw.trim());
@@ -1498,16 +1509,8 @@ async function loadOrders() {
                     ${(()=>{
                         const sets=[], singles={};
                         (o.order_content||[]).forEach(item=>{
-                            const qM=item.name.match(/ x(\d+)/), qty=qM?parseInt(qM[1]):1;
-                            // clean 用於分組 key（移除口味和數量），display 保留口味
-                            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                            // 提取口味標籤
-                            const flvM=item.name.match(/\[([^\]]+)\]/);
-                            const flvTag=flvM?flvM[1]:'';
-                            const pIdx=clean.indexOf(' ('), inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-                            const isSet=inner&&inner.includes('、');
+                            const{qty,flv:flvTag,clean,inner,isSet,brand}=parseItemDisplay(item.name);
                             if(isSet){
-                                const brand=clean.slice(0,pIdx).trim();
                                 const subList=parseSetSubs(inner);
                                 sets.push({brand,qty,subList});
                             } else {
@@ -2455,10 +2458,8 @@ function renderReports(orders){
     orders.forEach(o=>{
         totalAdult+=(o.adult_count||0);totalKid+=(o.kid_count||0);totalChild+=(o.child_count||0);totalRev+=(o.total_price||0);
         (o.order_content||[]).forEach(item=>{
-            const{qty,flv,clean:cleanName}=parseItemDisplay(item.name);
-            const pIdx=cleanName.indexOf(' ('),inner=pIdx>-1?cleanName.slice(pIdx+2,-1):null,isSet=inner&&inner.includes('、');
+            const{qty,flv,clean:cleanName,inner,isSet,brand}=parseItemDisplay(item.name);
             if(isSet){
-                const brand=cleanName.slice(0,pIdx).trim();
                 setMenuCount[brand]=(setMenuCount[brand]||0)+qty;
                 if(!setMenuDetail[brand]) setMenuDetail[brand]={};
                 const subs=parseSetSubs(inner);
@@ -2541,10 +2542,8 @@ function renderReports(orders){
         // 解析套餐/單點
         const sets=[],singles={};
         (o.order_content||[]).forEach(item=>{
-            const{qty,flv,clean}=parseItemDisplay(item.name);
-            const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-            if(inner&&inner.includes('、')){
-                const brand=clean.slice(0,pIdx).trim(),subs={};
+            const{qty,flv,clean,inner,isSet,brand}=parseItemDisplay(item.name);
+            if(isSet){
                 const subList=parseSetSubs(inner);
                 sets.push({brand,qty,subList});
             } else {
@@ -2623,12 +2622,9 @@ function exportFullData(){
     function parseOrderItems(items){
         const out=[];
         items.forEach(item=>{
-            const{qty:_qty,flv:_flv,clean}=parseItemDisplay(item.name);
-            const pIdx=clean.indexOf(' (');
-            const inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-            const isSet=inner&&inner.includes('、');
+            const{qty:_qty,flv:_flv,clean,inner,isSet}=parseItemDisplay(item.name);
             if(isSet){
-                const brand=clean.slice(0,pIdx).trim()+(_flv?` [${_flv}]`:'');
+                const brand=clean+(_flv?` [${_flv}]`:'');
                 // 數重複出現次數
                 const subList=parseSetSubs(inner);
                 let first=true;
@@ -3576,10 +3572,8 @@ function renderCalDayBody(orders){
         // 解析套餐/單點
         const sets=[], singles={};
         (o.order_content||[]).forEach(item=>{
-            const{qty,flv,clean}=parseItemDisplay(item.name);
-            const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-            if(inner&&inner.includes('、')){
-                const brand=clean.slice(0,pIdx).trim(),subs={};
+            const{qty,flv,clean,inner,isSet,brand}=parseItemDisplay(item.name);
+            if(isSet){
                 const subList=parseSetSubs(inner);
                 sets.push({brand,qty,subList});
             } else {
