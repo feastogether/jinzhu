@@ -214,13 +214,14 @@
         /* ANNOUNCE */
         #announce-popup{position:fixed;inset:0;background:rgba(10,20,15,0.75);z-index:1000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);}
         #announce-popup.visible{display:flex;}
-        .announce-card{background:white;border-radius:28px;width:100%;max-width:360px;overflow:hidden;animation:scaleIn 0.35s ease both;}
-        .announce-header{background:var(--pine);padding:24px 24px 20px;}
-        .announce-icon{font-size:1.5rem;margin-bottom:8px;}
-        .announce-title{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:white;}
-        .announce-body{padding:24px;}
+        .announce-card{background:white;border-radius:28px;width:100%;max-width:360px;max-height:85svh;display:flex;flex-direction:column;overflow:hidden;animation:scaleIn 0.35s ease both;}
+        .announce-card-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+        .announce-header{background:var(--pine);padding:20px 24px 16px;flex-shrink:0;}
+        .announce-icon{font-size:1.3rem;margin-bottom:6px;}
+        .announce-title{font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:900;color:white;}
+        .announce-body{padding:16px 24px;}
         .announce-content{font-size:13px;color:var(--stone);line-height:1.8;white-space:pre-line;}
-        .announce-close{display:block;width:calc(100% - 48px);margin:0 24px 24px;padding:16px;background:var(--pine);color:white;border:none;border-radius:14px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;}
+        .announce-close{display:block;width:calc(100% - 48px);margin:0 24px 20px;padding:14px;background:var(--pine);color:white;border:none;border-radius:14px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;flex-shrink:0;}
 
         /* ANIMATIONS */
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
@@ -232,6 +233,17 @@
         @keyframes badgePop{0%{transform:scale(1);}50%{transform:scale(1.35);}100%{transform:scale(1);}}
         .badge-pop{animation:badgePop 0.3s ease;}
         .img-skeleton{width:100%;height:100%;background:linear-gradient(90deg,var(--cream) 25%,#f0ebe2 50%,var(--cream) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:10px;}
+
+        /* UPSELL */
+        #upsell-modal{position:fixed;inset:0;background:rgba(10,20,15,0.75);z-index:750;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);}
+        #upsell-modal.visible{display:flex;}
+        .upsell-sheet{background:white;width:100%;max-width:500px;max-height:80svh;border-radius:24px 24px 0 0;display:flex;flex-direction:column;animation:slideUp 0.35s cubic-bezier(0.25,0.46,0.45,0.94) both;}
+        .upsell-item-card{display:flex;gap:12px;align-items:flex-start;background:var(--paper);border-radius:16px;padding:12px;border:2px solid transparent;cursor:pointer;transition:all 0.2s;}
+        .upsell-item-card.selected{border-color:var(--pine);background:rgba(0,77,64,0.04);}
+        .upsell-item-img{width:56px;height:56px;border-radius:10px;background:var(--cream);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+        .upsell-item-img img{width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;}
+        .upsell-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;background:white;}
+        .upsell-item-card.selected .upsell-check{background:var(--pine);border-color:var(--pine);}
 
         /* TOAST */
         .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:white;padding:12px 24px;border-radius:999px;font-size:12px;font-weight:700;z-index:9000;white-space:nowrap;animation:fadeUp 0.3s ease both;pointer-events:none;}
@@ -396,14 +408,34 @@
     </div>
 </div>
 
+<div id="upsell-modal">
+    <div class="upsell-sheet">
+        <div class="sheet-handle"></div>
+        <div style="padding:16px 20px 8px;flex-shrink:0">
+            <div id="upsell-modal-title" style="font-family:'Noto Serif TC',serif;font-size:1.05rem;font-weight:900;color:var(--pine);text-align:center;letter-spacing:0.1em">加購推薦</div>
+            <div style="font-size:11px;color:var(--stone);text-align:center;margin-top:4px">點選品項後一起加入訂單</div>
+        </div>
+        <div id="upsell-list" style="flex:1;overflow-y:auto;padding:8px 16px 8px;display:flex;flex-direction:column;gap:10px"></div>
+        <div style="padding:12px 16px;border-top:1px solid rgba(0,0,0,0.06);display:flex;gap:10px;flex-shrink:0;background:white">
+            <button onclick="skipUpsell()" style="flex:1;padding:14px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.1);background:white;color:var(--stone);font-weight:700;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif" data-i18n="upsellSkip">不用了，直接送出</button>
+            <button onclick="confirmUpsell()" style="flex:2;padding:14px;border-radius:12px;border:none;background:var(--pine);color:white;font-weight:700;font-size:13px;cursor:pointer;font-family:'Noto Sans TC',sans-serif" data-i18n="upsellConfirm">加入並送出</button>
+        </div>
+    </div>
+</div>
+
 <div id="announce-popup">
     <div class="announce-card">
-        <div class="announce-header">
+        <div class="announce-header" style="flex-shrink:0">
             <div class="announce-icon">📢</div>
             <div class="announce-title" id="popup-title"></div>
         </div>
-        <div class="announce-body">
-            <p class="announce-content" id="popup-content"></p>
+        <div class="announce-card-scroll">
+            <div id="popup-img-wrap" style="display:none;background:white;text-align:center;padding:12px 16px 0">
+                <img id="popup-img" src="" alt="" style="max-width:100%;max-height:240px;width:auto;height:auto;object-fit:contain;border-radius:10px;">
+            </div>
+            <div class="announce-body">
+                <p class="announce-content" id="popup-content"></p>
+            </div>
         </div>
         <button class="announce-close" onclick="closeAnnouncePopup()" data-i18n="announcClose">我知道了</button>
     </div>
@@ -449,7 +481,7 @@ const I18N={
         toastFill:'請填寫姓名與電話',toastAdded:'已加入預點清單 ✓',
         toastFlv:'請選取客製口味',toastSetFull:'本區上限為',toastSetItem:'尚未選滿',
         noteFlavor:'請選擇',noteDesc:'真心款待，誠摯滋味。',
-        selectCta:'選擇',setChoose:'任選',setInclude:'含',
+        selectCta:'選擇',setChoose:'任選',setInclude:'含',upsellSkip:'不用了，直接送出',upsellConfirm:'加入並送出',
     },
     en:{
         subtitle:'Heartfelt Hospitality · Playful Flavors',
@@ -470,11 +502,13 @@ const I18N={
         s3t2:'To make changes, please call us:',
         s3call:'📞 Call Us',s3query:'📋 Track My Order',s3fortune:'🎋 Draw Fortune',
         announcClose:'Got it',
+        defaultAnnTitle:'Welcome to Jinzhu Taiwanese Cuisine',
+        defaultAnnContent:'Heritage in Heart, Innovation in Taste.\nGathering the vibrant and diverse flavors of authentic Taiwanese cuisine, we adhere to the philosophy of "seasonal eating." We traverse mountains and seas to select the finest ingredients, combining decades of masterful craftsmanship with a playful culinary spirit. Each dish is meticulously prepared to recreate the collective taste memory of the Taiwanese people.\nWe present to you the abundance and beauty of fine Taiwanese flavors!',
         toastFill:'Please enter your name and phone',toastAdded:'Added to order ✓',
         toastFlv:'Please select flavor options',toastSetFull:'Max items in this section:',
         toastSetItem:'Please complete your selection',
         noteFlavor:'Please select',noteDesc:'Heartfelt flavors, crafted with care.',
-        selectCta:'Select',setChoose:'Choose',setInclude:'Includes',
+        selectCta:'Select',setChoose:'Choose',setInclude:'Includes',upsellSkip:'Skip, just submit',upsellConfirm:'Add & Submit',
     },
     ja:{
         subtitle:'心を込めて · 新しい美味しさ',
@@ -495,11 +529,13 @@ const I18N={
         s3t2:'変更のご連絡はお電話にて：',
         s3call:'📞 電話する',s3query:'📋 注文を確認する',s3fortune:'🎋 おみくじを引く',
         announcClose:'了解しました',
+        defaultAnnTitle:'真珠（Jinzhu）台湾佳味へようこそ',
+        defaultAnnContent:'受け継がれる真心、遊び心溢れる新境地。\n台湾料理の豊かで活氣ある味わいを集結させ、「旬の食材を食す」という理念を大切にしています。山から海まで厳選された最高の食材を使い、数十年にわたる確かな技術と探求心によって、台湾の人々の記憶に刻まれた共通の味を丁寧に作り上げました。\n台湾料理の豊かで素晴らしいひとときを、心ゆくまでお楽しみください！',
         toastFill:'お名前と電話番号を入力してください',toastAdded:'カートに追加しました ✓',
         toastFlv:'フレーバーを選択してください',toastSetFull:'このセクションの上限：',
         toastSetItem:'まだ選択が完了していません',
         noteFlavor:'選択してください',noteDesc:'心を込めた味わい。',
-        selectCta:'選ぶ',setChoose:'選択',setInclude:'含む',
+        selectCta:'選ぶ',setChoose:'選択',setInclude:'含む',upsellSkip:'スキップして送信',upsellConfirm:'追加して送信',
     },
     ko:{
         subtitle:'마음을 담아 · 새로운 맛의 즐거움',
@@ -520,11 +556,13 @@ const I18N={
         s3t2:'메뉴 변경은 전화로 문의해 주세요：',
         s3call:'📞 전화하기',s3query:'📋 주문 확인하기',s3fortune:'🎋 운세 뽑기',
         announcClose:'확인했습니다',
+        defaultAnnTitle:'진주(Jinzhu) 대만가미에 오신 것을 환영합니다',
+        defaultAnnContent:'전통을 잇는 마음, 새로움을 더하는 감각.\n대만 요리 특유의 다채롭고 생동감 넘치는 맛을 한데 모았습니다. 제철 식재료의 가치를 바탕으로 산과 바다에서 엄선한 최고의 재료만을 사용합니다. 수십 년간 쌓아온 탄탄한 손맛과 실험 정신을 조화시켜, 대만인 모두가 공유하는 맛의 기억을 정성스럽게 요리해냈습니다.\n대만 요리의 풍성하고 아름다운 맛을 여러분께 선보입니다!',
         toastFill:'이름과 전화번호를 입력해 주세요',toastAdded:'주문에 추가되었습니다 ✓',
         toastFlv:'맛 옵션을 선택해 주세요',toastSetFull:'이 섹션의 최대 수량：',
         toastSetItem:'선택을 완료해 주세요',
         noteFlavor:'선택하세요',noteDesc:'마음을 담은 맛.',
-        selectCta:'선택',setChoose:'선택',setInclude:'포함',
+        selectCta:'선택',setChoose:'선택',setInclude:'포함',upsellSkip:'건너뛰고 주문하기',upsellConfirm:'추가하고 주문',
     },
 };
 
@@ -536,7 +574,24 @@ function setLang(lang){
     applyLang();
     if(allCats.length) reRenderMenu();
     // 語言切換時同步更新公告內容
-    if(cachedAnnouncement) showAnnouncement();
+    if(cachedAnnouncement?._isDefault){
+        // 預設訊息要重新產生
+        if(lang!=='zh'){
+            cachedAnnouncement={
+                title:t('defaultAnnTitle'),
+                content:t('defaultAnnContent'),
+                image_url:null,
+                _isDefault:true,
+            };
+            showAnnouncement();
+        } else {
+            // 換回中文且是預設訊息，直接關掉
+            closeAnnouncePopup();
+            cachedAnnouncement=null;
+        }
+    } else if(cachedAnnouncement){
+        showAnnouncement();
+    }
     // 關閉下拉
     document.getElementById('lang-dropdown')?.classList.remove('open');
     document.getElementById('lang-trigger')?.classList.remove('open');
@@ -635,7 +690,7 @@ async function startOrder(){
     document.getElementById('step-1').style.display='none';
     document.getElementById('step-2').classList.add('visible');
     document.getElementById('cart-bar').classList.add('visible');
-    loadContent();loadAnnouncement();
+    loadContent();loadAnnouncement();loadUpsellSettings();
 }
 
 async function loadContent(){
@@ -884,16 +939,108 @@ function removeItem(idx){
     if(!cart.length){closePreview();return;}openPreview();
 }
 
+// ── UPSELL ──
+let upsellSettings=null, upsellSelectedIds=new Set();
+
+async function loadUpsellSettings(){
+    try{
+        const{data,error}=await _s.from('upsell_settings').select('*').eq('id',1).single();
+        if(error) console.warn('upsell load err:',error);
+        upsellSettings=data||null;
+    }catch(e){
+        console.warn('upsell exception:',e);
+        upsellSettings=null;
+    }
+}
+
+async function openUpsellModal(){
+    if(!upsellSettings?.enabled||!upsellSettings?.item_ids?.length){
+        await doFinalSubmit();return;
+    }
+    // 確保 ids 都是字串
+    const ids=(upsellSettings.item_ids||[]).map(String);
+    const{data:items}=await _s.from('menu_items').select('*').in('id',ids).eq('is_hidden',false);
+    if(!items||!items.length){await doFinalSubmit();return;}
+
+    upsellSelectedIds=new Set();
+
+    const titleKey='title'+(curLang!=='zh'?'_'+curLang:'');
+    const title=upsellSettings[titleKey]||upsellSettings.title||'加購推薦';
+    document.getElementById('upsell-modal-title').textContent=title;
+
+    document.querySelectorAll('[data-i18n="upsellSkip"]').forEach(el=>el.textContent=t('upsellSkip'));
+    document.querySelectorAll('[data-i18n="upsellConfirm"]').forEach(el=>el.textContent=t('upsellConfirm'));
+
+    document.getElementById('upsell-list').innerHTML=items.map(i=>`
+        <div class="upsell-item-card" id="upsell-item-${i.id}" onclick="toggleUpsellSelect('${i.id}','${i.price}')">
+            <div class="upsell-item-img">
+                ${i.image_url?`<img src="${i.image_url}" loading="lazy">`:`<span style="font-size:1.4rem;opacity:.3">🍽</span>`}
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13px;color:var(--pine)">${getLangName(i,'name')}</div>
+                ${getLangName(i,'description')?`<div style="font-size:11px;color:var(--stone);margin-top:4px;line-height:1.6">${getLangName(i,'description')}</div>`:''}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+                <div style="font-family:'Noto Serif TC',serif;font-weight:900;color:var(--gold);font-size:1rem">$${i.price}</div>
+                <div class="upsell-check" id="upsell-check-${i.id}"></div>
+            </div>
+        </div>`).join('');
+
+    document.getElementById('upsell-modal').classList.add('visible');
+    closePreview();
+}
+
+function toggleUpsellSelect(id,price){
+    const card=document.getElementById('upsell-item-'+id);
+    const check=document.getElementById('upsell-check-'+id);
+    if(upsellSelectedIds.has(id)){
+        upsellSelectedIds.delete(id);
+        card.classList.remove('selected');
+        check.innerHTML='';
+    } else {
+        upsellSelectedIds.add(id);
+        card.classList.add('selected');
+        check.innerHTML='<svg style="width:11px;height:11px" fill="none" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    }
+}
+
+function skipUpsell(){
+    document.getElementById('upsell-modal').classList.remove('visible');
+    doFinalSubmit();
+}
+
+async function confirmUpsell(){
+    document.getElementById('upsell-modal').classList.remove('visible');
+    // 把選到的加購品項加入 cart
+    if(upsellSelectedIds.size>0){
+        const ids=upsellSettings.item_ids;
+        const{data:items}=await _s.from('menu_items').select('*').in('id',[...upsellSelectedIds]);
+        (items||[]).forEach(i=>{
+            const displayName=getLangName(i,'name');
+            cart.push({name:displayName,nameCN:i.name,price:i.price});
+        });
+    }
+    doFinalSubmit();
+}
+
 let isSubmitting=false;
 async function finalSubmit(){
-    if(isSubmitting)return;isSubmitting=true;
+    if(isSubmitting)return;
+    openUpsellModal();
+}
+
+async function doFinalSubmit(){
+    if(isSubmitting)return;
+    isSubmitting=true;
     const btn=document.querySelector('.submit-btn');if(btn){btn.disabled=true;btn.textContent='...';}
     const{error}=await _s.from('orders').insert([{
         customer_name:guest.name,phone:guest.phone,
-        order_content:cart.map(i=>({name:i.nameCN||i.name, price:i.price})),total_price:cart.reduce((s,i)=>s+i.price,0),
+        order_content:cart.map(i=>({name:i.nameCN||i.name,price:i.price})),
+        total_price:cart.reduce((s,i)=>s+i.price,0),
         note:document.getElementById('order-note').value
     }]);
     if(!error){
+        document.getElementById('upsell-modal').classList.remove('visible');
         closePreview();
         document.getElementById('step-2').classList.remove('visible');
         document.getElementById('cart-bar').classList.remove('visible');
@@ -936,8 +1083,19 @@ let cachedAnnouncement=null;
 
 async function loadAnnouncement(){
     const{data}=await _s.from('announcements').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1);
-    if(!data||data.length===0)return;
-    cachedAnnouncement=data[0];
+    if(data&&data.length>0){
+        cachedAnnouncement=data[0];
+    } else if(curLang!=='zh'){
+        // 無公告時，非中文語系顯示預設歡迎訊息
+        cachedAnnouncement={
+            title:t('defaultAnnTitle'),
+            content:t('defaultAnnContent'),
+            image_url:null,
+            _isDefault:true,
+        };
+    } else {
+        return; // 中文無公告就不顯示
+    }
     showAnnouncement();
 }
 
@@ -948,16 +1106,44 @@ function showAnnouncement(){
     const content=curLang!=='zh'?(a['content_'+curLang]||a.content):a.content;
     document.getElementById('popup-title').textContent=title||a.title;
     document.getElementById('popup-content').textContent=content||a.content||'';
+    // 圖片顯示
+    const imgWrap=document.getElementById('popup-img-wrap');
+    const imgEl=document.getElementById('popup-img');
+    if(a.image_url){
+        imgEl.src=a.image_url;
+        imgWrap.style.display='block';
+    } else {
+        imgWrap.style.display='none';
+    }
     document.getElementById('announce-popup').classList.add('visible');
+    document.body.style.overflow='hidden'; // 鎖定背景
 }
-function closeAnnouncePopup(){document.getElementById('announce-popup').classList.remove('visible');}
+function closeAnnouncePopup(){
+    document.getElementById('announce-popup').classList.remove('visible');
+    document.body.style.overflow=''; // 解鎖背景
+}
 
-// nudge
+// 引導滾動提示（只在 KV 畫面，用戶主動滑動後停止）
 (function(){
-    let count=0,userScrolled=false;
-    function doNudge(){if(count>=3)return;count++;window.scrollTo({top:60,behavior:'smooth'});setTimeout(()=>{window.scrollTo({top:0,behavior:'smooth'});if(count<3)setTimeout(doNudge,900);},500);}
-    window.addEventListener('scroll',()=>{userScrolled=true;},{once:true});
-    setTimeout(()=>{if(!userScrolled)doNudge();},2800);
+    let count=0, stopped=false;
+    function doNudge(){
+        if(stopped||count>=3) return;
+        // 確認 KV 還在畫面上才執行
+        const kv=document.getElementById('kv-area');
+        if(!kv||kv.classList.contains('hidden')) return;
+        count++;
+        window.scrollTo({top:50,behavior:'smooth'});
+        setTimeout(()=>{
+            if(stopped) return;
+            window.scrollTo({top:0,behavior:'smooth'});
+            if(count<3) setTimeout(doNudge,1000);
+        },500);
+    }
+    // 用戶主動滑動超過 30px 就永久停止
+    window.addEventListener('scroll',()=>{
+        if(window.scrollY>30){ stopped=true; }
+    });
+    setTimeout(()=>{ if(!stopped) doNudge(); }, 2800);
 })();
 </script>
 </body>
