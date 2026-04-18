@@ -430,11 +430,8 @@
         <button id="btn-menu"       onclick="switchTab('menu')"       class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🍱</span><span class="nav-label">菜單編輯</span></button>
         <button id="btn-flavors"    onclick="switchTab('flavors')"    class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🌶️</span><span class="nav-label">口味定義</span></button>
         <button id="btn-settings"   onclick="switchTab('settings')"   class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">⚙️</span><span class="nav-label">系統設定</span></button>
-        <button id="btn-eventurl"   onclick="switchTab('eventurl')"   class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🔗</span><span class="nav-label">網址配置</span></button>
         <button id="btn-report"     onclick="switchTab('report')"     class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">📊</span><span class="nav-label">統計報表</span></button>
         <button id="btn-photos"     onclick="switchTab('photos')"     class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">📸</span><span class="nav-label">照片管理</span></button>
-        <button id="btn-linenotify" onclick="switchTab('linenotify')" class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">💬</span><span class="nav-label">通知管理</span></button>
-        <button id="btn-announce"   onclick="switchTab('announce')"   class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">📢</span><span class="nav-label">公告管理</span></button>
         <div class="border-t border-white/10 my-2"></div>
         <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
     </nav>
@@ -664,53 +661,198 @@
     <div id="flv-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 </section>
 
-<!-- 系統設定 -->
-<section id="sec-settings" class="hidden space-y-6">
-    
-    <div class="bg-white p-8 rounded-2xl border shadow-sm max-w-xl space-y-6">
-        <div>
-            <p class="text-xs font-bold text-slate-400 mb-4 uppercase tracking-widest">Logo 上傳（推薦 SVG 或去背 PNG）</p>
-            <input type="file" id="logo-file" class="w-full border-2 border-dashed border-slate-200 p-5 rounded-xl text-sm mb-4" accept=".svg,.png,.jpg,.jpeg">
-            <div id="current-logo-preview" class="hidden mb-4 text-center bg-slate-50 p-4 rounded-xl">
-                <img id="admin-logo-img" src="" class="max-h-20 mx-auto object-contain bg-white">
-            </div>
-            <button onclick="uploadLogo()" class="btn btn-primary w-full justify-center py-4">確認更新 Logo</button>
-        </div>
-        <div class="border-t pt-6">
-            <p class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">側欄 Logo 模式</p>
-            <div class="flex gap-3">
-                <button onclick="setSidebarLogoMode('white')"    class="flex-1 py-2 bg-emerald-900 text-white text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">轉白色</button>
-                <button onclick="setSidebarLogoMode('original')" class="flex-1 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">原始顏色</button>
-            </div>
+<!-- 系統設定（整合版） -->
+<section id="sec-settings" class="hidden space-y-4">
+    <!-- 上方橫幅子選單 -->
+    <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div class="flex overflow-x-auto no-scrollbar border-b border-slate-100">
+            <button onclick="switchSettings('logo')"       id="ss-btn-logo"       class="ss-btn flex-shrink-0 flex items-center gap-1.5 px-5 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition">🖼️ Logo</button>
+            <button onclick="switchSettings('announce')"   id="ss-btn-announce"   class="ss-btn flex-shrink-0 flex items-center gap-1.5 px-5 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition">📢 公告管理</button>
+            <button onclick="switchSettings('upsell')"     id="ss-btn-upsell"     class="ss-btn flex-shrink-0 flex items-center gap-1.5 px-5 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition">🛒 加購設定</button>
+            <button onclick="switchSettings('linenotify')" id="ss-btn-linenotify" class="ss-btn flex-shrink-0 flex items-center gap-1.5 px-5 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition">💬 通知管理</button>
+            <button onclick="switchSettings('eventurl')"   id="ss-btn-eventurl"   class="ss-btn flex-shrink-0 flex items-center gap-1.5 px-5 py-3 text-xs font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition">🔗 網址配置</button>
         </div>
     </div>
-</section>
 
-<!-- 網址配置 -->
-<section id="sec-eventurl" class="hidden space-y-6">
-    
-    <div class="bg-white p-8 rounded-2xl border shadow-sm max-w-3xl space-y-8">
-        <div>
-            <label class="filter-label">1. 選擇活動代號</label>
-            <select id="sel-campaign" class="filter-select mt-2 max-w-xs"></select>
+    <!-- 內容區 -->
+    <div>
+
+        <!-- Logo -->
+        <div id="ss-logo" class="ss-panel space-y-4">
+            <div class="bg-white p-6 rounded-2xl border shadow-sm max-w-lg space-y-5">
+                <div>
+                    <p class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">Logo 上傳（推薦 SVG 或去背 PNG）</p>
+                    <input type="file" id="logo-file" class="w-full border-2 border-dashed border-slate-200 p-4 rounded-xl text-sm mb-3" accept=".svg,.png,.jpg,.jpeg">
+                    <div id="current-logo-preview" class="hidden mb-3 text-center bg-slate-50 p-3 rounded-xl">
+                        <img id="admin-logo-img" src="" class="max-h-16 mx-auto object-contain bg-white">
+                    </div>
+                    <button onclick="uploadLogo()" class="btn btn-primary w-full justify-center">確認更新 Logo</button>
+                </div>
+                <div class="border-t pt-4">
+                    <p class="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">側欄 Logo 模式</p>
+                    <div class="flex gap-3">
+                        <button onclick="setSidebarLogoMode('white')"    class="flex-1 py-2 bg-emerald-900 text-white text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">轉白色</button>
+                        <button onclick="setSidebarLogoMode('original')" class="flex-1 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl border-2 border-transparent hover:border-amber-400 transition">原始顏色</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div>
-            <label class="filter-label">2. 勾選欲顯示的分類（可多選，僅列隱藏分類）</label>
-            <div id="cat-checkbox-list" class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3"></div>
+
+        <!-- 公告管理 -->
+        <div id="ss-announce" class="ss-panel hidden space-y-4">
+            <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-800 font-semibold min-w-0">
+                    💡 啟用中的公告會在顧客進入點餐頁面時自動彈出顯示
+                </div>
+                <button onclick="openAnnounceModal(false)" class="btn btn-primary flex-shrink-0">+ 新增公告</button>
+            </div>
+            <div id="announce-list" class="space-y-3"></div>
         </div>
-        <button onclick="bindEvent()" class="btn btn-primary w-full justify-center py-4 text-base">確認綁定並產生活動連結</button>
-    </div>
-    <div class="max-w-3xl">
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">目前運作中的活動</h3>
-        <div id="active-event-list" class="space-y-4"></div>
-    </div>
+
+        <!-- 加購設定 -->
+        <div id="ss-upsell" class="ss-panel hidden space-y-6">
+            <div class="bg-white rounded-2xl border shadow-sm p-6 space-y-5">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,77,64,0.08);display:flex;align-items:center;justify-content:center;font-size:1.1rem">🛒</div>
+                        <div>
+                            <div class="font-bold text-sm" style="color:var(--pine)">加購推薦功能</div>
+                            <div class="text-xs text-slate-400 mt-0.5">客人送出訂單前顯示加購品項讓客人選擇</div>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer select-none">
+                        <span class="text-xs font-bold text-slate-400" id="upsell-enabled-label">啟用中</span>
+                        <div id="upsell-toggle-bg" style="width:40px;height:22px;border-radius:999px;background:var(--pine);cursor:pointer;transition:background 0.2s;display:flex;align-items:center;padding:2px" onclick="toggleUpsellEnabled()">
+                            <div id="upsell-toggle-dot" style="width:18px;height:18px;border-radius:50%;background:white;transition:transform 0.2s;transform:translateX(18px)"></div>
+                        </div>
+                    </label>
+                </div>
+                <div class="border-t pt-5">
+                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">顯示標題（客人看到的）</div>
+                    <div class="flex bg-slate-100 rounded-xl p-1 gap-0.5 mb-4">
+                        <button onclick="upsellTitleTab('zh')" id="uptab-zh" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-700 shadow-sm">🇹🇼 中文</button>
+                        <button onclick="upsellTitleTab('en')" id="uptab-en" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇺🇸 EN</button>
+                        <button onclick="upsellTitleTab('ja')" id="uptab-ja" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇯🇵 日本語</button>
+                        <button onclick="upsellTitleTab('ko')" id="uptab-ko" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇰🇷 한국어</button>
+                    </div>
+                    <div id="uptitle-zh"><input id="upsell-title-zh" class="filter-input" placeholder="加購推薦" style="font-size:14px"></div>
+                    <div id="uptitle-en" style="display:none"><input id="upsell-title-en" class="filter-input" placeholder="Add-on Recommendations" style="font-size:14px"></div>
+                    <div id="uptitle-ja" style="display:none"><input id="upsell-title-ja" class="filter-input" placeholder="オプション追加" style="font-size:14px"></div>
+                    <div id="uptitle-ko" style="display:none"><input id="upsell-title-ko" class="filter-input" placeholder="추가 주문" style="font-size:14px"></div>
+                    <button onclick="saveUpsellSettings()" class="btn btn-primary btn-sm mt-3">儲存設定</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl border shadow-sm p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <div class="font-bold text-sm" style="color:var(--pine)">加購品項選擇</div>
+                        <div class="text-xs text-slate-400 mt-0.5">從現有菜單中勾選要推薦的品項</div>
+                    </div>
+                    <span id="upsell-selected-count" class="text-xs font-bold px-3 py-1 rounded-full" style="background:rgba(0,77,64,0.08);color:var(--pine)">已選 0 項</span>
+                </div>
+                <div class="flex gap-3 mb-4">
+                    <input type="text" id="upsell-search" oninput="renderUpsellPicker()" class="filter-input flex-1" placeholder="搜尋菜名…">
+                    <select id="upsell-cat-filter" onchange="renderUpsellPicker()" class="filter-select w-36"></select>
+                </div>
+                <div id="upsell-picker-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+            </div>
+        </div>
+
+        <!-- 通知管理 -->
+        <div id="ss-linenotify" class="ss-panel hidden space-y-4">
+            <!-- 每日彙整 + 通知對象 兩欄並排 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+                <!-- 每日彙整排程（可折疊） -->
+                <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                    <button onclick="toggleCronPanel()" class="w-full flex items-center justify-between px-5 py-4 hover:bg-slate-50 transition text-left" id="cron-panel-btn">
+                        <div class="flex items-center gap-3">
+                            <div style="width:32px;height:32px;border-radius:9px;background:rgba(0,77,64,0.08);display:flex;align-items:center;justify-content:center;font-size:1rem">📋</div>
+                            <div>
+                                <div class="font-bold text-sm" style="color:var(--pine)">每日訂單彙整通知</div>
+                                <div class="text-xs text-slate-400">自動發送當日訂單總覽</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 flex-shrink-0">
+                            <label class="flex items-center gap-2 cursor-pointer select-none" onclick="event.stopPropagation()">
+                                <span class="text-xs font-bold text-slate-400" id="summary-enabled-label">啟用中</span>
+                                <div class="relative">
+                                    <input type="checkbox" id="summary-enabled" class="sr-only" onchange="saveSummarySettings()">
+                                    <div id="summary-toggle-bg" style="width:36px;height:20px;border-radius:999px;background:var(--pine);cursor:pointer;transition:background 0.2s;display:flex;align-items:center;padding:2px" onclick="document.getElementById('summary-enabled').click()">
+                                        <div id="summary-toggle-dot" style="width:16px;height:16px;border-radius:50%;background:white;transition:transform 0.2s;transform:translateX(16px)"></div>
+                                    </div>
+                                </div>
+                            </label>
+                            <svg id="cron-panel-chevron" class="w-4 h-4 text-slate-300 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div id="cron-panel-body" class="hidden border-t border-slate-100">
+                        <div class="flex items-center gap-3 px-5 py-3 bg-slate-50" id="summary-time-row">
+                            <span class="text-xs font-bold text-slate-500 flex-shrink-0">發送時間</span>
+                            <div class="flex items-center gap-1.5 flex-1">
+                                <select id="summary-hour" onchange="saveSummarySettings()" class="filter-select" style="width:auto;padding:5px 8px;font-weight:700;color:var(--pine)"></select>
+                                <span class="font-bold text-slate-300 text-sm">:</span>
+                                <select id="summary-minute" onchange="saveSummarySettings()" class="filter-select" style="width:auto;padding:5px 8px;font-weight:700;color:var(--pine)">
+                                    <option value="0">00</option>
+                                    <option value="15">15</option>
+                                    <option value="30" selected>30</option>
+                                    <option value="45">45</option>
+                                </select>
+                                <span class="text-xs text-slate-400">台灣時間</span>
+                            </div>
+                            <button onclick="testSummaryNotify()" class="btn btn-ghost btn-sm flex-shrink-0">📤 測試</button>
+                        </div>
+                        <div class="px-5 py-3">
+                            <div class="text-[10px] text-slate-400 flex items-center gap-1 mb-2"><span>⚠</span><span>需在 Supabase SQL Editor 更新 pg_cron 排程</span></div>
+                            <div id="cron-hint" class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs font-mono text-amber-800 leading-relaxed">
+                                <div class="font-bold mb-1 font-sans text-[10px]">📋 請到 Supabase → SQL Editor 執行：</div>
+                                <div id="cron-sql" class="whitespace-pre-wrap break-all text-[10px]"></div>
+                                <button onclick="copyCronSql()" class="mt-2 btn btn-ghost btn-sm font-sans">複製 SQL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 操作按鈕 -->
+                <div class="flex flex-col gap-3">
+                    <div class="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-xs text-amber-800 font-semibold">
+                        💡 讓對方加 Bot 好友並傳訊息，從 Edge Function Logs 取得 User ID
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="line-bind.html" target="_blank" class="btn btn-ghost btn-sm">🔗 綁定頁面</a>
+                        <button onclick="openAddTargetModal()" class="btn btn-primary btn-sm">＋ 手動新增</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 通知對象列表 -->
+            <div id="line-targets-list" class="space-y-3"></div>
+        </div>
+
+        <!-- 網址配置 -->
+        <div id="ss-eventurl" class="ss-panel hidden space-y-6">
+            <div class="bg-white p-8 rounded-2xl border shadow-sm max-w-3xl space-y-8">
+                <div>
+                    <label class="filter-label">1. 選擇活動代號</label>
+                    <select id="sel-campaign" class="filter-select mt-2 max-w-xs"></select>
+                </div>
+                <div>
+                    <label class="filter-label">2. 勾選欲顯示的分類（可多選，僅列隱藏分類）</label>
+                    <div id="cat-checkbox-list" class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3"></div>
+                </div>
+                <button onclick="bindEvent()" class="btn btn-primary w-full justify-center py-4 text-base">確認綁定並產生活動連結</button>
+            </div>
+            <div class="max-w-3xl">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">目前運作中的活動</h3>
+                <div id="active-event-list" class="space-y-4"></div>
+            </div>
+        </div>
+
+    </div><!-- end 內容區 -->
 </section>
 
 <!-- 備料統計報表 -->
 <section id="sec-report" class="hidden space-y-4">
-    <!-- 報表篩選列（白色卡片，與訂單監控同風格） -->
     <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-2">
-        <!-- 常駐列 -->
         <div class="flex items-center gap-2 px-3 py-2 border-b border-slate-100 flex-wrap">
             <select id="report-date-type-quick" onchange="document.getElementById('report-date-type').value=this.value;document.getElementById('report-sort').value=this.value==='booking'?'booking_asc':'created_desc'" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
                 <option value="created">下單日期</option>
@@ -729,48 +871,24 @@
             </div>
             <span id="report-period-display" class="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style="background:rgba(0,77,64,.08);color:var(--pine)">尚未查詢</span>
             <div class="flex gap-1 ml-auto">
-                <button onclick="fetchData()" class="btn btn-primary btn-sm">
-                    <span id="r-run-lbl">▶ 查詢</span>
-                </button>
+                <button onclick="fetchData()" class="btn btn-primary btn-sm"><span id="r-run-lbl">▶ 查詢</span></button>
                 <button onclick="reportPrint()" class="btn btn-ghost btn-sm">🖨</button>
                 <button onclick="exportFullData()" class="btn btn-ghost btn-sm">📊</button>
-                <button onclick="toggleReportFilter()" id="report-filter-toggle" class="btn btn-ghost btn-sm px-2" title="展開詳細設定">
+                <button onclick="toggleReportFilter()" id="report-filter-toggle" class="btn btn-ghost btn-sm px-2">
                     <svg id="report-chevron" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
                 </button>
             </div>
         </div>
-        <!-- 展開區 -->
         <div id="report-filter-expand" class="hidden px-3 pb-3 pt-2 space-y-2 bg-slate-50">
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 items-end">
-                <div>
-                    <label class="filter-label">日期類型</label>
-                    <select id="report-date-type" class="filter-select" style="width:100%">
-                        <option value="created">下單日期</option>
-                        <option value="booking" selected>訂位日期</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="filter-label">開始日期</label>
-                    <input type="date" id="r-s-date" class="filter-input">
-                </div>
-                <div>
-                    <label class="filter-label">結束日期</label>
-                    <input type="date" id="r-e-date" class="filter-input">
-                </div>
-                <div>
-                    <label class="filter-label">開始時間</label>
-                    <input type="time" id="r-s-time" value="00:00" class="filter-input">
-                </div>
-                <div>
-                    <label class="filter-label">結束時間</label>
-                    <input type="time" id="r-e-time" value="23:59" class="filter-input">
-                </div>
+                <div><label class="filter-label">日期類型</label><select id="report-date-type" class="filter-select" style="width:100%"><option value="created">下單日期</option><option value="booking" selected>訂位日期</option></select></div>
+                <div><label class="filter-label">開始日期</label><input type="date" id="r-s-date" class="filter-input"></div>
+                <div><label class="filter-label">結束日期</label><input type="date" id="r-e-date" class="filter-input"></div>
+                <div><label class="filter-label">開始時間</label><input type="time" id="r-s-time" value="00:00" class="filter-input"></div>
+                <div><label class="filter-label">結束時間</label><input type="time" id="r-e-time" value="23:59" class="filter-input"></div>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
-                <div>
-                    <label class="filter-label">活動代號</label>
-                    <select id="report-campaign" class="filter-select" style="width:100%"><option value="all">全部來源</option><option value="none">一般訂單</option></select>
-                </div>
+                <div><label class="filter-label">活動代號</label><select id="report-campaign" class="filter-select" style="width:100%"><option value="all">全部來源</option><option value="none">一般訂單</option></select></div>
             </div>
             <div class="flex gap-1.5 pt-2 border-t border-slate-200">
                 <button class="btn btn-ghost btn-sm rpt-quick-btn" onclick="rptPreset('today')">今日</button>
@@ -781,28 +899,25 @@
         </div>
     </div>
     <input type="hidden" id="r-run-btn">
-
     <div class="bg-white rounded-2xl border shadow-sm px-4 py-2.5 flex items-center flex-wrap gap-x-5 gap-y-2">
         <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">訂單</span><span class="font-serif font-black text-base" style="color:var(--pine)" id="kpi-orders">—</span><span class="text-[10px] text-slate-400">筆</span></div>
         <div style="width:1px;height:14px;background:var(--border)"></div>
-        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">大人</span><span class="font-serif font-black text-base" style="color:var(--gold)" id="kpi-adult">—</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">大人</span><span class="font-serif font-black text-base" style="color:var(--gold)" id="kpi-adult">—</span></div>
         <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">小孩</span><span class="font-serif font-black text-base" style="color:var(--gold)" id="kpi-kid">—</span></div>
         <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">兒童</span><span class="font-serif font-black text-base" style="color:var(--gold)" id="kpi-child">—</span></div>
         <div style="width:1px;height:14px;background:var(--border)"></div>
-        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">總人數</span><span class="font-serif font-black text-base" style="color:#3b82f6" id="kpi-people">—</span><span class="text-[10px] text-slate-400">位</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">總人數</span><span class="font-serif font-black text-base" style="color:#3b82f6" id="kpi-people">—</span><span class="text-[10px] text-slate-400">位</span></div>
         <div style="width:1px;height:14px;background:var(--border)"></div>
-        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">套餐</span><span class="font-serif font-black text-base" style="color:var(--pine)" id="kpi-sets">—</span><span class="text-[10px] text-slate-400">組</span></div>
-        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">品項</span><span class="font-serif font-black text-base" style="color:var(--stone)" id="kpi-items">—</span><span class="text-[10px] text-slate-400">種</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">套餐</span><span class="font-serif font-black text-base" style="color:var(--pine)" id="kpi-sets">—</span><span class="text-[10px] text-slate-400">組</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">品項</span><span class="font-serif font-black text-base" style="color:var(--stone)" id="kpi-items">—</span><span class="text-[10px] text-slate-400">種</span></div>
         <div style="width:1px;height:14px;background:var(--border)"></div>
-        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">預估營收</span><span class="font-serif font-black text-base" style="color:#f43f5e" id="kpi-rev">—</span></div>
+        <div class="flex items-center gap-1.5"><span class="text-[10px] font-bold text-slate-400">預估營收</span><span class="font-serif font-black text-base" style="color:#f43f5e" id="kpi-rev">—</span></div>
     </div>
-
     <div class="flex gap-1 bg-slate-100 rounded-xl p-1">
         <button class="rpt-tab on" onclick="rptTab('prepare')">🍳 備料總表</button>
         <button class="rpt-tab"    onclick="rptTab('setmenu')">🍱 套餐明細</button>
         <button class="rpt-tab"    onclick="rptTab('orders')">📋 訂單流水帳</button>
     </div>
-
     <div id="rtab-prepare">
         <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
             <div class="flex justify-between items-center px-5 py-4 bg-slate-800">
@@ -840,7 +955,6 @@
 <!-- 紀念照管理 -->
 <section id="sec-photos" class="hidden space-y-5">
     <div class="flex flex-wrap justify-between items-center gap-3">
-        
         <div class="flex gap-2">
             <button onclick="autoDeleteOld()" class="btn btn-danger">🗑 刪除 7 天前</button>
             <button onclick="openUploadModal()" class="btn btn-primary">📤 上傳照片</button>
@@ -865,33 +979,6 @@
         </div>
     </div>
     <div id="photo-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
-</section>
-
-<!-- LINE 通知 -->
-<section id="sec-linenotify" class="hidden space-y-6">
-    <div class="flex justify-between items-center">
-        
-        <div class="flex gap-2">
-            <a href="line-bind.html" target="_blank" class="btn btn-ghost">🔗 綁定頁面</a>
-            <button onclick="openAddTargetModal()" class="btn btn-primary">＋ 手動新增</button>
-        </div>
-    </div>
-    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 font-semibold">
-        💡 讓對方加 Bot 好友並傳訊息，從 Edge Function Logs 取得 User ID
-    </div>
-    <div id="line-targets-list" class="space-y-3"></div>
-</section>
-
-<!-- 公告管理 -->
-<section id="sec-announce" class="hidden space-y-6">
-    <div class="flex justify-between items-center">
-        
-        <button onclick="openAnnounceModal(false)" class="btn btn-primary">+ 新增公告</button>
-    </div>
-    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 font-semibold">
-        💡 啟用中的公告會在顧客進入點餐頁面時自動彈出顯示
-    </div>
-    <div id="announce-list" class="space-y-4"></div>
 </section>
 
 </main>
@@ -1113,6 +1200,19 @@
             <button onclick="switchAnnTab('ko')" id="anntab-ko" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400">🇰🇷 한국어</button>
         </div>
         <!-- 中文 -->
+        <!-- 圖片上傳 -->
+        <div class="mb-2">
+            <label class="filter-label">公告圖片（選填）</label>
+            <div id="ann-img-preview" class="hidden mb-2 relative">
+                <img id="ann-img-preview-img" src="" class="w-full rounded-xl object-cover max-h-48">
+                <button onclick="clearAnnImg()" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px">✕</button>
+            </div>
+            <div id="ann-img-placeholder" class="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition" onclick="document.getElementById('ann-img-file').click()">
+                <p class="text-xs text-slate-400 font-bold">📷 點擊上傳公告圖片</p>
+            </div>
+            <input type="file" id="ann-img-file" class="hidden" accept="image/*" onchange="previewAnnImg(this)">
+            <input type="hidden" id="ann-image-url">
+        </div>
         <div id="annlang-zh">
             <div class="mb-3"><label class="filter-label">公告標題（中文）</label><input type="text" id="ann-title" class="filter-input mt-1" placeholder="母親節活動公告"></div>
             <div><label class="filter-label">公告內容（中文）</label><textarea id="ann-content" rows="4" class="filter-input mt-1 resize-none" placeholder="輸入公告內容…"></textarea></div>
@@ -1145,6 +1245,45 @@
 
 <!-- ── SCRIPTS ── -->
 <script>
+
+// ── 品項名稱解析 helper（保留口味標籤） ──
+function parseItemDisplay(rawName){
+    // qty：只取頂層品名數量（括號前），不誤抓子品項的 x數量
+    const qM=rawName.match(/^[^(]* x(\d+)/);
+    const qty=qM?parseInt(qM[1]):1;
+    // inner：保留子品項的 x數量和口味，只移除頂層的 x數量
+    const topQtyRemoved=rawName.replace(/^([^(]+?) x\d+(\s*\()/, '$1$2').replace(/^([^(]+?) x\d+$/, '$1');
+    const pI=topQtyRemoved.indexOf(' (');
+    const inner=pI>-1?topQtyRemoved.slice(pI+2,-1):null;
+    const isSet=!!(inner&&inner.includes('、'));
+    // flv 只從括號前的品名取（套餐本身口味，通常為空）
+    const namePart=pI>-1?topQtyRemoved.slice(0,pI):topQtyRemoved;
+    const flvM=namePart.match(/\[([^\]]+)\]/);
+    const flv=flvM?flvM[1]:'';
+    // clean：移除所有口味標籤和數量
+    const clean=rawName.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+    const brand=isSet?clean.replace(/ \(.*$/,'').trim():null;
+    return{qty,flv,clean,inner,isSet,brand};
+}
+// 解析套餐子品項（含口味），回傳 [{name, flv, qty}]
+// inner 必須來自原始名稱（未移除口味的版本）
+function parseSetSubs(innerRaw){
+    if(!innerRaw) return[];
+    const items=innerRaw.split('、');
+    const map={};
+    items.forEach(raw=>{
+        const{clean,flv,qty}=parseItemDisplay(raw.trim());
+        if(!clean) return;
+        const key=flv?clean+'｜'+flv:clean;
+        if(!map[key]) map[key]={name:clean,flv,qty:0};
+        map[key].qty+=qty||1;
+    });
+    return Object.values(map);
+}
+function flvTag(flv){
+    return flv?`<span style="font-size:10px;color:var(--gold);margin-left:3px;font-weight:500">[${flv}]</span>`:'';
+}
+
 const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
 const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1201,12 +1340,9 @@ async function switchTab(t) {
     if (t==='categories') loadCats();
     if (t==='menu')       { await loadCats(); loadMenu(); }
     if (t==='flavors')    loadFlvs();
-    if (t==='settings')   loadSettings();
-    if (t==='eventurl')   initEventUrl();
+    if (t==='settings')   initSettings();
     if (t==='report')     initReport();
     if (t==='photos')     loadPhotos();
-    if (t==='linenotify') loadLineNotify();
-    if (t==='announce')   loadAnnouncements();
 }
 
 function setQuickDate(val) {
@@ -1374,25 +1510,17 @@ async function loadOrders() {
                     ${(()=>{
                         const sets=[], singles={};
                         (o.order_content||[]).forEach(item=>{
-                            const qM=item.name.match(/ x(\d+)/), qty=qM?parseInt(qM[1]):1;
-                            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                            const pIdx=clean.indexOf(' ('), inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-                            const isSet=inner&&inner.includes('、');
+                            const{qty,flv:flvTag,clean,inner,isSet,brand}=parseItemDisplay(item.name);
                             if(isSet){
-                                const brand=clean.slice(0,pIdx).trim();
-                                const subs={};
-                                inner.split('、').forEach(sub=>{
-                                    const sM=sub.match(/ x(\d+)/), sq=sM?parseInt(sM[1]):1;
-                                    const s=sub.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                                    if(s) subs[s]=(subs[s]||0)+qty*sq;
-                                });
-                                sets.push({brand,qty,subs});
+                                const subList=parseSetSubs(inner);
+                                sets.push({brand,qty,subList});
                             } else {
-                                singles[clean]=(singles[clean]||0)+qty;
+                                const key=flvTag?`${clean}｜${flvTag}`:clean;
+                                if(!singles[key]) singles[key]={name:clean,flv:flvTag,qty:0};
+                                singles[key].qty+=qty;
                             }
                         });
                         let html='';
-                        // 套餐區塊
                         if(sets.length){
                             html+=sets.map(set=>`
                             <div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:8px">
@@ -1401,29 +1529,29 @@ async function loadOrders() {
                                     <span style="font-weight:900;font-size:13px;color:var(--gold)">${set.qty} 套</span>
                                 </div>
                                 <div style="padding:4px 12px">
-                                    ${Object.entries(set.subs).map(([name,count])=>`
+                                    ${set.subList.map(({name,flv,qty:sq})=>`
                                     <div class="order-item-row">
                                         <div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
-                                        <div class="order-item-name" style="font-size:11px">${name}</div>
-                                        <div style="font-weight:900;color:var(--pine);font-size:12px">${count}</div>
+                                        <div class="order-item-name" style="font-size:11px">${name}${flv?`<span style="color:var(--gold);margin-left:3px;font-size:10px">[${flv}]</span>`:''}</div>
+                                        <div style="font-weight:900;color:var(--pine);font-size:12px">${set.qty*sq}</div>
                                         <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
                                     </div>`).join('')}
                                 </div>
                             </div>`).join('');
                         }
                         // 單點區塊
-                        const singleEntries=Object.entries(singles).sort((a,b)=>b[1]-a[1]);
+                        const singleEntries=Object.values(singles).sort((a,b)=>b.qty-a.qty);
                         if(singleEntries.length){
                             html+=`<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
                                 <div style="background:#f8fafc;padding:6px 12px;border-bottom:1px solid var(--border)">
                                     <span style="font-weight:900;font-size:11px;color:var(--stone);text-transform:uppercase;letter-spacing:.1em">單點</span>
                                 </div>
                                 <div style="padding:4px 12px">
-                                    ${singleEntries.map(([name,count])=>`
+                                    ${singleEntries.map(({name,flv,qty})=>`
                                     <div class="order-item-row">
                                         <div class="order-item-dot"></div>
-                                        <div class="order-item-name">${name}</div>
-                                        <div style="font-weight:900;color:var(--pine);font-size:13px">${count}</div>
+                                        <div class="order-item-name">${name}${flv?`<span style="font-size:10px;color:var(--gold);margin-left:4px;font-weight:500">[${flv}]</span>`:''}</div>
+                                        <div style="font-weight:900;color:var(--pine);font-size:13px">${qty}</div>
                                         <div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>
                                     </div>`).join('')}
                                 </div>
@@ -1474,7 +1602,6 @@ async function saveBookingDateAndClose(id, newDate){
 }
 async function saveBookingDate(id, newDate){
     if(!newDate) return;
-    // 同時支援訂單卡片（btime-）和 modal（som-btime-）兩種 id 格式
     const timeEl = document.getElementById(`btime-${id}`) || document.getElementById(`som-btime-${id}`);
     const time = timeEl?.value || '00:00';
     const isoStr = `${newDate}T${time}:00+08:00`;
@@ -1483,13 +1610,23 @@ async function saveBookingDate(id, newDate){
     if(!error){
         if(el){ el.style.borderColor='#10b981'; setTimeout(()=>el.style.borderColor='',1200); }
         toast('訂位日期已更新');
-        if(curOrderView==='calendar') renderCalendar();
+        // 不立即 renderCalendar，避免 DOM 重建後時間欄位消失
+        if(curOrderView==='calendar') setTimeout(()=>renderCalendar(), 1500);
     } else toast('更新失敗','error');
 }
 async function saveBookingTime(id, newTime){
     if(!newTime) return;
+    // 先嘗試從 DOM 取日期，DOM 可能因日曆重建已不存在，改從 ordersRef 取
     const dateEl = document.getElementById(`bdate-${id}`) || document.getElementById(`som-bdate-${id}`);
-    const date = dateEl?.value;
+    let date = dateEl?.value;
+    if(!date){
+        // 從快取取
+        const cached = (window.ordersRef||[]).find(o=>o.id===id);
+        if(cached?.booking_date){
+            const tw = new Date(new Date(cached.booking_date).getTime()+8*3600000);
+            date = `${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;
+        }
+    }
     if(!date){ toast('請先填寫訂位日期','warn'); return; }
     const isoStr = `${date}T${newTime}:00+08:00`;
     const{error}=await _s.from('orders').update({booking_date: isoStr}).eq('id',id);
@@ -1497,7 +1634,7 @@ async function saveBookingTime(id, newTime){
     if(!error){
         if(el){ el.style.borderColor='#10b981'; setTimeout(()=>el.style.borderColor='',1200); }
         toast('訂位時間已更新');
-        if(curOrderView==='calendar') renderCalendar();
+        if(curOrderView==='calendar') setTimeout(()=>renderCalendar(), 1500);
     } else toast('更新失敗','error');
 }
 async function toggleSync(id,cur){
@@ -1949,13 +2086,55 @@ async function saveFlvGroup(){
 
 function closeFlavorModal(){document.getElementById('flavor-modal').classList.remove('visible');}
 async function delFlv(id){const ok=await confirm2({icon:'🌶️',title:'刪除口味組',msg:'確定刪除此口味組？',okText:'刪除',danger:true});if(ok){await _s.from('flavor_groups').delete().eq('id',id);loadFlvs();toast('已刪除');}}
-async function loadSettings(){const{data}=await _s.from('store_settings').select('*').eq('id',1).single();if(data?.logo_url){document.getElementById('current-logo-preview').classList.remove('hidden');document.getElementById('admin-logo-img').src=`${data.logo_url}?t=${Date.now()}`;}}
+// ── SETTINGS (整合) ──
+let curSettingsTab='logo';
+
+function switchSettings(tab){
+    curSettingsTab=tab;
+    document.querySelectorAll('.ss-panel').forEach(p=>p.classList.add('hidden'));
+    const panel=document.getElementById('ss-'+tab);
+    if(panel) panel.classList.remove('hidden');
+    document.querySelectorAll('.ss-btn').forEach(b=>{
+        b.style.color='';
+        b.style.borderBottomColor='transparent';
+        b.style.fontWeight='700';
+    });
+    const btn=document.getElementById('ss-btn-'+tab);
+    if(btn){
+        btn.style.color='var(--pine)';
+        btn.style.borderBottomColor='var(--gold)';
+    }
+    if(tab==='logo')       loadSettingsLogo();
+    if(tab==='announce')   loadAnnouncements();
+    if(tab==='upsell')     loadUpsell();
+    if(tab==='linenotify') loadLineNotify();
+    if(tab==='eventurl')   initEventUrl();
+}
+
+function toggleCronPanel(){
+    const body=document.getElementById('cron-panel-body');
+    const chevron=document.getElementById('cron-panel-chevron');
+    const open=body.classList.toggle('hidden');
+    chevron.style.transform=open?'':'rotate(180deg)';
+}
+
+async function initSettings(){
+    switchSettings('logo');
+}
+
+async function loadSettingsLogo(){
+    const{data}=await _s.from('store_settings').select('*').eq('id',1).single();
+    if(data?.logo_url){
+        document.getElementById('current-logo-preview').classList.remove('hidden');
+        document.getElementById('admin-logo-img').src=`${data.logo_url}?t=${Date.now()}`;
+    }
+}
 async function uploadLogo(){
     const f=document.getElementById('logo-file').files[0];
     if(!f){toast('請先選擇檔案','warn');return;}
     const ext=f.name.split('.').pop().toLowerCase(),path=`logo_${Date.now()}.${ext}`,type=ext==='svg'?'image/svg+xml':f.type;
     const{error}=await _s.storage.from('assets').upload(path,f,{contentType:type,cacheControl:'3600',upsert:true});
-    if(!error){const{data}=_s.storage.from('assets').getPublicUrl(path);await _s.from('store_settings').update({logo_url:data.publicUrl}).eq('id',1);toast('Logo 已更新');loadSettings();loadSidebarLogo();}
+    if(!error){const{data}=_s.storage.from('assets').getPublicUrl(path);await _s.from('store_settings').update({logo_url:data.publicUrl}).eq('id',1);toast('Logo 已更新');loadSettingsLogo();loadSidebarLogo();}
     else toast('上傳失敗','error');
 }
 function setSidebarLogoMode(mode){const img=document.getElementById('sidebar-logo');img.style.filter=mode==='white'?'brightness(0) invert(1)':'none';localStorage.setItem('logoMode',mode);}
@@ -2289,21 +2468,16 @@ function renderReports(orders){
     orders.forEach(o=>{
         totalAdult+=(o.adult_count||0);totalKid+=(o.kid_count||0);totalChild+=(o.child_count||0);totalRev+=(o.total_price||0);
         (o.order_content||[]).forEach(item=>{
-            const qtyM=item.name.match(/ x(\d+)/),qty=qtyM?parseInt(qtyM[1]):1;
-            let cleanName=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-            const pIdx=cleanName.indexOf(' ('),inner=pIdx>-1?cleanName.slice(pIdx+2,-1):null,isSet=inner&&inner.includes('、');
+            const{qty,flv,clean:cleanName,inner,isSet,brand}=parseItemDisplay(item.name);
             if(isSet){
-                const brand=cleanName.slice(0,pIdx).trim();
                 setMenuCount[brand]=(setMenuCount[brand]||0)+qty;
                 if(!setMenuDetail[brand]) setMenuDetail[brand]={};
-                const subNames=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);
-                const subCnt={};
-                subNames.forEach(s=>{subCnt[s]=(subCnt[s]||0)+1;});
-                Object.entries(subCnt).forEach(([s,cnt])=>{
-                    // key 格式：「套餐名稱／子品項名」方便顯示
-                    const key=`${brand}／${s}`;
-                    dishCount[key]=(dishCount[key]||0)+qty*cnt;
-                    setMenuDetail[brand][s]=(setMenuDetail[brand][s]||0)+qty*cnt;
+                const subs=parseSetSubs(inner);
+                subs.forEach(({name,flv:sFlv,qty:sQty})=>{
+                    const dispName=sFlv?`${name} [${sFlv}]`:name;
+                    const key=`${brand}／${dispName}`;
+                    dishCount[key]=(dishCount[key]||0)+qty*sQty;
+                    setMenuDetail[brand][dispName]=(setMenuDetail[brand][dispName]||0)+qty*sQty;
                 });
             }
             else{
@@ -2378,14 +2552,15 @@ function renderReports(orders){
         // 解析套餐/單點
         const sets=[],singles={};
         (o.order_content||[]).forEach(item=>{
-            const qM=item.name.match(/ x(\d+)/),qty=qM?parseInt(qM[1]):1;
-            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-            const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-            if(inner&&inner.includes('、')){
-                const brand=clean.slice(0,pIdx).trim(),subs={};
-                const _subs=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
-                sets.push({brand,qty,subs});
-            } else {singles[clean]=(singles[clean]||0)+qty;}
+            const{qty,flv,clean,inner,isSet,brand}=parseItemDisplay(item.name);
+            if(isSet){
+                const subList=parseSetSubs(inner);
+                sets.push({brand,qty,subList});
+            } else {
+                const key=flv?clean+'｜'+flv:clean;
+                if(!singles[key])singles[key]={name:clean,flv,qty:0};
+                singles[key].qty+=qty;
+            }
         });
         let itemsHtml='';
         sets.forEach(set=>{
@@ -2395,18 +2570,18 @@ function renderReports(orders){
                     <span style="font-weight:900;font-size:13px;color:var(--gold)">${set.qty} 套</span>
                 </div>
                 <div style="padding:4px 12px">
-                ${Object.entries(set.subs).map(([n,c])=>`<div class="order-item-row"><div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><div class="order-item-name" style="font-size:11px">${n}</div><div style="font-weight:900;color:var(--pine);font-size:12px">${c}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
+                ${set.subList.map(({name,flv,qty:sq})=>`<div class="order-item-row"><div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div><div class="order-item-name" style="font-size:11px">${name}${flv?`<span style="color:var(--gold);margin-left:3px;font-size:10px">[${flv}]</span>`:''}</div><div style="font-weight:900;color:var(--pine);font-size:12px">${set.qty*sq}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
                 </div>
             </div>`;
         });
-        const singleEntries=Object.entries(singles);
+        const singleEntries=Object.values(singles);
         if(singleEntries.length){
             itemsHtml+=`<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">
                 <div style="background:#f8fafc;padding:6px 12px;border-bottom:1px solid var(--border)">
                     <span style="font-weight:900;font-size:11px;color:var(--stone);text-transform:uppercase;letter-spacing:.1em">單點</span>
                 </div>
                 <div style="padding:4px 12px">
-                ${singleEntries.map(([n,c])=>`<div class="order-item-row"><div class="order-item-dot"></div><div class="order-item-name">${n}</div><div style="font-weight:900;color:var(--pine);font-size:13px">${c}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
+                ${singleEntries.map(({name,flv,qty})=>`<div class="order-item-row"><div class="order-item-dot"></div><div class="order-item-name">${name}${flv?`<span style="font-size:10px;color:var(--gold);margin-left:4px;font-weight:500">[${flv}]</span>`:''}</div><div style="font-weight:900;color:var(--pine);font-size:13px">${qty}</div><div style="font-size:10px;color:var(--stone);margin-left:2px">份</div></div>`).join('')}
                 </div>
             </div>`;
         }
@@ -2457,25 +2632,18 @@ function exportFullData(){
     function parseOrderItems(items){
         const out=[];
         items.forEach(item=>{
-            const qtyM=item.name.match(/ x(\d+)/);
-            const qty=qtyM?parseInt(qtyM[1]):1;
-            const clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-            const pIdx=clean.indexOf(' (');
-            const inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-            const isSet=inner&&inner.includes('、');
+            const{qty,flv,clean,inner,isSet,brand:setName}=parseItemDisplay(item.name);
             if(isSet){
-                const brand=clean.slice(0,pIdx).trim();
-                // 數重複出現次數
-                const subNames=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);
-                const subCnt={};
-                subNames.forEach(s=>{subCnt[s]=(subCnt[s]||0)+1;});
+                const brandDisp=setName+(flv?` [${flv}]`:'');
+                const subList=parseSetSubs(inner);
                 let first=true;
-                Object.entries(subCnt).forEach(([s,cnt])=>{
-                    out.push({isSet:true,brand,sub:s,qty:qty*cnt,price:first?item.price:'',first});
+                subList.forEach(({name,flv:sFlv,qty:sq})=>{
+                    const dispName=sFlv?`${name} [${sFlv}]`:name;
+                    out.push({isSet:true,brand:brandDisp,sub:dispName,qty:qty*sq,price:first?item.price:'',first});
                     first=false;
                 });
             } else {
-                out.push({isSet:false,brand:'',sub:'',name:clean,qty,price:item.price,first:true});
+                out.push({isSet:false,brand:'',sub:'',name:clean+(flv?` [${flv}]`:''),qty,price:item.price,first:true});
             }
         });
         return out;
@@ -2682,11 +2850,74 @@ async function deletePhoto(id,storagePath){
 
 // ── LINE NOTIFY ──
 async function loadLineNotify(){
+    // 初始化時間選單 6~22 點
+    const hourSel=document.getElementById('summary-hour');
+    if(hourSel&&!hourSel.options.length){
+        for(let h=6;h<=22;h++){
+            const opt=new Option(`${String(h).padStart(2,'0')}`,h);
+            hourSel.add(opt);
+        }
+    }
+    // 載入排程設定
+    await loadSummarySettingsUI();
+
     const{data,error}=await _s.from('line_notify_targets').select('*').order('created_at',{ascending:true});
     const container=document.getElementById('line-targets-list');
     if(error){container.innerHTML=`<p class="text-red-400 text-sm font-bold p-4">${error.message}</p>`;return;}
     if(!data?.length){container.innerHTML=`<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">尚無通知對象</div><div class="empty-state-sub">點右上角「手動新增」加入第一位</div></div>`;return;}
-    container.innerHTML=data.map(t=>`<div class="bg-white rounded-2xl border shadow-sm p-5"><div class="flex flex-wrap items-start gap-4"><div class="flex-1 min-w-0"><div class="flex items-center gap-2 mb-1"><span class="font-black text-base" style="color:var(--pine)">${t.name}</span>${t.is_active?`<span class="text-[10px] font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">✅ 啟用</span>`:`<span class="text-[10px] font-bold bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full">⏸ 停用</span>`}</div><div class="font-mono text-xs text-slate-400 mb-2 truncate">${t.user_id}</div><div class="flex gap-3 flex-wrap"><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" ${t.notify_order?'checked':''} onchange="updateTarget('${t.id}','notify_order',this.checked)" class="accent-green-700"><span class="text-xs font-bold text-slate-600">🔔 訂單</span></label><label class="flex items-center gap-1.5 cursor-pointer"><input type="checkbox" ${t.notify_photo?'checked':''} onchange="updateTarget('${t.id}','notify_photo',this.checked)" class="accent-green-700"><span class="text-xs font-bold text-slate-600">📸 照片</span></label></div></div><div class="flex gap-2"><button onclick="testSendLine('${t.user_id}','${t.name}')" class="btn btn-ghost btn-sm">📤 測試</button><button onclick="toggleTarget('${t.id}',${t.is_active})" class="btn btn-sm ${t.is_active?'btn-ghost':'btn-primary'}">${t.is_active?'停用':'啟用'}</button><button onclick="deleteTarget('${t.id}','${t.name}')" class="btn btn-danger btn-sm">刪除</button></div></div></div>`).join('');
+    container.innerHTML=`<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">`+data.map(t=>{
+        const isGroup=t.user_id?.startsWith('C');
+        const avatarId=`line-avatar-${t.id}`;
+        // LINE 只能透過 Bot API 取頭像，用 placeholder 顯示，之後非同步嘗試載入
+        const initials=t.name?.slice(0,1)||'?';
+        return`<div class="bg-white rounded-2xl border shadow-sm p-4 flex flex-col gap-3 ${t.is_active?'':'opacity-60'}">
+            <!-- 頭像 + 狀態 -->
+            <div class="flex items-center gap-3">
+                <div class="relative flex-shrink-0">
+                    <div id="${avatarId}" style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--pine),var(--pine-light));display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900;color:white;overflow:hidden;flex-shrink:0">
+                        ${isGroup?'👥':initials}
+                    </div>
+                    <div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;border:2px solid white;background:${t.is_active?'#10b981':'#94a3b8'}"></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-sm truncate" style="color:var(--pine)">${t.name}</div>
+                    <div class="text-[9px] font-mono text-slate-300 truncate">${t.user_id?.slice(0,16)}…</div>
+                </div>
+            </div>
+            <!-- 通知類型 -->
+            <div class="flex gap-2">
+                <label class="flex items-center gap-1 cursor-pointer bg-slate-50 rounded-lg px-2 py-1 flex-1 justify-center">
+                    <input type="checkbox" ${t.notify_order?'checked':''} onchange="updateTarget('${t.id}','notify_order',this.checked)" class="accent-green-700 w-3 h-3">
+                    <span class="text-[10px] font-bold text-slate-500">🔔 訂單</span>
+                </label>
+                <label class="flex items-center gap-1 cursor-pointer bg-slate-50 rounded-lg px-2 py-1 flex-1 justify-center">
+                    <input type="checkbox" ${t.notify_photo?'checked':''} onchange="updateTarget('${t.id}','notify_photo',this.checked)" class="accent-green-700 w-3 h-3">
+                    <span class="text-[10px] font-bold text-slate-500">📸 照片</span>
+                </label>
+            </div>
+            <!-- 操作 -->
+            <div class="flex gap-1.5 border-t pt-2.5">
+                <button onclick="toggleTarget('${t.id}',${t.is_active})" class="flex-1 text-[10px] font-bold py-1.5 rounded-lg border transition ${t.is_active?'border-slate-200 text-slate-400 hover:bg-slate-50':'bg-pine text-white border-transparent'}" style="${t.is_active?'':'background:var(--pine);color:white;border-color:var(--pine)'}">${t.is_active?'停用':'啟用'}</button>
+                <button onclick="testSendLine('${t.user_id}','${t.name}')" class="flex-1 text-[10px] font-bold py-1.5 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 transition">測試</button>
+                <button onclick="deleteTarget('${t.id}','${t.name}')" class="text-[10px] font-bold py-1.5 px-2 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition">🗑</button>
+            </div>
+        </div>`;
+    }).join('')+`</div>`;
+    // 嘗試非同步載入 LINE 頭像（個人帳號才支援，群組無法）
+    data.forEach(async t=>{
+        if(!t.user_id?.startsWith('U')) return; // 只處理個人帳號
+        try{
+            const{data:resData, error}=await _s.functions.invoke('get-line-profile',{body:{userId:t.user_id}});
+            console.log(`LINE profile [${t.name}]:`, resData, error);
+            const pictureUrl=resData?.pictureUrl;
+            if(pictureUrl){
+                const el=document.getElementById(`line-avatar-${t.id}`);
+                if(el) el.innerHTML=`<img src="${pictureUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:14px;">`;
+            }
+        }catch(e){
+            console.warn(`avatar load fail [${t.name}]:`, e);
+        }
+    });
 }
 function openAddTargetModal(){['lt-name','lt-uid'].forEach(id=>document.getElementById(id).value='');document.getElementById('lt-notify-order').checked=true;document.getElementById('lt-notify-photo').checked=true;document.getElementById('line-target-modal').classList.remove('hidden');}
 function closeTargetModal(){document.getElementById('line-target-modal').classList.add('hidden');}
@@ -2703,6 +2934,219 @@ async function updateTarget(id,field,value){await _s.from('line_notify_targets')
 async function toggleTarget(id,current){await _s.from('line_notify_targets').update({is_active:!current}).eq('id',id);loadLineNotify();}
 async function deleteTarget(id,name){const ok=await confirm2({icon:'💬',title:'刪除通知對象',msg:`確定刪除「${name}」的通知設定？`,okText:'刪除',danger:true});if(ok){await _s.from('line_notify_targets').delete().eq('id',id);loadLineNotify();toast('已刪除');}}
 async function testSendLine(userId,name){toast(`📤 測試通知需透過 Supabase Edge Function 觸發，請從點餐頁下一筆測試訂單驗證「${name}」的接收狀態`,'info',4000);}
+
+// ── 每日彙整排程設定 ──
+async function loadSummarySettingsUI(){
+    const{data}=await _s.from('daily_summary_settings').select('*').eq('id',1).single();
+    if(!data)return;
+    const enabled=data.enabled;
+    const hour=data.notify_hour??10;
+    const minute=data.notify_minute??30;
+
+    const cb=document.getElementById('summary-enabled');
+    const dot=document.getElementById('summary-toggle-dot');
+    const bg=document.getElementById('summary-toggle-bg');
+    const lbl=document.getElementById('summary-enabled-label');
+    const timeRow=document.getElementById('summary-time-row');
+    if(cb){
+        cb.checked=enabled;
+        dot.style.transform=enabled?'translateX(18px)':'translateX(0)';
+        bg.style.background=enabled?'var(--pine)':'#94a3b8';
+        lbl.textContent=enabled?'啟用中':'已停用';
+        timeRow.style.opacity=enabled?'1':'0.4';
+        timeRow.style.pointerEvents=enabled?'':'none';
+    }
+    const hourSel=document.getElementById('summary-hour');
+    const minSel=document.getElementById('summary-minute');
+    if(hourSel) hourSel.value=hour;
+    if(minSel) minSel.value=minute;
+    updateCronHint(hour,minute,enabled);
+}
+
+async function saveSummarySettings(){
+    const enabled=document.getElementById('summary-enabled').checked;
+    const hour=parseInt(document.getElementById('summary-hour').value);
+    const minute=parseInt(document.getElementById('summary-minute').value);
+
+    // 更新 toggle UI
+    const dot=document.getElementById('summary-toggle-dot');
+    const bg=document.getElementById('summary-toggle-bg');
+    const lbl=document.getElementById('summary-enabled-label');
+    const timeRow=document.getElementById('summary-time-row');
+    dot.style.transform=enabled?'translateX(18px)':'translateX(0)';
+    bg.style.background=enabled?'var(--pine)':'#94a3b8';
+    lbl.textContent=enabled?'啟用中':'已停用';
+    timeRow.style.opacity=enabled?'1':'0.4';
+    timeRow.style.pointerEvents=enabled?'':'none';
+
+    // 存到 DB
+    await _s.from('daily_summary_settings').upsert({
+        id:1, enabled, notify_hour:hour, notify_minute:minute, updated_at:new Date().toISOString()
+    });
+    updateCronHint(hour,minute,enabled);
+    toast(enabled?`每日彙整已設定為 ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')} 發送`:'每日彙整已停用');
+}
+
+function updateCronHint(hour,minute,enabled){
+    const hint=document.getElementById('cron-hint');
+    const sqlEl=document.getElementById('cron-sql');
+    if(!hint||!sqlEl)return;
+    // 台灣時間轉 UTC（-8小時）
+    const utcHour=((hour-8)+24)%24;
+    const cronExpr=enabled?`${minute} ${utcHour} * * *`:`# 已停用（不執行）`;
+    const sql=enabled
+        ?`SELECT cron.unschedule('daily-order-summary');\nSELECT cron.schedule(\n  'daily-order-summary',\n  '${cronExpr}',\n  $$SELECT net.http_post(\n    url := 'https://pydlnqriztpzgxbjuohm.supabase.co/functions/v1/daily-summary',\n    headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ${SUPABASE_KEY}'),\n    body := '{}'::jsonb\n  );$$\n);`
+        :`SELECT cron.unschedule('daily-order-summary');`;
+    sqlEl.textContent=sql;
+    // cron-hint 現在固定顯示在折疊區內，不需要控制 hidden
+}
+
+function copyCronSql(){
+    const sql=document.getElementById('cron-sql').textContent;
+    navigator.clipboard.writeText(sql).then(()=>toast('SQL 已複製 ✓'));
+}
+
+async function testSummaryNotify(){
+    toast('📤 正在發送測試彙整...','info',2000);
+    try{
+        const{data,error}=await _s.functions.invoke('daily-summary',{body:{}});
+        if(error) throw error;
+        toast('✓ 發送成功，請查看 LINE','success',4000);
+    }catch(e){
+        toast('發送失敗：'+( e?.message||e),'error',4000);
+    }
+}
+
+// ── UPSELL ──
+let upsellData={enabled:true,title:'加購推薦',title_en:'Add-on Recommendations',title_ja:'オプション追加',title_ko:'추가 주문',item_ids:[]};
+let upsellAllItems=[];
+
+async function loadUpsell(){
+    // 載入設定
+    const{data:s}=await _s.from('upsell_settings').select('*').eq('id',1).single();
+    if(s) upsellData={...upsellData,...s};
+
+    // 更新 UI
+    const enabled=upsellData.enabled;
+    document.getElementById('upsell-toggle-dot').style.transform=enabled?'translateX(18px)':'translateX(0)';
+    document.getElementById('upsell-toggle-bg').style.background=enabled?'var(--pine)':'#94a3b8';
+    document.getElementById('upsell-enabled-label').textContent=enabled?'啟用中':'已停用';
+    document.getElementById('upsell-title-zh').value=upsellData.title||'加購推薦';
+    document.getElementById('upsell-title-en').value=upsellData.title_en||'';
+    document.getElementById('upsell-title-ja').value=upsellData.title_ja||'';
+    document.getElementById('upsell-title-ko').value=upsellData.title_ko||'';
+    upsellTitleTab('zh');
+
+    // 載入菜單
+    const{data:cats}=await _s.from('categories').select('*').order('sort_order');
+    const{data:items}=await _s.from('menu_items').select('*,categories(name)').eq('is_hidden',false).order('sort_order');
+    upsellAllItems=items||[];
+
+    document.getElementById('upsell-cat-filter').innerHTML=
+        '<option value="all">所有分類</option>'+
+        (cats||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+
+    renderUpsellPicker();
+    updateUpsellCount();
+}
+
+function renderUpsellPicker(){
+    const kw=document.getElementById('upsell-search').value.toLowerCase();
+    const catF=document.getElementById('upsell-cat-filter').value;
+    const selectedIds=(upsellData.item_ids||[]).map(String);
+
+    const filtered=upsellAllItems.filter(i=>
+        i.name.toLowerCase().includes(kw) &&
+        (catF==='all'||i.category_id===catF)
+    );
+
+    document.getElementById('upsell-picker-grid').innerHTML=filtered.map(i=>{
+        const sel=selectedIds.includes(String(i.id));
+        return`<div onclick="toggleUpsellItem('${i.id}')"
+            class="border-2 rounded-2xl overflow-hidden cursor-pointer transition-all select-none"
+            style="${sel?'border-color:var(--pine);background:rgba(0,77,64,0.03)':'border-color:var(--border)'}"
+            id="upsell-card-${i.id}">
+            <div class="h-20 bg-slate-50 flex items-center justify-center overflow-hidden p-2">
+                ${i.image_url
+                    ?`<img src="${i.image_url}" class="max-h-full max-w-full object-contain mix-blend-multiply" loading="lazy">`
+                    :`<span style="font-size:1.5rem;opacity:.2">🍽</span>`}
+            </div>
+            <div class="p-2">
+                <div class="text-xs font-bold leading-tight" style="color:${sel?'var(--pine)':'var(--ink)'}">${i.name}</div>
+                <div class="text-xs mt-1" style="color:var(--gold);font-weight:900">$${i.price}</div>
+            </div>
+            <div class="flex items-center justify-between px-2 pb-2">
+                <div style="width:16px;height:16px;border-radius:50%;border:2px solid ${sel?'var(--pine)':'var(--border)'};background:${sel?'var(--pine)':'white'};display:flex;align-items:center;justify-content:center;transition:all 0.2s">
+                    ${sel?'<svg style="width:9px;height:9px" fill="white" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>':''}
+                </div>
+                <span class="text-[9px] font-bold" style="color:${sel?'var(--pine)':'#94a3b8'}">${sel?'已選':'點擊選取'}</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function toggleUpsellItem(id){
+    const ids=(upsellData.item_ids||[]).map(String);
+    const idx=ids.indexOf(String(id));
+    if(idx>-1) ids.splice(idx,1);
+    else ids.push(String(id));
+    upsellData.item_ids=[...ids];
+    saveUpsellItems();
+    renderUpsellPicker();
+    updateUpsellCount();
+}
+
+function updateUpsellCount(){
+    const n=(upsellData.item_ids||[]).length;
+    document.getElementById('upsell-selected-count').textContent=`已選 ${n} 項`;
+}
+
+async function saveUpsellItems(){
+    const{error}=await _s.from('upsell_settings')
+        .update({item_ids:upsellData.item_ids, updated_at:new Date().toISOString()})
+        .eq('id',1);
+    if(error){
+        console.error('upsell save error:',error);
+        toast('儲存失敗：'+error.message,'error');
+    } else {
+        toast(`已儲存 ${(upsellData.item_ids||[]).length} 項加購品項`);
+    }
+}
+
+async function saveUpsellSettings(){
+    const payload={
+        enabled:upsellData.enabled,
+        title:document.getElementById('upsell-title-zh').value.trim()||'加購推薦',
+        title_en:document.getElementById('upsell-title-en').value.trim()||null,
+        title_ja:document.getElementById('upsell-title-ja').value.trim()||null,
+        title_ko:document.getElementById('upsell-title-ko').value.trim()||null,
+        item_ids:upsellData.item_ids,
+        updated_at:new Date().toISOString()
+    };
+    const{error}=await _s.from('upsell_settings').update(payload).eq('id',1);
+    if(error){ toast('儲存失敗：'+error.message,'error'); return; }
+    upsellData={...upsellData,...payload};
+    toast('加購設定已儲存');
+}
+
+async function toggleUpsellEnabled(){
+    upsellData.enabled=!upsellData.enabled;
+    const enabled=upsellData.enabled;
+    document.getElementById('upsell-toggle-dot').style.transform=enabled?'translateX(18px)':'translateX(0)';
+    document.getElementById('upsell-toggle-bg').style.background=enabled?'var(--pine)':'#94a3b8';
+    document.getElementById('upsell-enabled-label').textContent=enabled?'啟用中':'已停用';
+    const{error}=await _s.from('upsell_settings').update({enabled, updated_at:new Date().toISOString()}).eq('id',1);
+    if(error) toast('更新失敗：'+error.message,'error');
+    else toast(enabled?'加購功能已啟用':'加購功能已停用');
+}
+
+function upsellTitleTab(lang){
+    ['zh','en','ja','ko'].forEach(l=>{
+        document.getElementById(`uptitle-${l}`)?.style && (document.getElementById(`uptitle-${l}`).style.display=l===lang?'block':'none');
+        const btn=document.getElementById(`uptab-${l}`);
+        if(btn) btn.className=`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${l===lang?'bg-white text-slate-700 shadow-sm':'text-slate-400'}`;
+    });
+}
 
 // ── ANNOUNCEMENTS ──
 async function loadAnnouncements(){
@@ -2744,14 +3188,34 @@ function switchAnnTab(lang){
 
 function openAnnounceModal(isEdit){
     if(!isEdit){
-        ['ann-id','ann-title','ann-content','ann-title-en','ann-content-en','ann-title-ja','ann-content-ja','ann-title-ko','ann-content-ko']
+        ['ann-id','ann-title','ann-content','ann-title-en','ann-content-en','ann-title-ja','ann-content-ja','ann-title-ko','ann-content-ko','ann-image-url']
             .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
         document.getElementById('ann-active').checked=true;
+        document.getElementById('ann-img-file').value='';
+        document.getElementById('ann-img-preview').classList.add('hidden');
+        document.getElementById('ann-img-placeholder').classList.remove('hidden');
     }
     switchAnnTab('zh');
     document.getElementById('announce-modal').classList.remove('hidden');
 }
 function closeAnnounceModal(){document.getElementById('announce-modal').classList.add('hidden');}
+
+function previewAnnImg(input){
+    const file=input.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=e=>{
+        document.getElementById('ann-img-preview-img').src=e.target.result;
+        document.getElementById('ann-img-preview').classList.remove('hidden');
+        document.getElementById('ann-img-placeholder').classList.add('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+function clearAnnImg(){
+    document.getElementById('ann-img-file').value='';
+    document.getElementById('ann-image-url').value='';
+    document.getElementById('ann-img-preview').classList.add('hidden');
+    document.getElementById('ann-img-placeholder').classList.remove('hidden');
+}
 
 async function editAnnouncement(id){
     const{data}=await _s.from('announcements').select('*').eq('id',id).single();
@@ -2766,13 +3230,42 @@ async function editAnnouncement(id){
     document.getElementById('ann-title-ko').value=data.title_ko||'';
     document.getElementById('ann-content-ko').value=data.content_ko||'';
     document.getElementById('ann-active').checked=data.is_active;
+    document.getElementById('ann-image-url').value=data.image_url||'';
+    document.getElementById('ann-img-file').value='';
+    // 顯示既有圖片
+    if(data.image_url){
+        document.getElementById('ann-img-preview-img').src=data.image_url;
+        document.getElementById('ann-img-preview').classList.remove('hidden');
+        document.getElementById('ann-img-placeholder').classList.add('hidden');
+    } else {
+        document.getElementById('ann-img-preview').classList.add('hidden');
+        document.getElementById('ann-img-placeholder').classList.remove('hidden');
+    }
     openAnnounceModal(true);
 }
 
 async function saveAnnouncement(){
     const id=document.getElementById('ann-id').value;
+    const title=document.getElementById('ann-title').value.trim();
+    if(!title){toast('請輸入中文公告標題','warn');switchAnnTab('zh');return;}
+
+    // 上傳圖片（如果有選新的）
+    let imageUrl=document.getElementById('ann-image-url').value||null;
+    const file=document.getElementById('ann-img-file').files[0];
+    if(file){
+        const ext=file.name.split('.').pop().toLowerCase();
+        const path=`announce/${Date.now()}.${ext}`;
+        const{error:upErr}=await _s.storage.from('assets').upload(path,file,{contentType:file.type,upsert:true});
+        if(!upErr){
+            const{data:urlData}=_s.storage.from('assets').getPublicUrl(path);
+            imageUrl=urlData.publicUrl;
+        } else {
+            toast('圖片上傳失敗','error');
+        }
+    }
+
     const payload={
-        title:document.getElementById('ann-title').value.trim(),
+        title,
         content:document.getElementById('ann-content').value.trim(),
         title_en:document.getElementById('ann-title-en').value.trim()||null,
         content_en:document.getElementById('ann-content-en').value.trim()||null,
@@ -2780,9 +3273,9 @@ async function saveAnnouncement(){
         content_ja:document.getElementById('ann-content-ja').value.trim()||null,
         title_ko:document.getElementById('ann-title-ko').value.trim()||null,
         content_ko:document.getElementById('ann-content-ko').value.trim()||null,
+        image_url:imageUrl,
         is_active:document.getElementById('ann-active').checked
     };
-    if(!payload.title){toast('請輸入中文公告標題','warn');switchAnnTab('zh');return;}
     if(id) await _s.from('announcements').update(payload).eq('id',id);
     else await _s.from('announcements').insert([payload]);
     closeAnnounceModal();loadAnnouncements();toast('公告已儲存');
@@ -3088,14 +3581,15 @@ function renderCalDayBody(orders){
         // 解析套餐/單點
         const sets=[], singles={};
         (o.order_content||[]).forEach(item=>{
-            const qM=item.name.match(/ x(\d+)/),qty=qM?parseInt(qM[1]):1;
-            let clean=item.name.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-            const pIdx=clean.indexOf(' ('),inner=pIdx>-1?clean.slice(pIdx+2,-1):null;
-            if(inner&&inner.includes('、')){
-                const brand=clean.slice(0,pIdx).trim(),subs={};
-                const _subs=inner.split('、').map(s=>s.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim()).filter(Boolean);const _cnt={};_subs.forEach(s=>{_cnt[s]=(_cnt[s]||0)+1;});Object.entries(_cnt).forEach(([s,n])=>{subs[s]=(subs[s]||0)+qty*n;});
-                sets.push({brand,qty,subs});
-            } else { singles[clean]=(singles[clean]||0)+qty; }
+            const{qty,flv,clean,inner,isSet,brand}=parseItemDisplay(item.name);
+            if(isSet){
+                const subList=parseSetSubs(inner);
+                sets.push({brand,qty,subList});
+            } else {
+                const key=flv?clean+'｜'+flv:clean;
+                if(!singles[key])singles[key]={name:clean,flv,qty:0};
+                singles[key].qty+=qty;
+            }
         });
 
         const detailHtml=`
@@ -3106,14 +3600,14 @@ function renderCalDayBody(orders){
                     <span style="font-size:11px;font-weight:900;color:var(--gold)">${set.qty} 套</span>
                 </div>
                 <div style="padding:4px 12px">
-                ${Object.entries(set.subs).map(([n,c])=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${n}</span><span style="font-weight:900;color:var(--pine)">${c} 份</span></div>`).join('')}
+                ${set.subList.map(({name,flv,qty:sq})=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${name}${flv?` <span style="font-size:10px;color:var(--gold)">[${flv}]</span>`:''}</span><span style="font-weight:900;color:var(--pine)">${set.qty*sq} 份</span></div>`).join('')}
                 </div>
             </div>`).join('')}
             ${Object.entries(singles).length?`
             <div style="border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden">
                 <div style="background:#f8fafc;padding:5px 12px;border-bottom:1px solid #e2e8f0"><span style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.1em">單點</span></div>
                 <div style="padding:4px 12px">
-                ${Object.entries(singles).map(([n,c])=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${n}</span><span style="font-weight:900;color:var(--pine)">${c} 份</span></div>`).join('')}
+                ${Object.values(singles).map(({name,flv,qty})=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f8fafc;font-size:11px"><span style="width:4px;height:4px;border-radius:50%;background:var(--gold);flex-shrink:0;display:block"></span><span style="flex:1;font-weight:600;color:#334155">${name}${flv?` <span style="font-size:10px;color:var(--gold)">[${flv}]</span>`:''}</span><span style="font-weight:900;color:var(--pine)">${qty} 份</span></div>`).join('')}
                 </div>
             </div>`:''}
             ${o.note?`<div style="margin-top:8px;padding:8px 12px;background:#f0fdf4;border-left:3px solid var(--pine);border-radius:8px;font-size:11px;font-weight:700;color:var(--pine)">📝 ${o.note}</div>`:''}`;
