@@ -1562,6 +1562,13 @@ async function loadOrders() {
                     ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
                 </div>
 
+                <!-- 後台備註 -->
+                <div class="order-section" style="margin-bottom:10px">
+                    <div class="order-section-label">📌 餐點備註</div>
+                    <div style="display:flex;gap:6px;align-items:flex-start">
+                        <textarea id="admin-note-${o.id}" rows="2" placeholder="輸入餐點備註" onblur="saveAdminNote('${o.id}',this.value)" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-family:'Noto Sans TC',sans-serif;resize:none;outline:none;background:#f8fafc;color:var(--ink);transition:border 0.2s" onfocus="this.style.borderColor='var(--gold)'" onblurCapture="this.style.borderColor='var(--border)'">${o.admin_note||''}</textarea>
+                    </div>
+                </div>
                 <div class="order-actions">
                     <button onclick="openEditOrder('${o.id}')" class="btn btn-ghost btn-sm flex-1 justify-center">修改細項</button>
                     <button onclick="toggleSync('${o.id}','${o.status}')" class="btn btn-sm flex-[1.5] justify-center ${synced?'btn-ghost':'btn-primary'}">${synced?'↩ 標記未完成':'✓ 標記完成'}</button>
@@ -1596,6 +1603,16 @@ async function updateOrderData(id,field,val,inputEl){
         toast('已更新');
         if(curOrderView==='calendar') renderCalendar();
     } else toast('更新失敗','error');
+}
+async function saveAdminNote(id, val){
+    const{error}=await _s.from('orders').update({admin_note:val||null}).eq('id',id);
+    if(!error){
+        const el=document.getElementById(`admin-note-${id}`);
+        if(el){el.style.borderColor='#10b981';setTimeout(()=>el.style.borderColor='',1200);}
+        // 更新 ordersRef 快取
+        const cached=(window.ordersRef||[]).find(o=>o.id===id);
+        if(cached) cached.admin_note=val||null;
+    } else toast('備註儲存失敗','error');
 }
 async function saveBookingDateAndClose(id, newDate){
     await saveBookingDate(id, newDate);
@@ -2683,12 +2700,13 @@ function exportFullData(){
                 '訂單合計':i===0?(o.total_price||0):'',
                 '下單時間':i===0?timeStr:'',
                 '備註':i===0?(o.note||''):'',
+                '後台備註':i===0?(o.admin_note||''):'',
             });
         });
         tableRows.push({});
     });
     const wsT=XLSX.utils.json_to_sheet(tableRows);
-    wsT['!cols']=[{wch:8},{wch:12},{wch:14},{wch:12},{wch:10},{wch:6},{wch:6},{wch:6},{wch:10},{wch:32},{wch:6},{wch:8},{wch:10},{wch:16},{wch:20}];
+    wsT['!cols']=[{wch:8},{wch:12},{wch:14},{wch:12},{wch:10},{wch:6},{wch:6},{wch:6},{wch:10},{wch:32},{wch:6},{wch:8},{wch:10},{wch:16},{wch:20},{wch:24}];
     XLSX.utils.book_append_sheet(wb,wsT,'🪑 逐桌明細');
 
     // ── 摘要 ──
@@ -2757,12 +2775,13 @@ function exportFullData(){
                 金額:row.price,
                 合計:li===0?(o.total_price||0):'',
                 備註:li===0?(o.note||''):'',
+                後台備註:li===0?(o.admin_note||''):'',
             });
         });
         ledgerRows.push({});
     });
     const wsL=XLSX.utils.json_to_sheet(ledgerRows);
-    wsL['!cols']=[{wch:6},{wch:18},{wch:12},{wch:8},{wch:12},{wch:14},{wch:8},{wch:6},{wch:6},{wch:6},{wch:10},{wch:32},{wch:6},{wch:8},{wch:10},{wch:20}];
+    wsL['!cols']=[{wch:6},{wch:18},{wch:12},{wch:8},{wch:12},{wch:14},{wch:8},{wch:6},{wch:6},{wch:6},{wch:10},{wch:32},{wch:6},{wch:8},{wch:10},{wch:20},{wch:24}];
     XLSX.utils.book_append_sheet(wb,wsL,'📋 流水帳');
 
     XLSX.writeFile(wb,`真珠備料統計_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.xlsx`);
