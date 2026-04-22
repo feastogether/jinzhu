@@ -1495,12 +1495,12 @@ async function loadOrders() {
                 </div>
 
                 <!-- 區塊2：人數 -->
-                <div class="order-section" style="background:#f8fafc;border-radius:12px;padding:14px">
-                    <div class="order-section-label">👥 用餐人數</div>
-                    <div class="pax-grid">
-                        <div class="pax-field"><label>大人</label><input type="number" min="0" value="${o.adult_count||0}" onchange="updateOrderData('${o.id}','adult_count',this.value,this)"></div>
-                        <div class="pax-field"><label>小孩</label><input type="number" min="0" value="${o.kid_count||0}" onchange="updateOrderData('${o.id}','kid_count',this.value,this)"></div>
-                        <div class="pax-field"><label>兒童</label><input type="number" min="0" value="${o.child_count||0}" onchange="updateOrderData('${o.id}','child_count',this.value,this)"></div>
+                <div class="order-section">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                        <span class="order-section-label" style="margin-bottom:0;flex-shrink:0">👥 用餐人數</span>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--stone)">大人<input type="number" min="0" value="${o.adult_count||0}" onchange="updateOrderData('${o.id}','adult_count',this.value,this)" style="width:44px;text-align:center;font-size:12px;font-weight:900;padding:3px 4px;border-radius:6px;border:1.5px solid var(--border);background:#f8fafc;outline:none;font-family:'Noto Serif TC',serif"></label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--stone)">小孩<input type="number" min="0" value="${o.kid_count||0}" onchange="updateOrderData('${o.id}','kid_count',this.value,this)" style="width:44px;text-align:center;font-size:12px;font-weight:900;padding:3px 4px;border-radius:6px;border:1.5px solid var(--border);background:#f8fafc;outline:none;font-family:'Noto Serif TC',serif"></label>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--stone)">兒童<input type="number" min="0" value="${o.child_count||0}" onchange="updateOrderData('${o.id}','child_count',this.value,this)" style="width:44px;text-align:center;font-size:12px;font-weight:900;padding:3px 4px;border-radius:6px;border:1.5px solid var(--border);background:#f8fafc;outline:none;font-family:'Noto Serif TC',serif"></label>
                     </div>
                 </div>
 
