@@ -2962,7 +2962,7 @@ async function loadLineNotify(){
     data.forEach(async t=>{
         if(!t.user_id?.startsWith('U')) return; // 只處理個人帳號
         try{
-            const{data:resData, error}=await _s.functions.invoke('get-line-profile',{body:{userId:t.user_id}});
+            const{data:resData, error}=await _s.functions.invoke('jin-zhu-notify',{body:{action:'get-profile',userId:t.user_id}});
             console.log(`LINE profile [${t.name}]:`, resData, error);
             const pictureUrl=resData?.pictureUrl;
             if(pictureUrl){
@@ -3050,7 +3050,7 @@ function updateCronHint(hour,minute,enabled){
     const utcHour=((hour-8)+24)%24;
     const cronExpr=enabled?`${minute} ${utcHour} * * *`:`# 已停用（不執行）`;
     const sql=enabled
-        ?`SELECT cron.unschedule('daily-order-summary');\nSELECT cron.schedule(\n  'daily-order-summary',\n  '${cronExpr}',\n  $$SELECT net.http_post(\n    url := 'https://pydlnqriztpzgxbjuohm.supabase.co/functions/v1/daily-summary',\n    headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ${SUPABASE_KEY}'),\n    body := '{}'::jsonb\n  );$$\n);`
+        ?`SELECT cron.unschedule('daily-order-summary');\nSELECT cron.schedule(\n  'daily-order-summary',\n  '${cronExpr}',\n  $$SELECT net.http_post(\n    url := 'https://pydlnqriztpzgxbjuohm.supabase.co/functions/v1/jin-zhu-notify',\n    headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer ${SUPABASE_KEY}'),\n    body := '{"action":"daily-summary"}'::jsonb\n  );$$\n);`
         :`SELECT cron.unschedule('daily-order-summary');`;
     sqlEl.textContent=sql;
     // cron-hint 現在固定顯示在折疊區內，不需要控制 hidden
@@ -3064,7 +3064,7 @@ function copyCronSql(){
 async function testSummaryNotify(){
     toast('📤 正在發送測試彙整...','info',2000);
     try{
-        const{data,error}=await _s.functions.invoke('daily-summary',{body:{}});
+        const{data,error}=await _s.functions.invoke('jin-zhu-notify',{body:{action:'daily-summary'}});
         if(error) throw error;
         toast('✓ 發送成功，請查看 LINE','success',4000);
     }catch(e){
