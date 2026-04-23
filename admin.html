@@ -1495,12 +1495,21 @@ async function loadOrders() {
                 </div>
 
                 <!-- 區塊2：人數 -->
-                <div class="order-section" style="background:#f8fafc;border-radius:12px;padding:14px">
+                <div class="order-section">
                     <div class="order-section-label">👥 用餐人數</div>
-                    <div class="pax-grid">
-                        <div class="pax-field"><label>大人</label><input type="number" min="0" value="${o.adult_count||0}" onchange="updateOrderData('${o.id}','adult_count',this.value,this)"></div>
-                        <div class="pax-field"><label>小孩</label><input type="number" min="0" value="${o.kid_count||0}" onchange="updateOrderData('${o.id}','kid_count',this.value,this)"></div>
-                        <div class="pax-field"><label>兒童</label><input type="number" min="0" value="${o.child_count||0}" onchange="updateOrderData('${o.id}','child_count',this.value,this)"></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                        <div class="order-field">
+                            <label>大人</label>
+                            <input type="number" min="0" value="${o.adult_count||0}" onchange="updateOrderData('${o.id}','adult_count',this.value,this)">
+                        </div>
+                        <div class="order-field">
+                            <label>小孩</label>
+                            <input type="number" min="0" value="${o.kid_count||0}" onchange="updateOrderData('${o.id}','kid_count',this.value,this)">
+                        </div>
+                        <div class="order-field">
+                            <label>兒童</label>
+                            <input type="number" min="0" value="${o.child_count||0}" onchange="updateOrderData('${o.id}','child_count',this.value,this)">
+                        </div>
                     </div>
                 </div>
 
@@ -1564,9 +1573,9 @@ async function loadOrders() {
 
                 <!-- 後台備註 -->
                 <div class="order-section" style="margin-bottom:10px">
-                    <div class="order-section-label">📌 餐點備註</div>
+                    <div class="order-section-label">📌 後台備註（內部使用）</div>
                     <div style="display:flex;gap:6px;align-items:flex-start">
-                        <textarea id="admin-note-${o.id}" rows="2" placeholder="輸入餐點備註" onblur="saveAdminNote('${o.id}',this.value)" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-family:'Noto Sans TC',sans-serif;resize:none;outline:none;background:#f8fafc;color:var(--ink);transition:border 0.2s" onfocus="this.style.borderColor='var(--gold)'" onblurCapture="this.style.borderColor='var(--border)'">${o.admin_note||''}</textarea>
+                        <textarea id="admin-note-${o.id}" rows="2" placeholder="輸入內部備註…（不顯示給顧客）" onblur="saveAdminNote('${o.id}',this.value)" style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:11px;font-family:'Noto Sans TC',sans-serif;resize:none;outline:none;background:#f8fafc;color:var(--ink);transition:border 0.2s" onfocus="this.style.borderColor='var(--gold)'" onblurCapture="this.style.borderColor='var(--border)'">${o.admin_note||''}</textarea>
                     </div>
                 </div>
                 <div class="order-actions">
@@ -1582,8 +1591,15 @@ async function loadOrders() {
 function toggleOrderCard(id) {
     const card=document.getElementById(`order-card-${id}`);
     const chevron=document.getElementById(`chevron-${id}`);
+    const wasOpen=!card.classList.contains('collapsed');
     card.classList.toggle('collapsed');
     if(chevron) chevron.style.transform=card.classList.contains('collapsed')?'':'rotate(180deg)';
+    // 收合時，若有待刷新的變更才重新渲染
+    if(wasOpen && window._pendingRefresh?.has(id)){
+        window._pendingRefresh.delete(id);
+        if(curOrderView==='calendar') setTimeout(()=>renderCalendar(),300);
+        else setTimeout(()=>loadOrders(),300);
+    }
 }
 
 async function updateOrderData(id,field,val,inputEl){
@@ -1600,9 +1616,23 @@ async function updateOrderData(id,field,val,inputEl){
         }
     }
     if(!error){
-        toast('已更新');
-        if(curOrderView==='calendar') renderCalendar();
+        // 只更新快取，不重新渲染（避免編輯中卡片消失）
+        const cached=(window.ordersRef||[]).find(o=>o.id===id);
+        if(cached) cached[field]=obj[field];
+        // 標記此訂單已有未刷新的變更
+        if(!window._pendingRefresh) window._pendingRefresh=new Set();
+        window._pendingRefresh.add(id);
+        showSaveIndicator(id);
     } else toast('更新失敗','error');
+}
+
+// 右下角顯示「已自動儲存」提示，節流避免重複
+let _saveIndicatorTimer=null;
+function showSaveIndicator(id){
+    clearTimeout(_saveIndicatorTimer);
+    _saveIndicatorTimer=setTimeout(()=>{
+        toast('✓ 變更已自動儲存','success',1800);
+    },400);
 }
 async function saveAdminNote(id, val){
     const{error}=await _s.from('orders').update({admin_note:val||null}).eq('id',id);
@@ -1626,18 +1656,19 @@ async function saveBookingDate(id, newDate){
     const el = document.getElementById(`bdate-${id}`) || document.getElementById(`som-bdate-${id}`);
     if(!error){
         if(el){ el.style.borderColor='#10b981'; setTimeout(()=>el.style.borderColor='',1200); }
-        toast('訂位日期已更新');
-        // 不立即 renderCalendar，避免 DOM 重建後時間欄位消失
-        if(curOrderView==='calendar') setTimeout(()=>renderCalendar(), 1500);
+        // 更新快取
+        const cached=(window.ordersRef||[]).find(o=>o.id===id);
+        if(cached) cached.booking_date=isoStr;
+        if(!window._pendingRefresh) window._pendingRefresh=new Set();
+        window._pendingRefresh.add(id);
+        showSaveIndicator(id);
     } else toast('更新失敗','error');
 }
 async function saveBookingTime(id, newTime){
     if(!newTime) return;
-    // 先嘗試從 DOM 取日期，DOM 可能因日曆重建已不存在，改從 ordersRef 取
     const dateEl = document.getElementById(`bdate-${id}`) || document.getElementById(`som-bdate-${id}`);
     let date = dateEl?.value;
     if(!date){
-        // 從快取取
         const cached = (window.ordersRef||[]).find(o=>o.id===id);
         if(cached?.booking_date){
             const tw = new Date(new Date(cached.booking_date).getTime()+8*3600000);
@@ -1650,14 +1681,19 @@ async function saveBookingTime(id, newTime){
     const el = document.getElementById(`btime-${id}`) || document.getElementById(`som-btime-${id}`);
     if(!error){
         if(el){ el.style.borderColor='#10b981'; setTimeout(()=>el.style.borderColor='',1200); }
-        toast('訂位時間已更新');
-        if(curOrderView==='calendar') setTimeout(()=>renderCalendar(), 1500);
+        const cached=(window.ordersRef||[]).find(o=>o.id===id);
+        if(cached) cached.booking_date=isoStr;
+        if(!window._pendingRefresh) window._pendingRefresh=new Set();
+        window._pendingRefresh.add(id);
+        showSaveIndicator(id);
     } else toast('更新失敗','error');
 }
 async function toggleSync(id,cur){
     await _s.from('orders').update({status:cur==='synced'?'pending':'synced'}).eq('id',id);
     toast(cur==='synced'?'已標記為準備中':'訂單已完成 ✓');
-    loadOrders();
+    // toggleSync 是明確操作，直接刷新
+    if(curOrderView==='calendar') renderCalendar();
+    else loadOrders();
 }
 
 let selectedOrderIds=new Set();
@@ -3696,13 +3732,16 @@ _s.channel('orders-realtime')
         const o = payload.new;
         toast(`🔔 新訂單：${o.customer_name} $${o.total_price}`, 'info', 5000);
         updateOrdersKpi();
-        if(curOrderView==='calendar') renderCalendar();
-        else loadOrders();
+        // 只有沒有卡片展開中才自動刷新
+        const anyOpen=document.querySelector('.order-card:not(.collapsed)');
+        if(!anyOpen){
+            if(curOrderView==='calendar') renderCalendar();
+            else loadOrders();
+        }
     })
     .on('postgres_changes', {event:'UPDATE', schema:'public', table:'orders'}, ()=>{
         updateOrdersKpi();
-        if(curOrderView==='calendar') renderCalendar();
-        else loadOrders();
+        // UPDATE 事件可能是自己儲存觸發的，不自動重新渲染以免打斷編輯
     })
     .subscribe();
 
