@@ -521,7 +521,14 @@ let allMenuItems=[],allCats=[],allCampaigns=[],ordersRef=[];
 
 // ── PARSE ──
 function parseItem(raw){
-  const qM=raw.match(/^[^(]* x(\d+)/);const qty=qM?parseInt(qM[1]):1;
+  // qty：支援「品名(備註) x數字」和「品名 x數字」兩種格式
+  let qty=1;
+  const qM1_=raw.match(/^[^(]* x(\d+)\s*\(/);
+  const qM2_=raw.match(/\) x(\d+)$/);
+  const qM3_=raw.match(/^[^(]* x(\d+)$/);
+  if(qM1_) qty=parseInt(qM1_[1]);
+  else if(qM2_) qty=parseInt(qM2_[1]);
+  else if(qM3_) qty=parseInt(qM3_[1]);
   const top=raw.replace(/^([^(]+?) x\d+(\s*\()/,'$1$2').replace(/^([^(]+?) x\d+$/,'$1');
   const pI=top.indexOf(' (');const inner=pI>-1?top.slice(pI+2,-1):null;
   const isSet=!!(inner&&inner.includes('、'));
@@ -1111,10 +1118,11 @@ async function fetchReport(){
       if(isSet){
         setCount[brand]=(setCount[brand]||0)+qty;
         if(!setDetail[brand])setDetail[brand]={};
-        const subs_=parseSubs(inner);
-        if(subs_.length>0){
-          subs_.forEach(({name,flv:sf,qty:sq})=>{const dn=sf?`${name} [${sf}]`:name;dishCount[dn]=(dishCount[dn]||0)+qty*sq;setDetail[brand][dn]=(setDetail[brand][dn]||0)+qty*sq;});
-        }else{const comboKey=clean+(inner?` (${inner})`:'');dishCount[comboKey]=(dishCount[comboKey]||0)+qty;setDetail[brand][comboKey]=(setDetail[brand][comboKey]||0)+qty;}
+        // 備料總表：用「品名(完整組合)」作 key，同組合合計，不同組合分開
+        const fullKey_=brand+(inner?` (${inner})`:'');
+        dishCount[fullKey_]=(dishCount[fullKey_]||0)+qty;
+        // setDetail 展開子品項（套餐明細用）
+        parseSubs(inner).forEach(({name,flv:sf,qty:sq})=>{const dn=sf?`${name} [${sf}]`:name;setDetail[brand][dn]=(setDetail[brand][dn]||0)+qty*sq;});
       }else{const key_=flv?`${clean} [${flv}]`:clean;dishCount[key_]=(dishCount[key_]||0)+qty;}
     });
   });
