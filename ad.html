@@ -2564,9 +2564,12 @@ async function fetchData(){
     const typeLabel=dateType==='booking'?'訂位日':'下單日';
     const camLabel=cam==='all'?'全部':cam==='none'?'一般訂單':cam;
     document.getElementById('report-period-display').textContent=`${typeLabel} ${sd} ～ ${ed} ｜ ${camLabel}`;
-    renderReports(orders||[]);
+    // 查詢哪些品項是套餐（is_set_menu=true），讓備料統計正確拆解
+    const{data:setItems}=await _s.from('menu_items').select('name').eq('is_set_menu',true);
+    const setMenuNames=new Set((setItems||[]).map(i=>i.name));
+    renderReports(orders||[], setMenuNames);
 }
-function renderReports(orders){
+function renderReports(orders, setMenuNames=new Set()){
     const dishCount={},setMenuCount={},setMenuDetail={};
     let totalAdult=0,totalKid=0,totalChild=0,totalRev=0;
     orders.forEach(o=>{
@@ -2576,14 +2579,33 @@ function renderReports(orders){
             if(isSet){
                 setMenuCount[brand]=(setMenuCount[brand]||0)+qty;
                 if(!setMenuDetail[brand]) setMenuDetail[brand]={};
-                // 備料總表：用「品名(完整組合)」作 key，同組合合計，不同組合分開
-                const fullKey=brand+(inner?` (${inner})`:'');
-                dishCount[fullKey]=(dishCount[fullKey]||0)+qty;
-                // setMenuDetail 展開子品項（套餐明細頁用）
-                parseSetSubs(inner).forEach(({name,flv:sFlv,qty:sQty})=>{
-                    const dispName=sFlv?`${name} [${sFlv}]`:name;
-                    setMenuDetail[brand][dispName]=(setMenuDetail[brand][dispName]||0)+qty*sQty;
-                });
+                if(setMenuNames.has(brand)){
+                    // 真正的套餐（is_set_menu=true）→ 子品項拆開統計
+                    // 智慧分割：忽略括號內的 、
+                    const subItems=[];let depth=0,cur='';
+                    for(const ch of (inner||'')){
+                        if(ch==='('){depth++;cur+=ch;}
+                        else if(ch===')'){depth--;cur+=ch;}
+                        else if(ch==='、'&&depth===0){subItems.push(cur.trim());cur='';}
+                        else cur+=ch;
+                    }
+                    if(cur.trim())subItems.push(cur.trim());
+                    subItems.forEach(raw=>{
+                        const sQM1=raw.match(/^[^(]* x(\d+)\s*\(/);
+                        const sQM2=raw.match(/\) x(\d+)$/);
+                        const sQM3=raw.match(/^[^(]* x(\d+)$/);
+                        const sq=sQM1?parseInt(sQM1[1]):sQM2?parseInt(sQM2[1]):sQM3?parseInt(sQM3[1]):1;
+                        const sc=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                        if(!sc)return;
+                        dishCount[sc]=(dishCount[sc]||0)+qty*sq;
+                        setMenuDetail[brand][sc]=(setMenuDetail[brand][sc]||0)+qty*sq;
+                    });
+                } else {
+                    // 口味選擇型（如三喜小菜拼盤）→ 整組作一個備料品項
+                    const fullKey=brand+(inner?` (${inner})`:'');
+                    dishCount[fullKey]=(dishCount[fullKey]||0)+qty;
+                    setMenuDetail[brand][fullKey]=(setMenuDetail[brand][fullKey]||0)+qty;
+                }
             }
             else{
                 // 單點：以品名（含口味）作 key
