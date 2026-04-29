@@ -9,6 +9,8 @@
 <link rel="icon" href="https://www.jinzhu.com.tw/favicon.ico">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -589,6 +591,50 @@ async function initApp(){
     toast(`🔔 新訂單：${p.new.customer_name} $${p.new.total_price}`,'info',5000);
     updateKpi();loadOrders();
   }).subscribe();
+
+  // ── Telegram Mini App 初始化 ──
+  initTelegram();
+}
+
+function initTelegram(){
+  // 如果在 TG Mini App 環境內
+  if(window.Telegram?.WebApp){
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand(); // 展開全螢幕
+    // TG 主題色同步
+    if(tg.colorScheme === 'dark'){
+      document.documentElement.style.setProperty('--paper','#1a1a1a');
+      document.documentElement.style.setProperty('--card','#2a2a2a');
+    }
+    // 返回按鈕：在編輯訂單時顯示
+    tg.BackButton.onClick(()=>{
+      if(document.getElementById('edit-order-sheet').classList.contains('visible')){
+        closeEditOrder();
+      }
+    });
+  }
+
+  // ── 從 URL 參數自動跳到指定訂單 ──
+  const params = new URLSearchParams(location.search);
+  const orderId = params.get('order_id');
+  if(orderId){
+    // 等訂單載入完成後跳到那筆
+    setTimeout(async()=>{
+      // 先確保訂單在 ordersRef 裡
+      if(!ordersRef.find(o=>o.id===orderId)){
+        const{data}=await _s.from('orders').select('*').eq('id',orderId).single();
+        if(data){ordersRef.push(data);renderOrders(ordersRef);}
+      }
+      const el=document.getElementById(`oc-${orderId}`);
+      if(el){
+        el.scrollIntoView({behavior:'smooth',block:'center'});
+        el.classList.add('open');
+        // 直接打開編輯模式
+        setTimeout(()=>openEditOrder(orderId),400);
+      }
+    },800);
+  }
 }
 
 async function updateKpi(){
@@ -749,6 +795,8 @@ async function openEditOrder(id){
 
   // 顯示全螢幕
   document.getElementById('edit-order-sheet').classList.add('visible');
+  // 顯示 TG 返回按鈕
+  window.Telegram?.WebApp?.BackButton?.show();
   eosTab('info',document.querySelector('.eos-tab.on')||document.querySelectorAll('.eos-tab')[0]);
   refreshEosCart();
 
@@ -762,6 +810,8 @@ async function openEditOrder(id){
 
 function closeEditOrder(){
   document.getElementById('edit-order-sheet').classList.remove('visible');
+  // 隱藏 TG 返回按鈕
+  window.Telegram?.WebApp?.BackButton?.hide();
 }
 
 function eosTab(name,el){
@@ -949,7 +999,14 @@ async function saveEditOrder(){
     total_price:total
   };
   const{error}=await _s.from('orders').update(payload).eq('id',eosOrder.id);
-  if(!error){toast('✅ 訂單已更新');closeEditOrder();loadOrders();updateKpi();}
+  if(!error){
+    toast('✅ 訂單已更新');
+    closeEditOrder();
+    loadOrders();
+    updateKpi();
+    // 通知 TG Mini App 資料已更新
+    window.Telegram?.WebApp?.sendData(JSON.stringify({action:'order_updated',order_id:eosOrder.id}));
+  }
   else toast('儲存失敗','error');
 }
 
