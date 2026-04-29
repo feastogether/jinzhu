@@ -945,7 +945,7 @@
             <div class="overflow-y-auto" style="max-height:60vh">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
-                        <tr><th class="px-5 py-3 w-10">#</th><th class="px-5 py-3">品名</th><th class="px-5 py-3 text-right w-28">備料數</th><th class="px-5 py-3 w-40">佔比</th></tr>
+                        <tr><th class="px-5 py-3 w-10">#</th><th class="px-5 py-3">品名</th><th class="px-5 py-3 text-right w-28">備料數</th></tr>
                     </thead>
                     <tbody id="dish-summary-body" class="divide-y divide-slate-50"></tbody>
                 </table>
@@ -1293,6 +1293,13 @@ function parseItemDisplay(rawName){
     const topQtyRemoved=rawName.replace(/^([^(]+?) x\d+(\s*\()/, '$1$2').replace(/^([^(]+?) x\d+$/, '$1');
     const pI=topQtyRemoved.indexOf(' (');
     const inner=pI>-1?topQtyRemoved.slice(pI+2,-1):null;
+    // isSet：inner 有'、'且裡面包含 menu_item 名稱（非純口味）
+    // 套餐的 inner 格式：「主食 x1、配菜 x1」或「主食、配菜」
+    // 口味的 inner 格式：「黃瓜愛裝蒜、涮嘴脆蘿蔔」— 這些是從 set_menu_contents.menu_items.name 來的
+    // 關鍵區別：套餐子品項是從 set_menu_groups/set_menu_contents 建的，口味是從 flavor_groups 建的
+    // 實際判斷：rawName 有 ' (' 結構且 inner 有 '、' → 視為套餐
+    // 但要排除：括號裡只有口味選項（通常是單一概念詞，不含 x數量）
+    // → 保持原有邏輯，但在備料統計時特殊處理
     const isSet=!!(inner&&inner.includes('、'));
     // flv 只從括號前的品名取（套餐本身口味，通常為空）
     const namePart=pI>-1?topQtyRemoved.slice(0,pI):topQtyRemoved;
@@ -2564,15 +2571,28 @@ function renderReports(orders){
                 setMenuCount[brand]=(setMenuCount[brand]||0)+qty;
                 if(!setMenuDetail[brand]) setMenuDetail[brand]={};
                 const subs=parseSetSubs(inner);
-                subs.forEach(({name,flv:sFlv,qty:sQty})=>{
-                    const dispName=sFlv?`${name} [${sFlv}]`:name;
-                    const key=`${brand}／${dispName}`;
-                    dishCount[key]=(dishCount[key]||0)+qty*sQty;
-                    setMenuDetail[brand][dispName]=(setMenuDetail[brand][dispName]||0)+qty*sQty;
-                });
+                if(subs.length>0){
+                    // 真正的套餐：子品項累計備料
+                    subs.forEach(({name,flv:sFlv,qty:sQty})=>{
+                        const dispName=sFlv?`${name} [${sFlv}]`:name;
+                        const key=`${brand}／${dispName}`;
+                        // 備料總表合併統計（只用品名作 key，不帶套餐前綴）
+                        dishCount[dispName]=(dishCount[dispName]||0)+qty*sQty;
+                        // 但 setMenuDetail 保留原結構（套餐明細用）
+                        setMenuDetail[brand][dispName]=(setMenuDetail[brand][dispName]||0)+qty*sQty;
+                    });
+                } else {
+                    // 套餐組合品（如三喜小菜拼盤），整組作為一個備料品項
+                    // key 用完整品名（含組合口味），方便廚房識別
+                    const comboKey=cleanName+(inner?` (${inner})`:'');
+                    dishCount[comboKey]=(dishCount[comboKey]||0)+qty;
+                    setMenuDetail[brand][comboKey]=(setMenuDetail[brand][comboKey]||0)+qty;
+                }
             }
             else{
-                dishCount[cleanName]=(dishCount[cleanName]||0)+qty;
+                // 單點：直接以品名（含口味）作 key 統計
+                const key=flv?`${cleanName} [${flv}]`:cleanName;
+                dishCount[key]=(dishCount[key]||0)+qty;
             }
         });
     });
@@ -2591,18 +2611,12 @@ function renderReports(orders){
     document.getElementById('set-menu-total').textContent=`${totalSets} 套`;
     document.getElementById('order-count-tag').textContent=`${orders.length} 筆`;
     document.getElementById('dish-summary-body').innerHTML=sorted.length===0
-        ?`<tr><td colspan="4" class="text-center py-10 text-slate-300 font-bold text-sm">查無資料</td></tr>`
+        ?`<tr><td colspan="3" class="text-center py-10 text-slate-300 font-bold text-sm">查無資料</td></tr>`
         :sorted.map(([key,count],i)=>{
-            const isSet=key.includes('／');
-            const [setName,itemName]=isSet?key.split('／'):[null,key];
-            const displayName=isSet
-                ?`<span style="font-size:9px;font-weight:700;color:var(--gold);background:rgba(184,145,80,0.1);padding:1px 6px;border-radius:4px;margin-right:6px;white-space:nowrap">${setName}</span>${itemName}`
-                :key;
             return`<tr class="hover:bg-slate-50 transition">
                 <td class="px-5 py-3 text-xs font-bold text-slate-300">${i+1}</td>
-                <td class="px-5 py-3 font-bold text-slate-700">${displayName}</td>
+                <td class="px-5 py-3 font-bold text-slate-700" style="word-break:break-all">${key}</td>
                 <td class="px-5 py-3 text-right"><span class="font-serif font-black text-xl" style="color:var(--pine)">${count}</span><span class="text-xs text-slate-300 ml-1">份</span></td>
-                <td class="px-5 py-3"><div style="background:#f1f5f9;border-radius:999px;height:5px;overflow:hidden"><div style="background:${isSet?'var(--gold)':'var(--pine)'};height:100%;width:${Math.round(count/maxQty*100)}%;border-radius:999px;transition:width .4s"></div></div></td>
             </tr>`;
         }).join('');
     document.getElementById('set-menu-body').innerHTML=Object.keys(setMenuCount).length===0
@@ -2794,20 +2808,10 @@ function exportFullData(){
         {項目:'預估營收',數值:totalRev},
     ]),'📊 摘要');
 
-    // ── 備料總表 ──
-    const prepRows=[];
-    // 套餐彙總
-    Object.entries(setMenuCount).sort((a,b)=>b[1]-a[1]).forEach(([name,count])=>{
-        prepRows.push({類型:'套餐',套餐:'',品名:name,數量:count});
-    });
-    // 各品項（套餐子品項加套餐名稱，單點直接顯示）
-    sorted.forEach(([key,count])=>{
-        const isSet=key.includes('／');
-        const[setName,itemName]=isSet?key.split('／'):[null,key];
-        prepRows.push({類型:isSet?'套餐品項':'單點',套餐:isSet?setName:'',品名:isSet?itemName:key,數量:count});
-    });
+    // ── 備料總表（廚房用，按數量排序，不分套餐/單點）──
+    const prepRows=sorted.map(([key,count])=>({'品名':key,'數量':count}));
     const wsP=XLSX.utils.json_to_sheet(prepRows);
-    wsP['!cols']=[{wch:10},{wch:16},{wch:28},{wch:8}];
+    wsP['!cols']=[{wch:48},{wch:8}];
     XLSX.utils.book_append_sheet(wb,wsP,'🍳 備料總表');
 
     // ── 套餐明細 ──
