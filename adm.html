@@ -21,6 +21,26 @@
   --safe-bot:env(safe-area-inset-bottom,0px);
   --nav-h:62px;
 }
+/* TG Mini App 原生化 */
+html{
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+/* 所有互動元素加 active 縮放效果 */
+.order-header:active,.seg-btn:active,.nav-item:active,.btn:active,.menu-item-card:active{
+  transform:scale(.97);
+  transition:transform .1s;
+}
+/* 滾動更順滑 */
+#content,#eos-panels .eos-panel,#cal-day-body{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
+/* 去掉 input/select 原生樣式 */
+input,select,textarea{
+  -webkit-appearance:none;
+  appearance:none;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
 body{font-family:'Noto Sans TC',sans-serif;background:var(--paper);color:var(--ink);overscroll-behavior:none}
@@ -604,23 +624,65 @@ async function initApp(){
 }
 
 function initTelegram(){
-  // 如果在 TG Mini App 環境內
-  if(window.Telegram?.WebApp){
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand(); // 展開全螢幕
-    // TG 主題色同步
-    if(tg.colorScheme === 'dark'){
-      document.documentElement.style.setProperty('--paper','#1a1a1a');
-      document.documentElement.style.setProperty('--card','#2a2a2a');
-    }
-    // 返回按鈕：在編輯訂單時顯示
-    tg.BackButton.onClick(()=>{
-      if(document.getElementById('edit-order-sheet').classList.contains('visible')){
-        closeEditOrder();
-      }
-    });
+  if(!window.Telegram?.WebApp) return;
+  const tg = window.Telegram.WebApp;
+
+  // ── 基礎設定 ──
+  tg.ready();
+  tg.expand();
+  tg.disableVerticalSwipes();        // 防止下拉關閉 Mini App
+  tg.enableClosingConfirmation();    // 離開前確認
+
+  // ── Header 顏色配合品牌色 ──
+  try {
+    tg.setHeaderColor('#002e27');    // pine-dark
+    tg.setBackgroundColor('#f8fafc');
+  } catch(e) {}
+
+  // ── 主題色同步 ──
+  if(tg.colorScheme === 'dark'){
+    document.documentElement.style.setProperty('--paper','#17212b');
+    document.documentElement.style.setProperty('--border','#2b5278');
+    document.documentElement.style.setProperty('--pine-dark','#17212b');
   }
+
+  // ── 返回按鈕 ──
+  tg.BackButton.onClick(()=>{
+    if(document.getElementById('edit-order-sheet').classList.contains('visible')){
+      closeEditOrder();
+    } else if(document.getElementById('pop-overlay').classList.contains('visible')){
+      closePop();
+    }
+  });
+
+  // ── 觸覺回饋封裝 ──
+  window.tgHaptic = {
+    light:   ()=>{ try{ tg.HapticFeedback.impactOccurred('light'); }catch(e){} },
+    medium:  ()=>{ try{ tg.HapticFeedback.impactOccurred('medium'); }catch(e){} },
+    heavy:   ()=>{ try{ tg.HapticFeedback.impactOccurred('heavy'); }catch(e){} },
+    success: ()=>{ try{ tg.HapticFeedback.notificationOccurred('success'); }catch(e){} },
+    error:   ()=>{ try{ tg.HapticFeedback.notificationOccurred('error'); }catch(e){} },
+    warning: ()=>{ try{ tg.HapticFeedback.notificationOccurred('warning'); }catch(e){} },
+    select:  ()=>{ try{ tg.HapticFeedback.selectionChanged(); }catch(e){} },
+  };
+
+  // ── MainButton：在編輯訂單時顯示「💾 儲存」按鈕 ──
+  try {
+    tg.MainButton.setText('💾 儲存訂單');
+    tg.MainButton.color = '#004d40';
+    tg.MainButton.textColor = '#ffffff';
+    tg.MainButton.onClick(()=>{ saveEditOrder(); });
+  } catch(e) {}
+
+  // ── Secondary Button（返回）─
+  try {
+    tg.SecondaryButton.setText('取消');
+    tg.SecondaryButton.onClick(()=>{ closeEditOrder(); });
+  } catch(e) {}
+
+  // ── 隱藏底部 save bar（用 TG MainButton 取代）──
+  const saveBar = document.getElementById('eos-save-bar');
+  if(saveBar) saveBar.style.display='none';
 
   // ── 從 URL 參數自動跳到指定訂單 ──
   const params = new URLSearchParams(location.search);
@@ -662,6 +724,7 @@ function switchTab(tab,el){
 // ── FILTERS ──
 let fStatus='all',fDate='all',curView='list';
 function setSeg(type,val,el){
+  window.tgHaptic?.select();
   el.closest('.seg-row').querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
   if(type==='status')fStatus=val;
@@ -757,6 +820,7 @@ function toggleOrder(id){document.getElementById(`oc-${id}`)?.classList.toggle('
 async function toggleStatus(id,cur){
   const ns=cur==='synced'?'pending':'synced';
   await _s.from('orders').update({status:ns}).eq('id',id);
+  if(ns==='synced') window.tgHaptic?.success(); else window.tgHaptic?.warning();
   toast(ns==='synced'?'✅ 已完成':'⏳ 標記待處理');
   loadOrders();updateKpi();
 }
@@ -764,6 +828,7 @@ async function deleteOrder(id){
   const ok=await confirm2({icon:'🗑',title:'刪除訂單',msg:'確定永久刪除？此操作無法復原。',okText:'確認刪除',danger:true});
   if(!ok)return;
   await _s.from('orders').delete().eq('id',id);
+  window.tgHaptic?.warning();
   loadOrders();updateKpi();toast('訂單已刪除');
 }
 
@@ -801,9 +866,14 @@ async function openEditOrder(id){
   document.getElementById('eos-title').textContent=`修改 · ${eosOrder.customer_name}`;
 
   // 顯示全螢幕
+  window.tgHaptic?.light();
   document.getElementById('edit-order-sheet').classList.add('visible');
-  // 顯示 TG 返回按鈕
-  window.Telegram?.WebApp?.BackButton?.show();
+  // 顯示 TG 返回按鈕 + MainButton
+  if(window.Telegram?.WebApp){
+    window.Telegram.WebApp.BackButton.show();
+    try{ window.Telegram.WebApp.MainButton.show(); }catch(e){}
+    try{ window.Telegram.WebApp.SecondaryButton.show(); }catch(e){}
+  }
   eosTab('info',document.querySelector('.eos-tab.on')||document.querySelectorAll('.eos-tab')[0]);
   refreshEosCart();
 
@@ -817,8 +887,12 @@ async function openEditOrder(id){
 
 function closeEditOrder(){
   document.getElementById('edit-order-sheet').classList.remove('visible');
-  // 隱藏 TG 返回按鈕
-  window.Telegram?.WebApp?.BackButton?.hide();
+  // 隱藏 TG 按鈕
+  if(window.Telegram?.WebApp){
+    window.Telegram.WebApp.BackButton.hide();
+    try{ window.Telegram.WebApp.MainButton.hide(); }catch(e){}
+    try{ window.Telegram.WebApp.SecondaryButton.hide(); }catch(e){}
+  }
 }
 
 function eosTab(name,el){
@@ -1007,14 +1081,17 @@ async function saveEditOrder(){
   };
   const{error}=await _s.from('orders').update(payload).eq('id',eosOrder.id);
   if(!error){
+    window.tgHaptic?.success();
     toast('✅ 訂單已更新');
     closeEditOrder();
     loadOrders();
     updateKpi();
     // 通知 TG Mini App 資料已更新
     window.Telegram?.WebApp?.sendData(JSON.stringify({action:'order_updated',order_id:eosOrder.id}));
+  } else {
+    window.tgHaptic?.error();
+    toast('儲存失敗','error');
   }
-  else toast('儲存失敗','error');
 }
 
 // ── CALENDAR ──
@@ -1111,6 +1188,9 @@ async function fetchReport(){
   const o=orders||[];
   const dishCount={},setCount={},setDetail={};
   let tA=0,tK=0,tC=0,tRev=0;
+  // 查哪些是套餐品項（is_set_menu=true）
+  const{data:setItemsAdm}=await _s.from('menu_items').select('name').eq('is_set_menu',true);
+  const setMenuNamesAdm=new Set((setItemsAdm||[]).map(i=>i.name));
   o.forEach(ord=>{
     tA+=(ord.adult_count||0);tK+=(ord.kid_count||0);tC+=(ord.child_count||0);tRev+=(ord.total_price||0);
     (ord.order_content||[]).forEach(item=>{
@@ -1118,11 +1198,30 @@ async function fetchReport(){
       if(isSet){
         setCount[brand]=(setCount[brand]||0)+qty;
         if(!setDetail[brand])setDetail[brand]={};
-        // 備料總表：用「品名(完整組合)」作 key，同組合合計，不同組合分開
-        const fullKey_=brand+(inner?` (${inner})`:'');
-        dishCount[fullKey_]=(dishCount[fullKey_]||0)+qty;
-        // setDetail 展開子品項（套餐明細用）
-        parseSubs(inner).forEach(({name,flv:sf,qty:sq})=>{const dn=sf?`${name} [${sf}]`:name;setDetail[brand][dn]=(setDetail[brand][dn]||0)+qty*sq;});
+        if(setMenuNamesAdm.has(brand)){
+          // 真正的套餐 → 子品項拆開統計（智慧分割，忽略括號內的、）
+          const subItemsAdm=[];let depthAdm=0,curAdm='';
+          for(const ch of (inner||'')){
+            if(ch==='('){depthAdm++;curAdm+=ch;}
+            else if(ch===')'){depthAdm--;curAdm+=ch;}
+            else if(ch==='、'&&depthAdm===0){subItemsAdm.push(curAdm.trim());curAdm='';}
+            else curAdm+=ch;
+          }
+          if(curAdm.trim())subItemsAdm.push(curAdm.trim());
+          subItemsAdm.forEach(raw=>{
+            const sQM2=raw.match(/\) x(\d+)$/);const sQM3=raw.match(/^[^(]* x(\d+)$/);
+            const sq=sQM2?parseInt(sQM2[1]):sQM3?parseInt(sQM3[1]):1;
+            const sc=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            if(!sc)return;
+            dishCount[sc]=(dishCount[sc]||0)+qty*sq;
+            setDetail[brand][sc]=(setDetail[brand][sc]||0)+qty*sq;
+          });
+        }else{
+          // 口味選擇型 → 整組顯示
+          const fullKey_=brand+(inner?` (${inner})`:'');
+          dishCount[fullKey_]=(dishCount[fullKey_]||0)+qty;
+          setDetail[brand][fullKey_]=(setDetail[brand][fullKey_]||0)+qty;
+        }
       }else{const key_=flv?`${clean} [${flv}]`:clean;dishCount[key_]=(dishCount[key_]||0)+qty;}
     });
   });
