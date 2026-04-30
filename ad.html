@@ -846,6 +846,58 @@
             <div id="line-targets-list" class="space-y-3"></div>
         </div>
 
+        <!-- TG 通知設定 card -->
+        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(0,119,181,0.1);display:flex;align-items:center;justify-content:center;font-size:1rem">✈️</div>
+                    <div>
+                        <div class="font-bold text-sm" style="color:var(--pine)">Telegram 群組通知</div>
+                        <div class="text-xs text-slate-400">真珠文心預點系統群組</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="tg-status-badge" class="text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(0,77,64,0.08);color:var(--pine)">已啟用</span>
+                    <label class="flex items-center cursor-pointer select-none" onclick="event.stopPropagation()">
+                        <div class="relative">
+                            <input type="checkbox" id="tg-notify-enabled" class="sr-only" onchange="saveTgNotifySetting()" checked>
+                            <div id="tg-toggle-bg" style="width:36px;height:20px;border-radius:999px;background:var(--pine);cursor:pointer;transition:background 0.2s;display:flex;align-items:center;padding:2px" onclick="document.getElementById('tg-notify-enabled').click()">
+                                <div id="tg-toggle-dot" style="width:16px;height:16px;border-radius:50%;background:white;transition:transform 0.2s;transform:translateX(16px)"></div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <div class="p-5 space-y-4">
+                <!-- QR Code 區域 -->
+                <div class="flex flex-col items-center gap-3 py-3">
+                    <div class="text-xs font-bold text-slate-400 uppercase tracking-widest">掃描加入群組</div>
+                    <div style="background:white;padding:12px;border-radius:16px;border:1.5px solid rgba(0,77,64,0.15);box-shadow:0 2px 12px rgba(0,0,0,0.06)">
+                        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQgAAAEICAIAAAAslP2oAAAE9UlEQVR4nO3dwW3lNhRA0ThIY2kgxaaBKe1nMasAVwsCfCBln7P2yPK3LwjoDcWvz+fzB/B/f56+AbiRMCAIA4IwIAgDgjAgCAOCMCAIA4IwIAgDgjAgCAOCMCAIA8Jfq//g65+/J+5ju8+/v45839XPZ/U+d13/6TrT93PK6s9lxYAgDAjCgCAMCMKAIAwIwoCwPMd48pa5werz+13P6aevf5u3/D08sWJAEAYEYUAQBgRhQBAGBGFA2DbHeDI9B9h1ndvmFbv2Uezad7HLbX8PT6wYEIQBQRgQhAFBGBCEAUEYEMbnGG9x2/uUds0fpucq35UVA4IwIAgDgjAgCAOCMCAIA8KPm2Psen7/XfdL/LR5xRMrBgRhQBAGBGFAEAYEYUAQBoTxOcZtz8VX5wmrc4ZT84rpc7un3+t1GysGBGFAEAYEYUAQBgRhQBAGhG1zjLecVz19zvf0foxTX7/qLX8PT6wYEIQBQRgQhAFBGBCEAUEYEL4+n8/pe7jC9H6GVafOI+c3KwYEYUAQBgRhQBAGBGFAEAaE5TnGW/YP3HZut/O2f3vL+6+sGBCEAUEYEIQBQRgQhAFBGBCOvVdq13Po6ef6b58bPDn13qdd86jpuZYVA4IwIAgDgjAgCAOCMCAIA8J175V6y36M2/YP7Pq+uz6HU9dZvf4TKwYEYUAQBgRhQBAGBGFAEAaE8TnGW94jtPp9V03/vLe9F+u2+cwqKwYEYUAQBgRhQBAGBGFAEAaE8fdKTT93P7V/Y9qp/Qmn3jd127zLigFBGBCEAUEYEIQBQRgQhAFheY5xan/CqtvmFbftr9h1nskp05+bFQOCMCAIA4IwIAgDgjAgCAPCtv0Yq257Ln7b+5FW3bb/5LY5zCorBgRhQBAGBGFAEAYEYUAQBoRjc4zbzot4+3Vum1fcdo7HKisGBGFAEAYEYUAQBgRhQBAGhOvO+b5tXnHbvoVd93PbPOHU7/2JFQOCMCAIA4IwIAgDgjAgCAPC+Dnfq1afN+96rn/qXO1Tbjvn+8mp/R5WDAjCgCAMCMKAIAwIwoAgDAjL+zFOPVc+9f/yn3zX+cZbfi77MeAAYUAQBgRhQBAGBGFAEAaE5f0Yt+1bmH5/0arpOcn0PGf69zs9f3A+BgwSBgRhQBAGBGFAEAYEYUAY348x7bb3ID05tQ9k15xn2m37UqwYEIQBQRgQhAFBGBCEAUEYELbtxzjl1HnSbznHetf9n5rDnNrnY8WAIAwIwoAgDAjCgCAMCMKAsG0/xm3ecg7G2z/P2+Yzq9d5YsWAIAwIwoAgDAjCgCAMCMKAsLwf48nb3ys1ve/ituf3bznP+xQrBgRhQBAGBGFAEAYEYUAQBoRtc4wntz0v3/Veo9VzslevP71PY3W+cep+Tl3HigFBGBCEAUEYEIQBQRgQhAFhfI5xm+lzr6fPQZ/e/3Db+7hOnStvxYAgDAjCgCAMCMKAIAwIwoDw4+YY0+cqrPqu54Xv2u8x/fk8sWJAEAYEYUAQBgRhQBAGBGFAGJ9j3HZ+wqnn4qum94FMz3OmP7fp61sxIAgDgjAgCAOCMCAIA4IwIGybY0yfn7DLqbnEW0zPQ94yP7FiQBAGBGFAEAYEYUAQBgRhQPj6fD6n7wGuY8WAIAwIwoAgDAjCgCAMCMKAIAwIwoAgDAjCgCAMCMKAIAwIwoDwH8QRMYEf+CEdAAAAAElFTkSuQmCC" style="width:140px;height:140px;display:block" alt="TG群組QR碼">
+                    </div>
+                    <a href="https://t.me/+ftM2kDStx1I0Mzhl" target="_blank" class="btn btn-ghost btn-sm" style="font-size:11px;color:#0088cc">
+                        🔗 https://t.me/+ftM2kDStx1I0Mzhl
+                    </a>
+                </div>
+                <!-- 功能說明 -->
+                <div style="background:rgba(0,119,181,0.04);border:1px solid rgba(0,119,181,0.15);border-radius:12px;padding:12px 14px" class="space-y-2">
+                    <div class="text-xs font-bold text-slate-500 mb-2">Bot 功能</div>
+                    <div class="text-xs text-slate-500 space-y-1.5">
+                        <div class="flex items-center gap-2"><span>🔔</span><span>新訂單即時通知</span></div>
+                        <div class="flex items-center gap-2"><span>✅</span><span>按鈕標記完成 / 取消完成</span></div>
+                        <div class="flex items-center gap-2"><span>✏️</span><span>連結直接開啟編輯訂單</span></div>
+                        <div class="flex items-center gap-2"><span>📋</span><span>每日訂單彙整（自動）</span></div>
+                        <div class="flex items-center gap-2"><span>⌨️</span><span>快捷選單：今日統計、待處理</span></div>
+                    </div>
+                </div>
+                <!-- Bot 資訊 -->
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-slate-400">Bot</span>
+                    <a href="https://t.me/jinzhutw_bot" target="_blank" class="font-bold" style="color:#0088cc">@jinzhutw_bot</a>
+                </div>
+            </div>
+        </div>
+
         <!-- 網址配置 -->
         <div id="ss-eventurl" class="ss-panel hidden space-y-6">
             <div class="bg-white p-8 rounded-2xl border shadow-sm max-w-3xl space-y-8">
@@ -2241,7 +2293,7 @@ function switchSettings(tab){
     if(tab==='logo')       loadSettingsLogo();
     if(tab==='announce')   loadAnnouncements();
     if(tab==='upsell')     loadUpsell();
-    if(tab==='linenotify') loadLineNotify();
+    if(tab==='linenotify') { loadLineNotify(); loadTgNotifySetting(); }
     if(tab==='eventurl')   initEventUrl();
 }
 
@@ -2649,14 +2701,20 @@ function renderReports(orders, setMenuNames=new Set()){
                         const sQM2=raw.match(/\) x(\d+)$/);
                         const sQM3=raw.match(/^[^(]* x(\d+)$/);
                         const sq=sQM1?parseInt(sQM1[1]):sQM2?parseInt(sQM2[1]):sQM3?parseInt(sQM3[1]):1;
-                        const sc=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                        let sc=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+                        // 把括號內的「、」分隔選項轉成 [選項] 格式，方便閱讀
+                        sc=sc.replace(/\s*\(([^)]+)\)/g,(_,inner)=>{
+                            return inner.split('、').map(s=>`[${s.trim()}]`).join('');
+                        });
                         if(!sc)return;
                         dishCount[sc]=(dishCount[sc]||0)+qty*sq;
                         setMenuDetail[brand][sc]=(setMenuDetail[brand][sc]||0)+qty*sq;
                     });
                 } else {
                     // 口味選擇型（如三喜小菜拼盤）→ 整組作一個備料品項
-                    const fullKey=brand+(inner?` (${inner})`:'');
+                    // 格式：品名[選項1][選項2][選項3]
+                    const innerFmt=inner?inner.split('、').map(s=>`[${s.trim()}]`).join(''):'';
+                    const fullKey=brand+innerFmt;
                     dishCount[fullKey]=(dishCount[fullKey]||0)+qty;
                     setMenuDetail[brand][fullKey]=(setMenuDetail[brand][fullKey]||0)+qty;
                 }
@@ -3131,6 +3189,7 @@ async function loadLineNotify(){
     }
     // 載入排程設定
     await loadSummarySettingsUI();
+    loadTgNotifySetting();
 
     const{data,error}=await _s.from('line_notify_targets').select('*').order('created_at',{ascending:true});
     const container=document.getElementById('line-targets-list');
@@ -3210,6 +3269,33 @@ async function updateTarget(id,field,value){await _s.from('line_notify_targets')
 async function toggleTarget(id,current){await _s.from('line_notify_targets').update({is_active:!current}).eq('id',id);loadLineNotify();}
 async function deleteTarget(id,name){const ok=await confirm2({icon:'💬',title:'刪除通知對象',msg:`確定刪除「${name}」的通知設定？`,okText:'刪除',danger:true});if(ok){await _s.from('line_notify_targets').delete().eq('id',id);loadLineNotify();toast('已刪除');}}
 async function testSendLine(userId,name){toast(`📤 測試通知需透過 Supabase Edge Function 觸發，請從點餐頁下一筆測試訂單驗證「${name}」的接收狀態`,'info',4000);}
+
+// ── TG 通知開關設定 ──
+async function saveTgNotifySetting(){
+    const enabled = document.getElementById('tg-notify-enabled').checked;
+    const dot = document.getElementById('tg-toggle-dot');
+    const bg = document.getElementById('tg-toggle-bg');
+    const badge = document.getElementById('tg-status-badge');
+    dot.style.transform = enabled ? 'translateX(16px)' : 'translateX(0)';
+    bg.style.background = enabled ? 'var(--pine)' : '#94a3b8';
+    if(badge){ badge.textContent = enabled ? '已啟用' : '已停用'; }
+    // 寫入 DB（daily_summary_settings 的 tg_enabled 欄位）
+    await _s.from('daily_summary_settings').update({tg_enabled: enabled}).eq('id',1);
+    toast(enabled ? '✅ TG 通知已啟用' : '🔕 TG 通知已停用');
+}
+
+async function loadTgNotifySetting(){
+    const{data} = await _s.from('daily_summary_settings').select('tg_enabled').eq('id',1).single();
+    const enabled = data?.tg_enabled !== false; // 預設啟用
+    const cb = document.getElementById('tg-notify-enabled');
+    const dot = document.getElementById('tg-toggle-dot');
+    const bg = document.getElementById('tg-toggle-bg');
+    const badge = document.getElementById('tg-status-badge');
+    if(cb){ cb.checked = enabled; }
+    if(dot) dot.style.transform = enabled ? 'translateX(16px)' : 'translateX(0)';
+    if(bg) bg.style.background = enabled ? 'var(--pine)' : '#94a3b8';
+    if(badge) badge.textContent = enabled ? '已啟用' : '已停用';
+}
 
 // ── 每日彙整排程設定 ──
 async function loadSummarySettingsUI(){
