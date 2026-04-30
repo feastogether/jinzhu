@@ -631,7 +631,7 @@ function initTelegram(){
   tg.ready();
   tg.expand();
   tg.disableVerticalSwipes();        // 防止下拉關閉 Mini App
-  tg.enableClosingConfirmation();    // 離開前確認
+  // tg.enableClosingConfirmation() 已停用，按關閉直接離開
 
   // ── Header 顏色配合品牌色 ──
   try {
@@ -685,24 +685,26 @@ function initTelegram(){
   if(saveBar) saveBar.style.display='none';
 
   // ── 從 URL 參數自動跳到指定訂單 ──
+  // 儲存 orderId 供 loadOrders 完成後使用
   const params = new URLSearchParams(location.search);
-  const orderId = params.get('order_id');
-  if(orderId){
-    // 等訂單載入完成後跳到那筆
-    setTimeout(async()=>{
-      // 先確保訂單在 ordersRef 裡
-      if(!ordersRef.find(o=>o.id===orderId)){
-        const{data}=await _s.from('orders').select('*').eq('id',orderId).single();
-        if(data){ordersRef.push(data);renderOrders(ordersRef);}
-      }
-      const el=document.getElementById(`oc-${orderId}`);
-      if(el){
-        el.scrollIntoView({behavior:'smooth',block:'center'});
-        el.classList.add('open');
-        // 直接打開編輯模式
-        setTimeout(()=>openEditOrder(orderId),400);
-      }
-    },800);
+  window._pendingOrderId = params.get('order_id');
+}
+
+// 從 TG 連結跳轉到指定訂單（loadOrders 完成後呼叫）
+async function jumpToOrderId(orderId){
+  if(!orderId) return;
+  // 先確保訂單在 ordersRef 裡
+  if(!ordersRef.find(o=>o.id===orderId)){
+    const{data}=await _s.from('orders').select('*').eq('id',orderId).single();
+    if(data){ordersRef.push(data);renderOrders(ordersRef);}
+  }
+  // 等 DOM 渲染
+  await new Promise(r=>setTimeout(r,100));
+  const el=document.getElementById(`oc-${orderId}`);
+  if(el){
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.classList.add('open');
+    setTimeout(()=>openEditOrder(orderId),300);
   }
 }
 
@@ -762,6 +764,12 @@ async function loadOrders(){
     return new Date(b.created_at)-new Date(a.created_at);
   });
   ordersRef=orders;renderOrders(orders);
+  // 如果有待跳轉的訂單（從 TG 連結進入）
+  if(window._pendingOrderId){
+    const tid=window._pendingOrderId;
+    window._pendingOrderId=null;
+    jumpToOrderId(tid);
+  }
 }
 
 function renderOrders(orders){
@@ -879,7 +887,7 @@ async function openEditOrder(id){
 
   // 載入菜單
   if(!allMenuItems.length){
-    const{data}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
+    const{data}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
     allMenuItems=data||[];
   }
   renderMenuCats();
@@ -1014,7 +1022,9 @@ function openPop(itemId,editIdx=-1){
         <div class="set-opts">${sortedContents.map(c=>{
           const idx=groupPrev.indexOf(c.menu_items.name);const isM=idx>-1;
           if(isM){groupPrev.splice(idx,1);popSels.groups[g.id].push({name:c.menu_items.name});}
-          return`<div class="set-opt ${isM?'on':''}" onclick="setGrp(this,'${g.id}','${c.menu_items.name}',${limit})">${c.menu_items.name}</div>`;
+          const pa_=c.price_adjustment||0;
+            const paTag=pa_>0?` +$${pa_}`:pa_<0?` -$${Math.abs(pa_)}`:'';
+            return`<div class="set-opt ${isM?'on':''}" onclick="setGrp(this,'${g.id}','${c.menu_items.name}',${limit},${pa_})" style="position:relative">${c.menu_items.name}${paTag?`<span style="font-size:9px;color:var(--gold);display:block;margin-top:2px">${paTag}</span>`:''}</div>`;
         }).join('')}</div>
       </div>`;
     }).join('');
@@ -1027,14 +1037,14 @@ function setFlv(el,gid,name){
   el.closest('.flv-chips').querySelectorAll('.flv-chip').forEach(c=>{c.classList.remove('on');});
   el.classList.add('on');popSels.flavors[gid]=name;
 }
-function setGrp(el,gid,name,limit){
+function setGrp(el,gid,name,limit,priceAdj=0){
   let s=popSels.groups[gid];
   if(limit===1){
     el.closest('.set-opts').querySelectorAll('.set-opt').forEach(c=>c.classList.remove('on'));
-    el.classList.add('on');popSels.groups[gid]=[{name}];
+    el.classList.add('on');popSels.groups[gid]=[{name,priceAdj}];
   }else{
     if(s.some(x=>x.name===name)){popSels.groups[gid]=s.filter(x=>x.name!==name);el.classList.remove('on');}
-    else if(s.length<limit){popSels.groups[gid]=[...s,{name}];el.classList.add('on');}
+    else if(s.length<limit){popSels.groups[gid]=[...s,{name,priceAdj}];el.classList.add('on');}
   }
 }
 function confirmPop(){
@@ -1045,9 +1055,11 @@ function confirmPop(){
   if(popEditIdx>-1){const qM=eosCart[popEditIdx].name.match(/ x(\d+)/);if(qM)xQty=` x${qM[1]}`;}
   const finalName=`${popItem.name}${xQty}${fn?` [${fn}]`:''}${gn?` (${gn})`:''}`;;
   const qty=xQty?parseInt(xQty.replace(' x','')):1;
-  const price=Number(popItem.price)*qty;
+  const basePrice=Number(popItem.price);
+  const adjTotal=Object.values(popSels.groups).flat().reduce((s,x)=>s+(x.priceAdj||0),0);
+  const price=(basePrice+adjTotal)*qty;
   if(popEditIdx>-1)eosCart[popEditIdx]={name:finalName,price};
-  else eosCart.push({name:finalName,price});
+  else eosCart.push({name:finalName,price:basePrice+adjTotal});
   closePop();refreshEosCart();
   // 切到購物車 tab
   eosTab('items',document.querySelectorAll('.eos-tab')[1]);
@@ -1242,7 +1254,7 @@ function exportXls(){
   const wb=XLSX.utils.book_new();
   const rows=rptData.orders.map(o=>({'姓名':o.customer_name,'電話':o.phone,'總額':o.total_price,'桌號':o.table_no,'活動':o.campaign_code,'訂位':o.booking_date,'狀態':o.status==='synced'?'已完成':'待處理','備註':o.note,'後台備註':o.admin_note}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),'訂單');
-  const rows2=Object.entries(rptData.dishCount).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({'品名':k,'數量':v}));
+  const rows2=Object.entries(rptData.dishCount||{}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({'品名':k,'數量':v}));
   XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows2),'🍳 備料總表');
   XLSX.writeFile(wb,`真珠報表_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.xlsx`);
   toast('Excel 已匯出 📊');
