@@ -696,7 +696,7 @@ async function startOrder(){
 async function loadContent(){
     const{data:cats}=await _s.from('categories').select('*').eq('is_visible',true).order('sort_order');
     const{data:items}=await _s.from('menu_items')
-        .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))') 
+        .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))') 
         .eq('is_hidden',false).order('sort_order',{ascending:true});
     menuData=items||[];allCats=cats||[];
     reRenderMenu();curCatIndex=0;initSwipe();
@@ -776,10 +776,10 @@ function openDetail(id){
                 return`<div class="set-group group-block" data-name="${g.group_name}" data-limit="${sortedContents.length}" data-type="include">
                     <div class="set-group-header"><span class="set-group-name">${g.group_name}</span><span class="set-group-limit" style="background:var(--gold)">${t('setInclude')} ${sortedContents.length}</span></div>
                     <div class="set-items-grid">${sortedContents.map((c,idx)=>`
-                        <div class="set-item-card selected" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length>0}" data-selected-flv="" data-auto-include="true">
+                        <div class="set-item-card selected" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length>0}" data-selected-flv="" data-auto-include="true" data-price-adj="${c.price_adjustment||0}">
                             <div class="set-item-header" style="background:rgba(184,145,80,0.06);pointer-events:none;flex-direction:column;align-items:stretch;padding:0;gap:0">
                                 ${c.menu_items.image_url?`<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="${c.menu_items.image_url}" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>`:`<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>`}
-                                <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px">${getLangName(c.menu_items,'name')}</span><span style="color:var(--gold);font-size:11px">✓</span></div>
+                                <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px">${getLangName(c.menu_items,'name')}${(c.price_adjustment||0)>0?`<span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:3px">+$${c.price_adjustment}</span>`:''}</span><span style="color:var(--gold);font-size:11px">✓</span></div>
                             </div>
                             <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
                         </div>`).join('')}</div></div>`;
@@ -788,10 +788,13 @@ function openDetail(id){
                     <div class="set-group-header"><span class="set-group-name">${g.group_name}</span><span class="set-group-limit">${t('setChoose')} ${g.selection_limit}</span></div>
                     <div class="set-items-grid">${sortedContents.map((c,idx)=>{
                         const mq=c.max_qty||1;
-                        return`<div class="set-item-card" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length>0}" data-selected-flv="" data-max-qty="${mq}" data-chosen-qty="1">
+                        return`<div class="set-item-card" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length>0}" data-selected-flv="" data-max-qty="${mq}" data-chosen-qty="1" data-price-adj="${c.price_adjustment||0}">
                             <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="set-item-header" style="flex-direction:column;align-items:stretch;padding:0;gap:0">
                                 ${c.menu_items.image_url?`<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="${c.menu_items.image_url}" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>`:`<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>`}
-                                <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px">${getLangName(c.menu_items,'name')}</span>${c.menu_items.item_flavor_relation?.length>0?'<span style="color:var(--gold);font-size:8px">●</span>':''}</div>
+                                <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
+                                <span style="font-size:11px">${getLangName(c.menu_items,'name')}${(c.price_adjustment||0)>0?`<span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:3px">+$${c.price_adjustment}</span>`:''}</span>
+                                ${c.menu_items.item_flavor_relation?.length>0?'<span style="color:var(--gold);font-size:8px">●</span>':''}
+                            </div>
                             </div>
                             ${mq>1?`<div id="qty-ctrl-sub-${g.id}-${c.menu_items.id}-${idx}" style="display:none;align-items:center;justify-content:center;gap:8px;padding:6px 10px;background:#fafafa;border-top:1px solid rgba(0,0,0,0.06)">
                                 <button onclick="event.stopPropagation();changeSubQty('sub-${g.id}-${c.menu_items.id}-${idx}',-1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">−</button>
@@ -884,7 +887,7 @@ function confirmAdd(){
         if(sels.length<tempItem.item_flavor_relation.length){showToast(t('toastFlv'));return;}
         mn=` [${sels.map(o=>o.dataset.val).join('/')}]`;
     }
-    let snCN=[], sn=[];  // sn=翻譯版（前台顯示），snCN=中文版（後台儲存）
+    let snCN=[], sn=[], totalPriceAdj=0;
     if(tempItem.is_set_menu){
         for(let b of document.querySelectorAll('.group-block')){
             const isInclude=b.dataset.type==='include';
@@ -894,9 +897,12 @@ function confirmAdd(){
                 if(!isInclude&&c.dataset.hasFlv==='true'&&!c.dataset.selectedFlv){showToast(`${t('noteFlavor')}【${c.dataset.name}】`);return;}
                 const chosenQty=parseInt(c.dataset.chosenQty)||1;
                 const qtyStr=chosenQty>1?` x${chosenQty}`:'';
+                // 累計 price_adjustment
+                const pa=parseFloat(c.dataset.priceAdj||0);
+                totalPriceAdj+=pa*chosenQty;
                 const subItem=menuData.find(m=>m.id===c.dataset.id);
                 const subName=subItem?getLangName(subItem,'name'):c.dataset.name;
-                const subNameCN=c.dataset.name; // 原始中文名
+                const subNameCN=c.dataset.name;
                 sn.push(subName+qtyStr+(c.dataset.selectedFlv?` [${c.dataset.selectedFlv}]`:''));
                 snCN.push(subNameCN+qtyStr+(c.dataset.selectedFlv?` [${c.dataset.selectedFlv}]`:''));
             }
@@ -904,9 +910,10 @@ function confirmAdd(){
     }
     const displayName=getLangName(tempItem,'name');
     const name=`${displayName}${currentQty>1?' x'+currentQty:''}${mn}${sn.length?' ('+sn.join('、')+')'  :''}`;
-    // 後台永遠用中文名
     const nameCN=`${tempItem.name}${currentQty>1?' x'+currentQty:''}${mn}${snCN.length?' ('+snCN.join('、')+')'  :''}`;
-    cart.push({name, nameCN, price:tempItem.price*currentQty});
+    // 最終金額 = (套餐基礎價 + 加購差價) × 數量
+    const finalPrice=(tempItem.price+totalPriceAdj)*currentQty;
+    cart.push({name, nameCN, price:finalPrice});
     const badge=document.getElementById('cart-count');
     badge.textContent=cart.length;badge.classList.remove('badge-pop');void badge.offsetWidth;badge.classList.add('badge-pop');
     closeDetail();showToast(t('toastAdded'));
