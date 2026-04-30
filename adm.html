@@ -1227,14 +1227,16 @@ async function fetchReport(){
           subItemsAdm.forEach(raw=>{
             const sQM2=raw.match(/\) x(\d+)$/);const sQM3=raw.match(/^[^(]* x(\d+)$/);
             const sq=sQM2?parseInt(sQM2[1]):sQM3?parseInt(sQM3[1]):1;
-            const sc=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            let sc=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
+            sc=sc.replace(/\s*\(([^)]+)\)/g,(_,inner)=>inner.split('、').map(s=>`[${s.trim()}]`).join(''));
             if(!sc)return;
             dishCount[sc]=(dishCount[sc]||0)+qty*sq;
             setDetail[brand][sc]=(setDetail[brand][sc]||0)+qty*sq;
           });
         }else{
           // 口味選擇型 → 整組顯示
-          const fullKey_=brand+(inner?` (${inner})`:'');
+          const innerFmtAdm=inner?inner.split('、').map(s=>`[${s.trim()}]`).join(''):'';
+          const fullKey_=brand+innerFmtAdm;
           dishCount[fullKey_]=(dishCount[fullKey_]||0)+qty;
           setDetail[brand][fullKey_]=(setDetail[brand][fullKey_]||0)+qty;
         }
