@@ -1155,6 +1155,12 @@
             <div class="w-2/5 flex flex-col overflow-hidden bg-slate-50">
                 <div class="px-6 py-5 border-b flex-shrink-0">
                     <p class="filter-label mb-3">暫存清單</p>
+                    <div class="flex gap-3 text-[9px] font-bold text-slate-400 mb-1 px-1">
+                        <span class="flex-1">品名</span>
+                        <span class="w-12 text-center">最多選</span>
+                        <span class="w-16 text-center text-amber-500">加/減價</span>
+                        <span class="w-4"></span>
+                    </div>
                     <div id="temp-pick-display" class="flex flex-wrap gap-2 min-h-[40px]"></div>
                     <div class="flex gap-2 mt-4">
                         <button onclick="saveFullSet()" id="btn-save-group" class="btn btn-primary flex-1 justify-center py-3">✓ 儲存分組</button>
@@ -1816,7 +1822,7 @@ async function openEditOrder(id){
     curEditOrder=window.ordersRef.find(o=>o.id===id);
     editCart=JSON.parse(JSON.stringify(curEditOrder.order_content));
     document.getElementById('order-edit-modal').classList.remove('hidden');
-    const{data:items}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
+    const{data:items}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
     allMenuItems=items||[];
     const{data:cats}=await _s.from('categories').select('*').order('sort_order');
     allCategories=cats||[];
@@ -1875,7 +1881,9 @@ function openEditPop(itemId,index=-1){
                 const idx=groupPrev.indexOf(c.menu_items.name);
                 const isM=idx>-1;
                 if(isM){groupPrev.splice(idx,1);curEditPopSels.groups[g.id].push({name:c.menu_items.name});}
-                return'<div onclick="setEditPopGroup(this,\''+g.id+'\',\''+c.menu_items.name+'\','+limit+')" class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold '+(isM?'opt-selected':'bg-slate-50')+'">'+(c.menu_items.name)+'</div>';
+                const pa=c.price_adjustment||0;
+                const priceTag=pa>0?`<span style="font-size:9px;color:var(--gold);margin-left:3px">+$${pa}</span>`:pa<0?`<span style="font-size:9px;color:#10b981;margin-left:3px">-$${Math.abs(pa)}</span>`:'';
+                return'<div onclick="setEditPopGroup(this,\''+g.id+'\',\''+c.menu_items.name+'\','+limit+','+pa+')" class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold '+(isM?'opt-selected':'bg-slate-50')+'">'+c.menu_items.name+priceTag+'</div>';
             }).join('')}</div></div>`;
         }).join('');
     }
@@ -1883,7 +1891,24 @@ function openEditPop(itemId,index=-1){
     document.getElementById('edit-flavor-popup').classList.remove('hidden');
 }
 function setEditPopFlv(el,gid,name){Array.from(el.parentElement.children).forEach(c=>{c.classList.remove('flavor-selected');c.classList.add('bg-slate-50');});el.classList.add('flavor-selected');el.classList.remove('bg-slate-50');curEditPopSels.flavors[gid]=name;}
-function setEditPopGroup(el,gid,name,limit){const sibs=Array.from(el.parentElement.children);if(limit===1){sibs.forEach(s=>s.classList.remove('opt-selected'));el.classList.add('opt-selected');curEditPopSels.groups[gid]=[{name}];}else{let s=curEditPopSels.groups[gid];if(s.some(x=>x.name===name)){s=s.filter(x=>x.name!==name);el.classList.remove('opt-selected');}else if(s.length<limit){s.push({name});el.classList.add('opt-selected');}curEditPopSels.groups[gid]=s;}}
+function setEditPopGroup(el,gid,name,limit,priceAdj=0){
+  const sibs=Array.from(el.parentElement.children);
+  if(limit===1){
+    sibs.forEach(s=>s.classList.remove('opt-selected'));
+    el.classList.add('opt-selected');
+    curEditPopSels.groups[gid]=[{name,priceAdj}];
+  }else{
+    let s=curEditPopSels.groups[gid];
+    if(s.some(x=>x.name===name)){
+      s=s.filter(x=>x.name!==name);
+      el.classList.remove('opt-selected');
+    }else if(s.length<limit){
+      s.push({name,priceAdj});
+      el.classList.add('opt-selected');
+    }
+    curEditPopSels.groups[gid]=s;
+  }
+}
 function confirmEditPop(){
     const fn=Object.values(curEditPopSels.flavors).join('/');
     const gn=Object.values(curEditPopSels.groups).flat().map(x=>x.name).join('、');
@@ -1893,9 +1918,14 @@ function confirmEditPop(){
         const qM=editCart[reEditIndex].name.match(/ x(\d+)/);
         if(qM) xQty=` x${qM[1]}`;
     }
+    // 計算總金額：套餐基礎價 + 所有子品項的 price_adjustment × qty
+    const qty_=parseInt(xQty.replace(' x','')||'1');
+    const basePrice=Number(curEditItem.price);
+    const adjTotal=Object.values(curEditPopSels.groups).flat().reduce((s,x)=>s+(x.priceAdj||0),0);
+    const totalPrice=(basePrice+adjTotal)*qty_;
     const finalName=`${curEditItem.name}${xQty}${fn?` [${fn}]`:''}${gn?` (${gn})`:''}`;
-    if(reEditIndex>-1)editCart[reEditIndex]={name:finalName,price:Number(curEditItem.price)*(parseInt(xQty.replace(' x','')||'1'))};
-    else editCart.push({name:finalName,price:Number(curEditItem.price)});
+    if(reEditIndex>-1)editCart[reEditIndex]={name:finalName,price:totalPrice};
+    else editCart.push({name:finalName,price:basePrice+adjTotal});
     closeEditPop();refreshEditCart();
 }
 async function saveOrderChange(){
@@ -2384,6 +2414,14 @@ function renderTempPicks(){
                 onclick="event.stopPropagation()"
                 class="w-8 text-center text-xs font-bold text-slate-700 bg-transparent outline-none border-none">
         </div>
+        <div class="flex items-center gap-0.5 bg-amber-50 border border-amber-200 rounded-lg px-1.5 py-0.5" title="加價金額（正數加價、負數減價、0不加價）">
+            <span class="text-[9px] text-amber-500 font-bold">$</span>
+            <input type="number" min="-9999" max="9999" value="${p.price_adjustment||0}"
+                onchange="event.stopPropagation();curPicks[${idx}].price_adjustment=parseInt(this.value)||0;"
+                onclick="event.stopPropagation()"
+                placeholder="0"
+                class="w-12 text-center text-xs font-bold text-amber-700 bg-transparent outline-none border-none">
+        </div>
         <span onclick="event.stopPropagation();curPicks.splice(${idx},1);renderTempPicks();" class="cursor-pointer text-red-300 hover:text-red-500 font-bold text-sm leading-none">✕</span>
     </div>`).join('');
 }
@@ -2406,7 +2444,7 @@ async function editSetGroup(gid){
         document.getElementById('btn-save-group').textContent='儲存更新';
         document.getElementById('btn-cancel-edit').classList.remove('hidden');
         const sorted=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-        curPicks=sorted.map(c=>({id:c.menu_items.id,name:c.menu_items.name,max_qty:c.max_qty||1}));
+        curPicks=sorted.map(c=>({id:c.menu_items.id,name:c.menu_items.name,max_qty:c.max_qty||1,price_adjustment:c.price_adjustment||0}));
         renderTempPicks();
     }
 }
@@ -2444,10 +2482,10 @@ async function saveFullSet(){
         const{data:g}=await _s.from('set_menu_groups').insert([{parent_set_id:curItem,group_name:n,selection_limit:parseInt(l),selection_type:stype}]).select();
         if(g)gid=g[0].id;
     }
-    if(gid){await _s.from('set_menu_contents').insert(curPicks.map((p,i)=>({group_id:gid,item_id:p.id,sort_order:i,max_qty:p.max_qty||1})));resetSetForm();loadSavedSets();toast('分組已儲存');}
+    if(gid){await _s.from('set_menu_contents').insert(curPicks.map((p,i)=>({group_id:gid,item_id:p.id,sort_order:i,max_qty:p.max_qty||1,price_adjustment:p.price_adjustment||0})));resetSetForm();loadSavedSets();toast('分組已儲存');}
 }
 async function loadSavedSets(){
-    const{data}=await _s.from('set_menu_groups').select('*,set_menu_contents(*,menu_items(*))').eq('parent_set_id',curItem).order('sort_order',{ascending:true});
+    const{data}=await _s.from('set_menu_groups').select('*,set_menu_contents(*,price_adjustment,menu_items(*))').eq('parent_set_id',curItem).order('sort_order',{ascending:true});
     document.getElementById('saved-groups-view').innerHTML=(data||[]).map(g=>{
         const isInclude=g.selection_type==='include';
         const badge=isInclude
@@ -2455,7 +2493,9 @@ async function loadSavedSets(){
             :`<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">任選 ${g.selection_limit}</span>`;
         const itemSummary = g.set_menu_contents.map(c => {
             const mq = c.max_qty||1;
-            return c.menu_items?.name + (mq>1?` x${mq}`:'');
+            const pa = c.price_adjustment||0;
+            const paStr = pa>0?` +$${pa}`:pa<0?` -$${Math.abs(pa)}`:'';
+            return c.menu_items?.name + (mq>1?` x${mq}`:'') + paStr;
         }).join('、');
         return `<div class="p-3 bg-white border rounded-xl shadow-sm cursor-grab select-none" draggable="true" data-gid="${g.id}" ondragstart="grpDragStart(event)" ondragover="grpDragOver(event)" ondrop="grpDrop(event)" ondragend="grpDragEnd(event)"><div class="flex justify-between items-center"><div class="flex-1 text-left text-xs"><span class="text-slate-300 mr-2 text-[10px]">⠿</span><b style="color:var(--pine)">${g.group_name}</b> ${badge}<p class="text-[10px] text-gray-400 line-clamp-1 mt-1">${itemSummary}</p></div><div class="flex gap-2 ml-2"><button onclick="event.stopPropagation();editSetGroup('${g.id}')" class="btn btn-ghost btn-sm" style="font-size:10px">編輯</button><button onclick="event.stopPropagation();delSetGroup('${g.id}')" class="btn btn-danger btn-sm" style="font-size:10px">刪除</button></div></div></div>`;
     }).join('');
@@ -2826,8 +2866,11 @@ function exportFullData(){
         {項目:'預估營收',數值:totalRev},
     ]),'📊 摘要');
 
-    // ── 備料總表（廚房用，按數量排序，不分套餐/單點）──
-    const prepRows=sorted.map(([key,count])=>({'品名':key,'數量':count}));
+    // ── 備料總表（廚房用，直接從 dishCount 重算，確保三喜等組合品項不遺漏）──
+    const{dishCount:dc}=window.lastData;
+    const prepRows=Object.entries(dc||{})
+      .sort((a,b)=>b[1]-a[1])
+      .map(([key,count])=>({'品名':key,'數量':count}));
     const wsP=XLSX.utils.json_to_sheet(prepRows);
     wsP['!cols']=[{wch:48},{wch:8}];
     XLSX.utils.book_append_sheet(wb,wsP,'🍳 備料總表');
