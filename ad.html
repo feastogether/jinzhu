@@ -2396,18 +2396,20 @@ function closeSetModal(){document.getElementById('set-modal').classList.add('hid
 function renderPickerList(items){
     const container=document.getElementById('item-picker-list');
     const grouped=items.reduce((acc,i)=>{const cat=i.categories?.name||'未分類';if(!acc[cat])acc[cat]=[];acc[cat].push(i);return acc;},{});
-    container.innerHTML=Object.keys(grouped).map(cat=>`<div class="col-span-2 mt-2 font-black text-[9px] text-slate-300 border-b uppercase">${cat}</div>`+grouped[cat].map(i=>`<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}','${i.name}')" class="picker-item flex justify-between p-3 border rounded-xl bg-white cursor-pointer shadow-sm text-xs font-bold hover:border-amber-300 transition"><div><span>${i.name}</span>${(i.name.includes('(加購)')||i.name.includes('（加購）'))&&i.price>0?`<span style='font-size:9px;color:var(--gold);margin-left:4px;font-weight:500'>+$${i.price}</span>`:''}</div><div class="check-mark hidden font-bold" style="color:var(--gold)">✔</div></div>`).join('')).join('');
+    container.innerHTML=Object.keys(grouped).map(cat=>`<div class="col-span-2 mt-2 font-black text-[9px] text-slate-300 border-b uppercase">${cat}</div>`+grouped[cat].map(i=>`<div id="picker-${i.id}" onclick="togglePickerSelect('${i.id}','${i.name}')" class="picker-item flex justify-between p-3 border rounded-xl bg-white cursor-pointer shadow-sm text-xs font-bold hover:border-amber-300 transition"><div><span>${i.name}</span>${(i.name.startsWith('(加購)')||i.name.startsWith('（加購）'))&&i.price>0?`<span style='font-size:9px;color:var(--gold);margin-left:4px;font-weight:500'>+$${i.price}</span>`:''}</div><div class="check-mark hidden font-bold" style="color:var(--gold)">✔</div></div>`).join('')).join('');
 }
 function filterPickerItems(){const kw=document.getElementById('set-item-search').value.toLowerCase();renderPickerList(window.allPickerItems.filter(i=>i.name.toLowerCase().includes(kw)));pickerSelectedItems.forEach(s=>{const el=document.getElementById(`picker-${s.id}`);if(el)el.classList.add('active');});}
-function togglePickerSelect(id,name){const el=document.getElementById(`picker-${id}`);const idx=pickerSelectedItems.findIndex(x=>x.id===id);if(idx>-1){pickerSelectedItems.splice(idx,1);el?.classList.remove('active');}else{const priceItem=window.allPickerItems?.find(x=>x.id===id);
-      pickerSelectedItems.push({id,name,price:priceItem?.price||0});el?.classList.add('active');}updatePickerStats();}
+function togglePickerSelect(id,name){const el=document.getElementById(`picker-${id}`);const idx=pickerSelectedItems.findIndex(x=>x.id===id);if(idx>-1){pickerSelectedItems.splice(idx,1);el?.classList.remove('active');}else{pickerSelectedItems.push({id,name});el?.classList.add('active');}updatePickerStats();}
 function updatePickerStats(){document.getElementById('picker-count').textContent=`已選 ${pickerSelectedItems.length} 項`;}
 function addSelectedToPicks(){
   pickerSelectedItems.forEach(s=>{
     if(!curPicks.some(p=>p.id===s.id)){
-      // 只有名稱含「(加購)」的品項才自動帶入定價作為加價金額
-      const isUpsell = s.name.includes('(加購)') || s.name.includes('（加購）');
-      curPicks.push({...s, max_qty:1, price_adjustment:isUpsell?(Number(s.price)||0):0});
+      // 只有名稱「以(加購)開頭」的品項才自動帶入定價
+      const isUpsell = s.name.startsWith('(加購)') || s.name.startsWith('（加購）');
+      const itemPrice = isUpsell
+        ? (window.allPickerItems?.find(x=>x.id===s.id)?.price || 0)
+        : 0;
+      curPicks.push({id:s.id, name:s.name, max_qty:1, price_adjustment:itemPrice});
     }
   });
   pickerSelectedItems=[];renderTempPicks();
@@ -2444,7 +2446,7 @@ function pickDragOver(e){e.preventDefault();}
 function pickDrop(e){e.preventDefault();const ti=parseInt(e.currentTarget.dataset.pickIdx);if(pickDragSrcIdx===null||pickDragSrcIdx===ti)return;const moved=curPicks.splice(pickDragSrcIdx,1)[0];curPicks.splice(ti,0,moved);renderTempPicks();}
 async function editSetGroup(gid){
     currentEditingGroupId=gid;
-    const{data:g}=await _s.from('set_menu_groups').select('*,set_menu_contents(*,menu_items(*))').eq('id',gid).single();
+    const{data:g}=await _s.from('set_menu_groups').select('*,set_menu_contents(*,price_adjustment,menu_items(*))').eq('id',gid).single();
     if(g){
         document.getElementById('g-name').value=g.group_name;
         document.getElementById('g-limit').value=g.selection_limit;
@@ -2456,7 +2458,7 @@ async function editSetGroup(gid){
         document.getElementById('btn-save-group').textContent='儲存更新';
         document.getElementById('btn-cancel-edit').classList.remove('hidden');
         const sorted=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-        curPicks=sorted.map(c=>({id:c.menu_items.id,name:c.menu_items.name,max_qty:c.max_qty||1,price_adjustment:c.price_adjustment||0,price:c.menu_items.price||0}));
+        curPicks=sorted.map(c=>({id:c.menu_items.id,name:c.menu_items.name,max_qty:c.max_qty||1,price_adjustment:c.price_adjustment||0}));
         renderTempPicks();
     }
 }
