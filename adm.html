@@ -693,19 +693,23 @@ function initTelegram(){
 // 從 TG 連結跳轉到指定訂單（loadOrders 完成後呼叫）
 async function jumpToOrderId(orderId){
   if(!orderId) return;
+  // 切換到列表模式（確保 DOM 存在）
+  setView('list', document.getElementById('v-list'));
   // 先確保訂單在 ordersRef 裡
   if(!ordersRef.find(o=>o.id===orderId)){
     const{data}=await _s.from('orders').select('*').eq('id',orderId).single();
     if(data){ordersRef.push(data);renderOrders(ordersRef);}
   }
-  // 等 DOM 渲染
-  await new Promise(r=>setTimeout(r,100));
+  // 等 DOM 渲染完成
+  await new Promise(r=>setTimeout(r,200));
   const el=document.getElementById(`oc-${orderId}`);
   if(el){
     el.scrollIntoView({behavior:'smooth',block:'center'});
     el.classList.add('open');
-    setTimeout(()=>openEditOrder(orderId),300);
   }
+  // 直接開啟編輯（不等 DOM 捲動）
+  await new Promise(r=>setTimeout(r,300));
+  openEditOrder(orderId);
 }
 
 async function updateKpi(){
