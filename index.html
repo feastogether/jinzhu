@@ -7,6 +7,7 @@
     <link rel="icon" type="image/x-icon" href="https://www.jinzhu.com.tw/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         :root {
             --ink:#1a2820;--pine:#004d40;--pine-light:#00695c;
@@ -152,7 +153,9 @@
         .set-group-limit{font-size:10px;color:white;background:var(--gold);padding:3px 10px;border-radius:999px;font-weight:700;}
         .set-items-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
         .set-item-card{border:1.5px solid rgba(0,0,0,0.08);border-radius:12px;overflow:hidden;cursor:pointer;transition:all 0.2s;}
-        .set-item-card.selected{border-color:var(--gold);background:rgba(184,145,80,0.05);}
+        .set-item-card.selected{border-color:var(--pine);background:rgba(0,77,64,0.04);}
+        .set-item-row.selected{border-color:var(--pine)!important;background:rgba(0,77,64,0.04)!important;}
+        .set-item-row{transition:all 0.2s;}
         .set-item-flv-area{background:var(--cream);padding:10px 12px;border-top:1px solid rgba(0,0,0,0.06);display:none;}
         .set-item-flv-area.visible{display:block;}
         .detail-footer{padding:12px 16px;background:white;border-top:1px solid rgba(0,0,0,0.06);flex-shrink:0;}
@@ -658,6 +661,20 @@ function getLangCatName(cat){
 // ── INIT ──
 window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20));
 
+async function initLiff(){
+    try{
+        await liff.init({liffId:'2009959283-MRTlwLY9'});
+        // 在 LIFF 環境內才做特殊處理
+        if(liff.isInClient()){
+            // 隱藏語言切換（在 LINE 內不需要）
+            const langSwitch=document.getElementById('lang-switcher');
+            if(langSwitch) langSwitch.style.display='none';
+        }
+    }catch(e){
+        console.warn('LIFF init failed:',e);
+    }
+}
+
 async function init(){
     const isMob=window.innerWidth<=768;
     document.getElementById('kv-bg').src=isMob
@@ -669,7 +686,7 @@ async function init(){
     }catch(e){}
     applyLang();
 }
-init();
+initLiff().then(()=>init());
 
 function toggleMenu(){
     const btn=document.getElementById('menu-btn'),menu=document.getElementById('side-menu'),ov=document.getElementById('overlay');
@@ -745,6 +762,10 @@ function goToSlide(index){
         if(i===index)b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
     });
     window.scrollTo({top:0,behavior:'smooth'});
+        // 在 LIFF 內：顯示完成頁後 3 秒自動關閉
+        if(typeof liff!=='undefined'&&liff.isInClient()){
+            setTimeout(()=>{ try{liff.closeWindow();}catch(e){} },4000);
+        }
 }
 
 function initSwipe(){
@@ -753,6 +774,112 @@ function initSwipe(){
     wrap.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;drag=true;horiz=null;},{passive:true});
     wrap.addEventListener('touchmove',e=>{if(!drag)return;const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;if(horiz===null)horiz=Math.abs(dx)>Math.abs(dy);if(horiz)e.preventDefault();},{passive:false});
     wrap.addEventListener('touchend',e=>{if(!drag||!horiz){drag=false;return;}const dx=e.changedTouches[0].clientX-sx;drag=false;if(Math.abs(dx)<50)return;if(dx<0&&curCatIndex<allCats.length-1)goToSlide(curCatIndex+1);if(dx>0&&curCatIndex>0)goToSlide(curCatIndex-1);},{passive:true});
+}
+
+function renderSetGroupItem(g, sc, idx){
+    var itemId = 'sub-'+g.id+'-'+sc.menu_items.id+'-'+idx;
+    var nm = getLangName(sc.menu_items,'name');
+    var pa = sc.price_adjustment||0;
+    var priceTag = pa>0 ? '<span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:3px">+$'+pa+'</span>' : '';
+    var mq = sc.max_qty||1;
+    var imgHtml = sc.menu_items.image_url
+        ? '<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="'+sc.menu_items.image_url+'" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>'
+        : '<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>';
+    var hasFlv = sc.menu_items.item_flavor_relation&&sc.menu_items.item_flavor_relation.length>0;
+    return '<div class="set-item-card selected" id="'+itemId+'" data-id="'+sc.menu_items.id+'" data-name="'+sc.menu_items.name+'" data-has-flv="'+hasFlv+'" data-selected-flv="" data-auto-include="true" data-price-adj="'+pa+'">'
+        + '<div class="set-item-header" style="background:rgba(184,145,80,0.06);pointer-events:none;flex-direction:column;align-items:stretch;padding:0;gap:0">'
+        + imgHtml
+        + '<div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px">'+nm+priceTag+'</span><span style="color:var(--gold);font-size:11px">✓</span></div>'
+        + '</div>'
+        + '<div id="flv-sub-'+g.id+'-'+sc.menu_items.id+'-'+idx+'" class="set-item-flv-area"></div>'
+        + '</div>';
+}
+
+function renderSetGroupChooseItem(g, sc, idx){
+    var itemId = 'sub-'+g.id+'-'+sc.menu_items.id+'-'+idx;
+    var nm = getLangName(sc.menu_items,'name');
+    var pa = sc.price_adjustment||0;
+    var mq = sc.max_qty||1;
+    var priceTag = pa>0 ? '<span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:3px">+$'+pa+'</span>' : '';
+    var hasFlv = sc.menu_items.item_flavor_relation&&sc.menu_items.item_flavor_relation.length>0;
+    var flvDot = hasFlv ? '<span style="color:var(--gold);font-size:8px">●</span>' : '';
+    var imgHtml = sc.menu_items.image_url
+        ? '<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="'+sc.menu_items.image_url+'" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>'
+        : '<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">&#x1F37D;</div>';
+    var qtyCtrl = '';
+    if(mq>1){
+        qtyCtrl = '<div id="qty-ctrl-'+itemId+'" style="display:none;align-items:center;justify-content:center;gap:8px;padding:6px 10px;background:#fafafa;border-top:1px solid rgba(0,0,0,0.06)">'
+            + '<button data-uid="'+itemId+'" onclick="event.stopPropagation();changeSubQty(this.dataset.uid,-1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">&#8722;</button>'
+            + '<span id="qty-num-'+itemId+'" style="font-weight:900;font-size:14px;color:var(--pine);min-width:16px;text-align:center">1</span>'
+            + '<button data-uid="'+itemId+'" onclick="event.stopPropagation();changeSubQty(this.dataset.uid,1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">&#43;</button>'
+            + '</div>';
+    }
+    return '<div class="set-item-card" id="'+itemId+'" data-id="'+sc.menu_items.id+'" data-name="'+sc.menu_items.name+'" data-has-flv="'+hasFlv+'" data-selected-flv="" data-max-qty="'+mq+'" data-chosen-qty="1" data-price-adj="'+pa+'">'
+        + '<div onclick="handleSubClick(this.parentElement.id)" class="set-item-header" style="flex-direction:column;align-items:stretch;padding:0;gap:0">'
+        + imgHtml
+        + '<div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px">'+nm+priceTag+'</span>'+flvDot+'</div>'
+        + '</div>'
+        + qtyCtrl
+        + '<div id="flv-'+itemId+'" class="set-item-flv-area"></div>'
+        + '</div>';
+}
+
+
+function renderSetGroupMultiItem(g, sc, idx){
+    var itemId = 'sub-'+g.id+'-'+sc.menu_items.id+'-'+idx;
+    var nm = getLangName(sc.menu_items,'name');
+    var pa = sc.price_adjustment||0;
+    var sl = g.selection_limit||0;
+    var priceTag = pa>0 ? '<span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:3px">+$'+pa+'</span>' : '';
+    var imgHtml = sc.menu_items.image_url
+        ? '<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="'+sc.menu_items.image_url+'" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>'
+        : '<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">&#x1F37D;</div>';
+    // 數量控制區（未選取時隱藏）
+    var qtyCtrl = '<div id="qty-ctrl-'+itemId+'" style="display:none;align-items:center;justify-content:center;gap:8px;padding:5px 8px;background:rgba(0,77,64,0.06);border-top:1px solid rgba(0,77,64,0.1)">'
+        + '<button data-uid="'+itemId+'" data-sl="'+sl+'" data-gid="'+g.id+'" onclick="event.stopPropagation();adjustMultiQty(this.dataset.uid,-1,this.dataset.gid,+this.dataset.sl)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">&#8722;</button>'
+        + '<span id="qty-label-'+itemId+'" style="font-size:14px;font-weight:900;color:var(--pine);min-width:18px;text-align:center">1</span>'
+        + '<button data-uid="'+itemId+'" data-sl="'+sl+'" data-gid="'+g.id+'" onclick="event.stopPropagation();adjustMultiQty(this.dataset.uid,1,this.dataset.gid,+this.dataset.sl)" style="width:22px;height:22px;border-radius:50%;background:var(--pine);border:none;font-size:14px;font-weight:700;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center">&#43;</button>'
+        + '</div>';
+    return '<div class="set-item-card" id="'+itemId+'"'
+        + ' data-id="'+sc.menu_items.id+'" data-name="'+sc.menu_items.name+'"'
+        + ' data-has-flv="'+(sc.menu_items.item_flavor_relation&&sc.menu_items.item_flavor_relation.length>0)+'"'
+        + ' data-selected-flv="" data-max-qty="'+(sl||99)+'" data-chosen-qty="0"'
+        + ' data-price-adj="'+pa+'" data-uid="'+itemId+'">'
+        + '<div onclick="handleSubClick(this.parentElement.dataset.uid)" class="set-item-header" style="flex-direction:column;align-items:stretch;padding:0;gap:0;cursor:pointer">'
+        + imgHtml
+        + '<div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center">'
+        + '<span style="font-size:11px;font-weight:700;color:var(--ink)">'+nm+priceTag+'</span>'
+        + '<span class="multi-check-icon" style="font-size:14px;color:var(--gold);opacity:0;transition:opacity 0.2s">✓</span>'
+        + '</div>'
+        + '</div>'
+        + qtyCtrl
+        + '<div id="flv-'+itemId+'" class="set-item-flv-area"></div>'
+        + '</div>';
+}
+
+function renderSetGroup(g){
+    var sortedContents = [...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    var stype = g.selection_type;
+    var limit = g.selection_limit||0;
+
+    if(stype==='include'){
+        return '<div class="set-group group-block" data-name="'+g.group_name+'" data-limit="'+sortedContents.length+'" data-type="include">'
+            + '<div class="set-group-header"><span class="set-group-name">'+g.group_name+'</span><span class="set-group-limit" style="background:var(--gold)">'+t('setInclude')+' '+sortedContents.length+'</span></div>'
+            + '<div class="set-items-grid">'+sortedContents.map((sc,idx)=>renderSetGroupItem(g,sc,idx)).join('')+'</div>'
+            + '</div>';
+    } else if(stype==='multi'){
+        var lbl = limit>0 ? t('setChoose')+' '+limit : (curLang==='zh'?'至少選一':'Select items');
+        return '<div class="set-group group-block" data-name="'+g.group_name+'" data-limit="'+limit+'" data-type="multi">'
+            + '<div class="set-group-header"><span class="set-group-name">'+g.group_name+'</span><span class="set-group-limit" style="background:#2563eb">'+lbl+'</span></div>'
+            + '<div class="set-items-grid">'+sortedContents.map((sc,idx)=>renderSetGroupMultiItem(g,sc,idx)).join('')+'</div>'
+            + '</div>';
+    } else {
+        var chooseLabel = limit>0 ? t('setChoose')+' '+limit : (curLang==='zh'?'至少選一':'Select one+');
+        return '<div class="set-group group-block" data-name="'+g.group_name+'" data-limit="'+limit+'" data-type="choose">'
+            + '<div class="set-group-header"><span class="set-group-name">'+g.group_name+'</span><span class="set-group-limit">'+chooseLabel+'</span></div>'
+            + '<div class="set-items-grid">'+sortedContents.map((sc,idx)=>renderSetGroupChooseItem(g,sc,idx)).join('')+'</div>'
+            + '</div>';
+    }
 }
 
 function openDetail(id){
@@ -769,43 +896,7 @@ function openDetail(id){
     if(tempItem.item_flavor_relation?.length>0)renderFlavorUI(tempItem.item_flavor_relation,'flavor-container','main-item');
     if(tempItem.is_set_menu&&tempItem.set_menu_groups){
         const sortedGroups=[...tempItem.set_menu_groups].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-        document.getElementById('set-group-container').innerHTML=sortedGroups.map(g=>{
-            const sortedContents=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-            const isInclude=g.selection_type==='include';
-            if(isInclude){
-                return`<div class="set-group group-block" data-name="${g.group_name}" data-limit="${sortedContents.length}" data-type="include">
-                    <div class="set-group-header"><span class="set-group-name">${g.group_name}</span><span class="set-group-limit" style="background:var(--gold)">${t('setInclude')} ${sortedContents.length}</span></div>
-                    <div class="set-items-grid">${sortedContents.map((c,idx)=>`
-                        <div class="set-item-card selected" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length>0}" data-selected-flv="" data-auto-include="true" data-price-adj="${c.price_adjustment||0}">
-                            <div class="set-item-header" style="background:rgba(184,145,80,0.06);pointer-events:none;flex-direction:column;align-items:stretch;padding:0;gap:0">
-                                ${c.menu_items.image_url?`<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="${c.menu_items.image_url}" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>`:`<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>`}
-                                <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px">${getLangName(c.menu_items,'name')}${(c.price_adjustment||0)>0?`<span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:3px">+$${c.price_adjustment}</span>`:''}</span><span style="color:var(--gold);font-size:11px">✓</span></div>
-                            </div>
-                            <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
-                        </div>`).join('')}</div></div>`;
-            }else{
-                return`<div class="set-group group-block" data-name="${g.group_name}" data-limit="${g.selection_limit}" data-type="choose">
-                    <div class="set-group-header"><span class="set-group-name">${g.group_name}</span><span class="set-group-limit">${t('setChoose')} ${g.selection_limit}</span></div>
-                    <div class="set-items-grid">${sortedContents.map((c,idx)=>{
-                        const mq=c.max_qty||1;
-                        return`<div class="set-item-card" id="sub-${g.id}-${c.menu_items.id}-${idx}" data-id="${c.menu_items.id}" data-name="${c.menu_items.name}" data-has-flv="${c.menu_items.item_flavor_relation?.length>0}" data-selected-flv="" data-max-qty="${mq}" data-chosen-qty="1" data-price-adj="${c.price_adjustment||0}">
-                            <div onclick="handleSubClick('sub-${g.id}-${c.menu_items.id}-${idx}')" class="set-item-header" style="flex-direction:column;align-items:stretch;padding:0;gap:0">
-                                ${c.menu_items.image_url?`<div style="width:100%;height:72px;overflow:hidden;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;padding:6px"><img src="${c.menu_items.image_url}" style="max-height:100%;max-width:100%;object-fit:contain;mix-blend-mode:multiply" loading="lazy"></div>`:`<div style="width:100%;height:72px;background:var(--cream);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.5rem">🍽</div>`}
-                                <div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
-                                <span style="font-size:11px">${getLangName(c.menu_items,'name')}${(c.price_adjustment||0)>0?`<span style="font-size:9px;color:var(--gold);font-weight:700;margin-left:3px">+$${c.price_adjustment}</span>`:''}</span>
-                                ${c.menu_items.item_flavor_relation?.length>0?'<span style="color:var(--gold);font-size:8px">●</span>':''}
-                            </div>
-                            </div>
-                            ${mq>1?`<div id="qty-ctrl-sub-${g.id}-${c.menu_items.id}-${idx}" style="display:none;align-items:center;justify-content:center;gap:8px;padding:6px 10px;background:#fafafa;border-top:1px solid rgba(0,0,0,0.06)">
-                                <button onclick="event.stopPropagation();changeSubQty('sub-${g.id}-${c.menu_items.id}-${idx}',-1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">−</button>
-                                <span id="qty-num-sub-${g.id}-${c.menu_items.id}-${idx}" style="font-weight:900;font-size:14px;color:var(--pine);min-width:16px;text-align:center">1</span>
-                                <button onclick="event.stopPropagation();changeSubQty('sub-${g.id}-${c.menu_items.id}-${idx}',1)" style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--gold);background:white;color:var(--gold);font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer">＋</button>
-                            </div>`:''}
-                            <div id="flv-sub-${g.id}-${c.menu_items.id}-${idx}" class="set-item-flv-area"></div>
-                        </div>`;
-                    }).join('')}</div></div>`;
-            }
-        }).join('');
+        document.getElementById('set-group-container').innerHTML=sortedGroups.map(g=>renderSetGroup(g)).join('');
     }
     document.getElementById('detail-scroll').scrollTop=0;
     document.getElementById('detail-modal').classList.add('visible');
@@ -814,24 +905,23 @@ function openDetail(id){
 function renderFlavorUI(rels,target,parentID){
     const container=document.getElementById(target);
     container.innerHTML+=rels.map(r=>{
-        // 口味組顯示名稱（支援多語言）
         const g=r.flavor_groups;
-        let groupLabel=g.name;
+        // 口味組顯示名稱（多語言）
+        let groupLabel=g.display_name||g.name;
         if(curLang!=='zh'){
-            const v=g[`display_name_${curLang}`]||g.display_name;
-            if(v&&v.trim()) groupLabel=v;
-        } else if(g.display_name) groupLabel=g.display_name;
-
-        return`<div><p class="flavor-group-label">${groupLabel}</p>
-        <div class="flavor-opts">${g.flavor_options.map(o=>{
-            // 選項顯示名稱（支援多語言）
+            const lk='display_name_'+curLang;
+            if(g[lk]&&g[lk].trim()) groupLabel=g[lk];
+        }
+        // 選項
+        const optsHtml=g.flavor_options.map(o=>{
             let optLabel=o.option_name;
             if(curLang!=='zh'){
-                const v=o[`option_name_${curLang}`];
-                if(v&&v.trim()) optLabel=v;
+                const lk2='option_name_'+curLang;
+                if(o[lk2]&&o[lk2].trim()) optLabel=o[lk2];
             }
-            return`<div onclick="selectFlv(this,'${parentID}')" class="flv-opt" data-val="${o.option_name}">${optLabel}</div>`;
-        }).join('')}</div></div>`;
+            return '<div onclick="selectFlv(this,\''+parentID+'\')" class="flv-opt" data-val="'+o.option_name+'">'+optLabel+'</div>';
+        }).join('');
+        return '<div><p class="flavor-group-label">'+groupLabel+'</p><div class="flavor-opts">'+optsHtml+'</div></div>';
     }).join('');
 }
 
@@ -854,31 +944,115 @@ function changeSubQty(uid,delta){
 }
 
 function handleSubClick(uid){
-    const card=document.getElementById(uid);
-    const block=card.closest('.group-block');
-    const limit=parseInt(block.dataset.limit);
-    if(limit===1){
-        Array.from(block.querySelectorAll('.set-item-card')).forEach(c=>{
-            c.classList.remove('selected');
-            const qc=document.getElementById('qty-ctrl-'+c.id);if(qc)qc.style.display='none';
+    const card  = document.getElementById(uid);
+    const block = card.closest('.group-block');
+    const limit = parseInt(block.dataset.limit);
+    const btype = block.dataset.type; // 'include' | 'choose' | 'multi'
+
+    if(btype === 'multi'){
+        // 複選＋數量模式：點擊切換選取，顯示數量控制
+        if(card.classList.contains('selected')){
+            card.classList.remove('selected');
+            const qc = document.getElementById('qty-ctrl-'+uid);
+            if(qc) qc.style.display='none';
+            card.dataset.chosenQty = '0';
+            updateMultiCardStyle(card, false);
+        } else {
+            // 上限檢查（0=無上限）
+            if(limit > 0){
+                const totalQty = Array.from(block.querySelectorAll('.set-item-card.selected'))
+                    .reduce((s,cd)=>s+parseInt(cd.dataset.chosenQty||1),0);
+                if(totalQty >= limit){ showToast(t('toastSetFull')+' '+limit); return; }
+            }
+            card.classList.add('selected');
+            card.dataset.chosenQty = '1';
+            const qc = document.getElementById('qty-ctrl-'+uid);
+            if(qc) qc.style.display='flex';
+            updateMultiCardStyle(card, true);
+            const lbl = document.getElementById('qty-label-'+uid);
+            if(lbl) lbl.textContent='1';
+        }
+        return;
+    }
+
+    if(limit === 1){
+        // 單選
+        Array.from(block.querySelectorAll('.set-item-card')).forEach(cd=>{
+            cd.classList.remove('selected');
+            const qc=document.getElementById('qty-ctrl-'+cd.id);if(qc)qc.style.display='none';
         });
         card.classList.add('selected');
-    }else{
+    } else {
+        // 多選（choose）
         if(card.classList.contains('selected')){
             card.classList.remove('selected');
             const qc=document.getElementById('qty-ctrl-'+uid);if(qc)qc.style.display='none';
             return;
         }
-        if(block.querySelectorAll('.set-item-card.selected').length>=limit){showToast(t('toastSetFull')+' '+limit);return;}
+        // limit=0 代表無上限，不限制
+        if(limit > 0 && block.querySelectorAll('.set-item-card.selected').length >= limit){
+            showToast(t('toastSetFull')+' '+limit); return;
+        }
         card.classList.add('selected');
     }
-    const qc=document.getElementById('qty-ctrl-'+uid);if(qc)qc.style.display='flex';
-    if(card.dataset.hasFlv==='true'){
-        const area=document.getElementById('flv-'+uid);
-        const sub=menuData.find(m=>m.id===card.dataset.id);
-        area.innerHTML='';renderFlavorUI(sub.item_flavor_relation,area.id,uid);area.classList.add('visible');
+    // 口味選擇
+    const hasFlv = card.dataset.hasFlv==='true';
+    if(hasFlv){
+        const flvArea=document.getElementById('flv-area-'+uid);
+        if(flvArea) flvArea.style.display='block';
     }
 }
+
+
+function adjustMultiQty(uid, delta, groupId, maxLimit){
+    const card  = document.getElementById(uid);
+    const block = card.closest('.group-block');
+    const limit = parseInt(block.dataset.limit) || 0;
+    let qty = parseInt(card.dataset.chosenQty || '1');
+
+    if(delta > 0){
+        // 上限檢查
+        if(limit > 0){
+            const total = Array.from(block.querySelectorAll('.set-item-card.selected'))
+                .reduce((s,cd)=>s+parseInt(cd.dataset.chosenQty||0),0);
+            if(total >= limit){ showToast(t('toastSetFull')+' '+limit); return; }
+        }
+        qty = qty + 1;
+    } else {
+        qty = qty - 1;
+        if(qty <= 0){
+            // 取消選取
+            card.classList.remove('selected');
+            card.dataset.chosenQty = '0';
+            const qc = document.getElementById('qty-ctrl-'+uid);
+            if(qc) qc.style.display='none';
+            updateMultiCardStyle(card, false);
+            return;
+        }
+    }
+    card.dataset.chosenQty = String(qty);
+    const label = document.getElementById('qty-label-'+uid);
+    if(label) label.textContent = qty;
+}
+
+function updateMultiCardStyle(card, selected){
+    if(selected){
+        card.style.borderColor = 'var(--pine)';
+        card.style.background  = 'rgba(0,77,64,0.04)';
+        const icon = card.querySelector('.multi-check-icon');
+        if(icon) icon.style.opacity='1';
+        const qc = document.getElementById('qty-ctrl-'+card.id);
+        if(qc) qc.style.display='flex';
+    } else {
+        card.style.borderColor = 'rgba(0,0,0,0.08)';
+        card.style.background  = 'white';
+        const icon = card.querySelector('.multi-check-icon');
+        if(icon) icon.style.opacity='0';
+        const qc = document.getElementById('qty-ctrl-'+card.id);
+        if(qc) qc.style.display='none';
+    }
+}
+
 
 function confirmAdd(){
     let mn='';
@@ -890,21 +1064,38 @@ function confirmAdd(){
     let snCN=[], sn=[], totalPriceAdj=0;
     if(tempItem.is_set_menu){
         for(let b of document.querySelectorAll('.group-block')){
-            const isInclude=b.dataset.type==='include';
-            const sels=b.querySelectorAll('.set-item-card.selected');
-            if(!isInclude&&sels.length<parseInt(b.dataset.limit)){showToast(`【${b.dataset.name}】${t('toastSetItem')}`);return;}
-            for(let c of sels){
-                if(!isInclude&&c.dataset.hasFlv==='true'&&!c.dataset.selectedFlv){showToast(`${t('noteFlavor')}【${c.dataset.name}】`);return;}
-                const chosenQty=parseInt(c.dataset.chosenQty)||1;
-                const qtyStr=chosenQty>1?` x${chosenQty}`:'';
-                // 累計 price_adjustment
-                const pa=parseFloat(c.dataset.priceAdj||0);
-                totalPriceAdj+=pa*chosenQty;
-                const subItem=menuData.find(m=>m.id===c.dataset.id);
-                const subName=subItem?getLangName(subItem,'name'):c.dataset.name;
-                const subNameCN=c.dataset.name;
-                sn.push(subName+qtyStr+(c.dataset.selectedFlv?` [${c.dataset.selectedFlv}]`:''));
-                snCN.push(subNameCN+qtyStr+(c.dataset.selectedFlv?` [${c.dataset.selectedFlv}]`:''));
+            const btype    = b.dataset.type; // include | choose | multi
+            const isInclude= btype==='include';
+            const isMulti  = btype==='multi';
+            const blimit   = parseInt(b.dataset.limit)||0;
+            const sels     = b.querySelectorAll('.set-item-card.selected');
+
+            // 驗證：choose 任選 & multi
+            if(!isInclude){
+                if(blimit > 0 && !isMulti && sels.length < blimit){
+                    showToast(`【${b.dataset.name}】${t('toastSetItem')}`); return;
+                }
+                if(!isMulti && blimit === 0 && sels.length === 0){
+                    showToast(`【${b.dataset.name}】請至少選一項`); return;
+                }
+                if(isMulti && sels.length === 0){
+                    showToast(`【${b.dataset.name}】請至少選一項`); return;
+                }
+            }
+
+            for(let cd of (isInclude ? b.querySelectorAll('.set-item-card') : sels)){
+                const nm   = cd.dataset.name;
+                const flv  = cd.dataset.selectedFlv;
+                const padj = parseInt(cd.dataset.priceAdj||'0');
+                const qty  = isMulti ? parseInt(cd.dataset.chosenQty||'1') : 1;
+                const suffix = flv ? `[${flv}]` : '';
+                const qtyStr = qty > 1 ? ` x${qty}` : '';
+                snCN.push(nm+suffix+qtyStr);
+                sn.push(nm+suffix+qtyStr);
+                totalPriceAdj += padj * qty;
+                if(isInclude && cd.dataset.hasFlv==='true' && !cd.dataset.selectedFlv){
+                    showToast(`${t('noteFlavor')}【${cd.dataset.name}】`); return;
+                }
             }
         }
     }
@@ -1054,6 +1245,10 @@ async function doFinalSubmit(){
         document.getElementById('step-3').classList.add('visible');
         applyLang();
         window.scrollTo({top:0,behavior:'smooth'});
+        // 在 LIFF 內：顯示完成頁後 3 秒自動關閉
+        if(typeof liff!=='undefined'&&liff.isInClient()){
+            setTimeout(()=>{ try{liff.closeWindow();}catch(e){} },4000);
+        }
     }else{
         showToast('送出失敗，請再試一次');isSubmitting=false;
         if(btn){btn.disabled=false;btn.textContent=t('submitBtn');}
