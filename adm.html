@@ -1015,22 +1015,57 @@ function openPop(itemId,editIdx=-1){
     container.innerHTML+=sortedGroups.map(g=>{
       popSels.groups[g.id]=[];
       const sortedContents=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-      const limit=g.selection_limit;
+      const stype_=g.selection_type||'choose';
+      const limit=g.selection_limit||0;
       const groupItemNames=new Set(sortedContents.map(c=>c.menu_items.name));
-      const groupPrev=[];let scan=0;
-      while(scan<prevNames.length&&groupPrev.length<limit){
-        if(groupItemNames.has(prevNames[scan])){groupPrev.push(prevNames[scan]);prevNames.splice(scan,1);}else scan++;
+      // 解析 prevNames（支援帶 x數量的格式）
+      const groupPrevQty={};
+      let scan=0;
+      while(scan<prevNames.length){
+        const rawN=prevNames[scan];
+        const qM_=rawN.match(/ x(\d+)$/);
+        const baseName_=qM_?rawN.replace(/ x\d+$/,'').trim():rawN;
+        const qty__=qM_?parseInt(qM_[1]):1;
+        if(groupItemNames.has(baseName_)){
+          groupPrevQty[baseName_]=(groupPrevQty[baseName_]||0)+qty__;
+          prevNames.splice(scan,1);
+        }else{scan++;}
       }
-      return`<div style="margin-bottom:16px">
-        <div class="pop-sec-label">${g.group_name} <span style="color:var(--gold)">任選${limit}</span></div>
-        <div class="set-opts">${sortedContents.map(c=>{
-          const idx=groupPrev.indexOf(c.menu_items.name);const isM=idx>-1;
-          if(isM){groupPrev.splice(idx,1);popSels.groups[g.id].push({name:c.menu_items.name});}
-          const pa_=c.price_adjustment||0;
-            const paTag=pa_>0?` +$${pa_}`:pa_<0?` -$${Math.abs(pa_)}`:'';
-            return`<div class="set-opt ${isM?'on':''}" onclick="setGrp(this,'${g.id}','${c.menu_items.name}',${limit},${pa_})" style="position:relative">${c.menu_items.name}${paTag?`<span style="font-size:9px;color:var(--gold);display:block;margin-top:2px">${paTag}</span>`:''}</div>`;
-        }).join('')}</div>
-      </div>`;
+      // 初始化選取狀態
+      sortedContents.forEach(c=>{
+        const name=c.menu_items.name;
+        if(stype_==='include'){
+          popSels.groups[g.id].push({name,priceAdj:c.price_adjustment||0,qty:1});
+        } else if(groupPrevQty[name]){
+          popSels.groups[g.id].push({name,priceAdj:c.price_adjustment||0,qty:groupPrevQty[name]});
+        }
+      });
+      const typeLabel_=stype_==='include'?'全部包含':stype_==='multi'?('複選+數量'+(limit>0?' 上限'+limit:'')):'任選'+(limit>0?limit:'1+');
+      const optsHtml=sortedContents.map(c=>{
+        const isM_=stype_==='include'||(groupPrevQty[c.menu_items.name]>0);
+        const pa__=c.price_adjustment||0;
+        const paTag_=pa__>0?' +$'+pa__:pa__<0?' -$'+Math.abs(pa__):'';
+        if(stype_==='multi'){
+          const curQ=groupPrevQty[c.menu_items.name]||0;
+          return '<div id="mob-epop-card-'+g.id+'-'+c.menu_items.id+'" class="set-opt '+(curQ>0?'on':'')+'" style="position:relative">'
+            +c.menu_items.name+(paTag_?'<span style="font-size:9px;color:var(--gold);display:block;margin-top:2px">'+paTag_+'</span>':'')
+            +'<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px">'
+            +'<button data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-pa="'+pa__+'" data-sl="'+limit+'" data-iid="'+c.menu_items.id+'"'
+            +' onclick="event.stopPropagation();mobPopMultiAdj(this,-1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--gold);background:white;font-size:13px;font-weight:900;cursor:pointer;color:var(--gold);display:flex;align-items:center;justify-content:center">&#8722;</button>'
+            +'<span id="mob-epop-qty-'+g.id+'-'+c.menu_items.id+'" style="font-size:14px;font-weight:900;color:var(--pine);min-width:18px;text-align:center">'+curQ+'</span>'
+            +'<button data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-pa="'+pa__+'" data-sl="'+limit+'" data-iid="'+c.menu_items.id+'"'
+            +' onclick="event.stopPropagation();mobPopMultiAdj(this,+1)" style="width:22px;height:22px;border-radius:50%;background:var(--pine);border:none;font-size:13px;font-weight:900;cursor:pointer;color:white;display:flex;align-items:center;justify-content:center">&#43;</button>'
+            +'</div></div>';
+        } else {
+          return '<div data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-pa="'+pa__+'" data-limit="'+limit+'"'
+            +' onclick="mobSetGrp(this)" class="set-opt '+(isM_?'on':'')+' '+(stype_==='include'?'opacity-60 pointer-events-none':'')+'" style="position:relative">'
+            +c.menu_items.name+(paTag_?'<span style="font-size:9px;color:var(--gold);display:block;margin-top:2px">'+paTag_+'</span>':'')
+            +'</div>';
+        }
+      }).join('');
+      return '<div style="margin-bottom:16px">'
+        +'<div class="pop-sec-label">'+g.group_name+' <span style="color:var(--gold)">'+typeLabel_+'</span></div>'
+        +'<div class="set-opts">'+optsHtml+'</div></div>';
     }).join('');
   }
   document.getElementById('pop-overlay').classList.add('visible');
@@ -1040,6 +1075,26 @@ function closePop(){document.getElementById('pop-overlay').classList.remove('vis
 function setFlv(el,gid,name){
   el.closest('.flv-chips').querySelectorAll('.flv-chip').forEach(c=>{c.classList.remove('on');});
   el.classList.add('on');popSels.flavors[gid]=name;
+}
+function mobSetGrp(el){
+  const gid=el.dataset.gid, name=el.dataset.name, limit=parseInt(el.dataset.limit)||0, pa=parseFloat(el.dataset.pa)||0;
+  setGrp(el, gid, name, limit, pa);
+}
+function mobPopMultiAdj(btn, delta){
+  const gid=btn.dataset.gid, name=btn.dataset.name, pa=parseFloat(btn.dataset.pa)||0, sl=parseInt(btn.dataset.sl)||0, iid=btn.dataset.iid;
+  if(!popSels.groups[gid]) popSels.groups[gid]=[];
+  const arr=popSels.groups[gid];
+  const existing=arr.find(x=>x.name===name);
+  const curQty=existing?existing.qty:0;
+  let newQty=Math.max(0, curQty+delta);
+  if(sl>0) newQty=Math.min(sl, newQty);
+  if(newQty===0){ popSels.groups[gid]=arr.filter(x=>x.name!==name); }
+  else if(existing){ existing.qty=newQty; }
+  else { arr.push({name,priceAdj:pa,qty:newQty}); }
+  const qEl=document.getElementById('mob-epop-qty-'+gid+'-'+iid);
+  if(qEl) qEl.textContent=newQty;
+  const card=document.getElementById('mob-epop-card-'+gid+'-'+iid);
+  if(card){ if(newQty>0) card.classList.add('on'); else card.classList.remove('on'); }
 }
 function setGrp(el,gid,name,limit,priceAdj=0){
   let s=popSels.groups[gid];
@@ -1054,7 +1109,13 @@ function setGrp(el,gid,name,limit,priceAdj=0){
 function confirmPop(){
   if(!popItem)return;
   const fn=Object.values(popSels.flavors).join('/');
-  const gn=Object.values(popSels.groups).flat().map(x=>x.name).join('、');
+  // multi 類型：帶 x數量，其他：只帶品名
+  const gnParts=[];
+  Object.values(popSels.groups).flat().forEach(x=>{
+    if(x.qty&&x.qty>1) gnParts.push(x.name+' x'+x.qty);
+    else if(!x.qty||x.qty>=1) gnParts.push(x.name);
+  });
+  const gn=gnParts.join('、');
   let xQty='';
   if(popEditIdx>-1){const qM=eosCart[popEditIdx].name.match(/ x(\d+)/);if(qM)xQty=` x${qM[1]}`;}
   const finalName=`${popItem.name}${xQty}${fn?` [${fn}]`:''}${gn?` (${gn})`:''}`;;
