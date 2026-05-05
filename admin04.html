@@ -242,6 +242,8 @@
         .img-contain { object-fit: contain; background: white; }
         .input-mini { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); width: 100%; outline: none; background: white; }
         .order-card-completed { opacity: 0.5; filter: grayscale(0.8); }
+        .order-card.is-takeout { border-color: #f59e0b; }
+        .order-card.is-takeout .order-header { background: #fffbeb; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -490,8 +492,8 @@
             <div id="list-filters" class="flex items-center gap-2 flex-1 flex-wrap">
                 <input type="text" id="filter-search" class="filter-input flex-1 min-w-[140px]" placeholder="搜尋顧客姓名或電話…" style="padding:5px 10px">
                 <select id="filter-date-type" onchange="loadOrders();const s=document.getElementById('filter-sort');if(this.value==='booking'&&s.value.startsWith('created'))s.value='booking_asc';else if(this.value==='created'&&s.value.startsWith('booking'))s.value='created_desc';" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700">
-                    <option value="created">下單日期</option>
-                    <option value="booking" selected>訂位日期</option>
+                    <option value="created" selected>下單日期</option>
+                    <option value="booking">訂位日期</option>
                 </select>
                 <select id="filter-date-preset" onchange="setQuickDate(this.value);loadOrders()" class="filter-select" style="width:auto;padding:5px 8px">
                     <option value="all">不限</option>
@@ -505,9 +507,9 @@
                     <option value="synced">已完成</option>
                 </select>
                 <select id="filter-sort" onchange="loadOrders()" class="filter-select" style="width:auto;padding:5px 8px;color:var(--pine);font-weight:700" title="排序方式">
-                    <option value="created_desc">下單↓新到舊</option>
+                    <option value="created_desc" selected>下單↓新到舊</option>
                     <option value="created_asc">下單↑舊到新</option>
-                    <option value="booking_asc" selected>訂位↑早到晚</option>
+                    <option value="booking_asc">訂位↑早到晚</option>
                     <option value="booking_desc">訂位↓晚到早</option>
                 </select>
                 <button onclick="loadOrders()" class="btn btn-primary btn-sm">篩選</button>
@@ -1553,7 +1555,13 @@ async function loadOrders() {
 
     document.getElementById('order-list').innerHTML=(data||[]).length===0
         ?`<div class="col-span-2 empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">找不到符合條件的訂單</div><div class="empty-state-sub">請調整篩選條件或重置後再試</div></div>`
-        :(data||[]).map(o=>{
+        :(()=>{
+        // 加日期分隔線（按訂位日期或下單日期分組）
+        const sortVal=document.getElementById('filter-sort')?.value||'created_desc';
+        const dateType=document.getElementById('filter-date-type')?.value||'created';
+        const useBooking=sortVal.startsWith('booking')&&dateType==='booking';
+        let lastDateKey='';
+        return (data||[]).map(o=>{
         let bTime='';
         if(o.booking_date){
             // booking_date 是 timestamptz，Supabase 回傳 UTC
@@ -1563,8 +1571,18 @@ async function loadOrders() {
             bTime = `${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}T${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`;
         }
         const synced=o.status==='synced';
-        return `
-        <div id="order-card-${o.id}" class="order-card ${synced?'completed':''} collapsed ${selectedOrderIds.has(o.id)?'ring-2 ring-red-300':''}">
+        // 計算日期分隔線
+        let sep='';
+        if(useBooking&&o.booking_date){
+            const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);
+            const dk=`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;
+            if(dk!==lastDateKey){lastDateKey=dk;sep=`<div style="display:flex;align-items:center;gap:10px;margin:10px 0 6px;col-span:2"><div style="flex:1;height:1.5px;background:linear-gradient(90deg,transparent,var(--border))"></div><span style="font-size:10px;font-weight:900;color:var(--stone);flex-shrink:0;padding:3px 10px;background:white;border:1px solid var(--border);border-radius:999px">${parseInt(dk.slice(5,7))}/${parseInt(dk.slice(8))} 訂位</span><div style="flex:1;height:1.5px;background:linear-gradient(90deg,var(--border),transparent)"></div></div>`;}
+        } else if(!useBooking){
+            const dk=new Date(o.created_at).toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'});
+            if(dk!==lastDateKey){lastDateKey=dk;sep=`<div style="display:flex;align-items:center;gap:10px;margin:10px 0 6px"><div style="flex:1;height:1.5px;background:linear-gradient(90deg,transparent,var(--border))"></div><span style="font-size:10px;font-weight:900;color:var(--stone);flex-shrink:0;padding:3px 10px;background:white;border:1px solid var(--border);border-radius:999px">${dk} 下單</span><div style="flex:1;height:1.5px;background:linear-gradient(90deg,var(--border),transparent)"></div></div>`;}
+        }
+        return sep + `
+        <div id="order-card-${o.id}" class="order-card ${synced?'completed':''} ${o.is_takeout?'is-takeout':''} collapsed ${selectedOrderIds.has(o.id)?'ring-2 ring-red-300':''}">
             <div class="order-header" onclick="toggleOrderCard('${o.id}')">
                 <input type="checkbox" ${selectedOrderIds.has(o.id)?'checked':''} onclick="event.stopPropagation()"
                     onchange="toggleOrderSelect('${o.id}',this.checked)"
@@ -1614,7 +1632,13 @@ async function loadOrders() {
                         </div>
                         <div class="order-field">
                             <label>桌號</label>
-                            <input type="text" value="${o.table_no||''}" onchange="updateOrderData('${o.id}','table_no',this.value,this)" placeholder="無">
+                            <div style="display:flex;align-items:center;gap:6px">
+                                <input type="text" value="${o.table_no||''}" onchange="updateOrderData('${o.id}','table_no',this.value,this)" placeholder="無" style="flex:1">
+                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;flex-shrink:0;padding:6px 8px;border-radius:8px;border:1.5px solid ${o.is_takeout?'#f59e0b':'var(--border)'};background:${o.is_takeout?'#fffbeb':'#f8fafc'};transition:all 0.2s" title="外帶訂單">
+                                    <input type="checkbox" ${o.is_takeout?'checked':''} onchange="updateOrderData('${o.id}','is_takeout',this.checked,null);this.closest('label').style.borderColor=this.checked?'#f59e0b':'var(--border)';this.closest('label').style.background=this.checked?'#fffbeb':'#f8fafc';this.closest('div.order-card').classList.toggle('is-takeout',this.checked);" class="accent-amber-500 w-3.5 h-3.5">
+                                    <span style="font-size:10px;font-weight:700;color:${o.is_takeout?'#d97706':'var(--stone)'}">外帶</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="order-field">
                             <label>活動代號</label>
@@ -1717,7 +1741,8 @@ async function loadOrders() {
                 </div>
             </div>
         </div>`;
-    }).join('');
+    }).filter(Boolean).join('');
+    })();
 }
 
 function toggleOrderCard(id) {
@@ -1933,39 +1958,102 @@ function openEditPop(itemId,index=-1){
     if(curEditItem.item_flavor_relation?.length>0){container.innerHTML+=curEditItem.item_flavor_relation.map(r=>`<div><p class="text-[10px] text-slate-400 mb-2 uppercase font-bold">${r.flavor_groups.name}</p><div class="flex flex-wrap gap-2">${r.flavor_groups.flavor_options.map(o=>{const isM=prevFlvs.includes(o.option_name);if(isM)curEditPopSels.flavors[r.flavor_groups.id]=o.option_name;return`<div onclick="setEditPopFlv(this,'${r.flavor_groups.id}','${o.option_name}')" class="px-4 py-1.5 border rounded-full text-xs cursor-pointer transition ${isM?'flavor-selected':'bg-slate-50'}">${o.option_name}</div>`;}).join('')}</div></div>`).join('');}
     if(curEditItem.is_set_menu&&curEditItem.set_menu_groups){
         const sortedGroups=[...curEditItem.set_menu_groups].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-        // 用動態比對逐一分配 prevNames 給各分組，避免同名跨分組誤判
         container.innerHTML+=sortedGroups.map(g=>{
             curEditPopSels.groups[g.id]=[];
             const sortedContents=[...g.set_menu_contents].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-            const limit=g.selection_limit;
-            // 先找出這個分組在 prevNames 裡實際有幾個品項屬於這組
+            const stype=g.selection_type||'choose';
+            const limit=g.selection_limit||0;
             const groupItemNames=new Set(sortedContents.map(c=>c.menu_items.name));
-            // 從 nameIdx 開始，收集屬於這個分組的名稱，直到找完或超過 limit
-            const groupPrev=[];
+            // 從 prevNames 中找屬於這個分組的品項（含數量）
+            const groupPrev={};// name -> qty
             let scan=0;
-            while(scan<prevNames.length && groupPrev.length<limit){
-                if(groupItemNames.has(prevNames[scan])){
-                    groupPrev.push(prevNames[scan]);
-                    prevNames.splice(scan,1); // 從原陣列移除，避免後面重用
+            const maxScan=limit>0?limit:sortedContents.length;
+            while(scan<prevNames.length){
+                // prevNames 中的元素可能帶 x數量
+                const rawN=prevNames[scan];
+                const qM=rawN.match(/ x(\d+)$/);
+                const baseName=qM?rawN.replace(/ x\d+$/,'').trim():rawN;
+                const qty_=qM?parseInt(qM[1]):1;
+                if(groupItemNames.has(baseName)){
+                    groupPrev[baseName]=(groupPrev[baseName]||0)+qty_;
+                    prevNames.splice(scan,1);
                 } else {
                     scan++;
                 }
             }
-            return`<div style="margin-bottom:16px"><p class="text-[10px] font-bold mb-2 uppercase" style="color:var(--pine)">${g.group_name} <span style="color:var(--gold)">任選${limit}</span></p><div class="grid grid-cols-2 gap-2">${sortedContents.map(c=>{
-                // 每個分組用自己的 groupPrev 比對，且比對後從中移除避免重複
-                const idx=groupPrev.indexOf(c.menu_items.name);
-                const isM=idx>-1;
-                if(isM){groupPrev.splice(idx,1);curEditPopSels.groups[g.id].push({name:c.menu_items.name});}
+            // 根據 stype 設定初始選取狀態
+            sortedContents.forEach(c=>{
+                const name=c.menu_items.name;
+                if(stype==='include'){
+                    // 全部自動選取
+                    curEditPopSels.groups[g.id].push({name,priceAdj:c.price_adjustment||0,qty:c.max_qty||1});
+                } else if(groupPrev[name]){
+                    curEditPopSels.groups[g.id].push({name,priceAdj:c.price_adjustment||0,qty:groupPrev[name]||1});
+                }
+            });
+            // 渲染標頭
+            const typeLabel=stype==='include'?`<span style="color:var(--gold)">全部包含</span>`:stype==='multi'?`<span style="color:#2563eb">複選+數量${limit>0?' 上限'+limit:''}</span>`:`<span style="color:var(--gold)">任選${limit>0?limit:'1+'}</span>`;
+            const pa_items=sortedContents.map(c=>{
+                const isM=stype==='include'||!!(groupPrev[c.menu_items.name]);
                 const pa=c.price_adjustment||0;
-                const priceTag=pa>0?`<span style="font-size:9px;color:var(--gold);margin-left:3px">+$${pa}</span>`:pa<0?`<span style="font-size:9px;color:#10b981;margin-left:3px">-$${Math.abs(pa)}</span>`:'';
-                return'<div onclick="setEditPopGroup(this,\''+g.id+'\',\''+c.menu_items.name+'\','+limit+','+pa+')" class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold '+(isM?'opt-selected':'bg-slate-50')+'">'+c.menu_items.name+priceTag+'</div>';
-            }).join('')}</div></div>`;
+                const priceTag=pa>0?'<span style="font-size:9px;color:var(--gold);margin-left:3px">+$'+pa+'</span>':pa<0?'<span style="font-size:9px;color:#10b981;margin-left:3px">-$'+Math.abs(pa)+'</span>':'';
+                if(stype==='multi'){
+                    // 複選：顯示數量控制
+                    const curQty=groupPrev[c.menu_items.name]||0;
+                    const qtyHtml='<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px">'
+                        +'<button data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-pa="'+pa+'" data-sl="'+limit+'"'
+                        +' onclick="event.stopPropagation();ePopMultiAdj(this,-1)" style="width:20px;height:20px;border-radius:50%;border:1px solid var(--gold);background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--gold)">&#8722;</button>'
+                        +'<span id="epop-qty-'+g.id+'-'+c.menu_items.id+'" style="font-size:13px;font-weight:900;color:var(--pine);min-width:16px;text-align:center">'+curQty+'</span>'
+                        +'<button data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-pa="'+pa+'" data-sl="'+limit+'"'
+                        +' onclick="event.stopPropagation();ePopMultiAdj(this,+1)" style="width:20px;height:20px;border-radius:50%;background:var(--pine);border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:white">&#43;</button>'
+                        +'</div>';
+                    const isSelected=curQty>0;
+                    return'<div id="epop-card-'+g.id+'-'+c.menu_items.id+'" class="p-3 border rounded-xl text-[11px] font-bold text-center '+(isSelected?'opt-selected':'bg-slate-50')+'" style="position:relative">'
+                        +c.menu_items.name+priceTag+qtyHtml+'</div>';
+                } else {
+                    return'<div data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-limit="'+limit+'" data-pa="'+pa+'"'
+                        +' onclick="setEditPopGroupByData(this)"'
+                        +' class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold '+(isM?'opt-selected':'bg-slate-50')+' '+(stype==='include'?'pointer-events-none opacity-70':'')+'">'                        +c.menu_items.name+priceTag+'</div>';
+                }
+            });
+            return'<div style="margin-bottom:16px"><p class="text-[10px] font-bold mb-2 uppercase" style="color:var(--pine)">'+g.group_name+' '+typeLabel+'</p><div class="grid grid-cols-2 gap-2">'+pa_items.join('')+'</div></div>';
         }).join('');
     }
+
     document.getElementById('edit-pop-title').textContent=curEditItem.name+(reEditIndex>-1&&editCart[reEditIndex]?.name.match(/ x(\d+)/)?` ×${editCart[reEditIndex].name.match(/ x(\d+)/)[1]}`:'');
     document.getElementById('edit-flavor-popup').classList.remove('hidden');
 }
 function setEditPopFlv(el,gid,name){Array.from(el.parentElement.children).forEach(c=>{c.classList.remove('flavor-selected');c.classList.add('bg-slate-50');});el.classList.add('flavor-selected');el.classList.remove('bg-slate-50');curEditPopSels.flavors[gid]=name;}
+function ePopMultiAdj(btn, delta){
+    const gid=btn.dataset.gid, name=btn.dataset.name, pa=parseFloat(btn.dataset.pa)||0, sl=parseInt(btn.dataset.sl)||0;
+    if(!curEditPopSels.groups[gid]) curEditPopSels.groups[gid]=[];
+    const arr=curEditPopSels.groups[gid];
+    const existing=arr.find(x=>x.name===name);
+    const curQty=existing?existing.qty:0;
+    let newQty=Math.max(0, curQty+delta);
+    if(sl>0) newQty=Math.min(sl, newQty);
+    // 更新數量
+    if(newQty===0){
+        curEditPopSels.groups[gid]=arr.filter(x=>x.name!==name);
+    } else if(existing){
+        existing.qty=newQty;
+    } else {
+        arr.push({name,priceAdj:pa,qty:newQty});
+    }
+    // 找 qty display 元素 - 從 curEditItem 取 item id
+    const itemObj=curEditItem?.set_menu_groups?.flatMap(g=>g.set_menu_contents||[]).find(c=>c.menu_items?.name===name);
+    if(itemObj){
+        const qEl=document.getElementById('epop-qty-'+gid+'-'+itemObj.menu_items.id);
+        if(qEl) qEl.textContent=newQty;
+        const card=document.getElementById('epop-card-'+gid+'-'+itemObj.menu_items.id);
+        if(card){if(newQty>0)card.classList.add('opt-selected');else card.classList.remove('opt-selected');}
+    }
+}
+
+function setEditPopGroupByData(el){
+    const gid=el.dataset.gid, name=el.dataset.name, limit=parseInt(el.dataset.limit)||0, pa=parseFloat(el.dataset.pa)||0;
+    setEditPopGroup(el, gid, name, limit, pa);
+}
 function setEditPopGroup(el,gid,name,limit,priceAdj=0){
   const sibs=Array.from(el.parentElement.children);
   if(limit===1){
@@ -1986,23 +2074,29 @@ function setEditPopGroup(el,gid,name,limit,priceAdj=0){
 }
 function confirmEditPop(){
     const fn=Object.values(curEditPopSels.flavors).join('/');
-    const gn=Object.values(curEditPopSels.groups).flat().map(x=>x.name).join('、');
-    // 保留原本的數量（x2、x3…）
+    // multi 類型：品名帶 x數量，include/choose：只帶品名
+    const gnParts=[];
+    Object.values(curEditPopSels.groups).flat().forEach(x=>{
+        if(x.qty&&x.qty>1) gnParts.push(x.name+' x'+x.qty);
+        else if(!x.qty||x.qty>=1) gnParts.push(x.name);
+    });
+    const gn=gnParts.join('、');
+    // 保留原本的套餐數量（x2、x3…）
     let xQty='';
     if(reEditIndex>-1){
         const qM=editCart[reEditIndex].name.match(/ x(\d+)/);
         if(qM) xQty=` x${qM[1]}`;
     }
-    // 計算總金額：套餐基礎價 + 所有子品項的 price_adjustment × qty
     const qty_=parseInt(xQty.replace(' x','')||'1');
     const basePrice=Number(curEditItem.price);
-    const adjTotal=Object.values(curEditPopSels.groups).flat().reduce((s,x)=>s+(x.priceAdj||0),0);
+    const adjTotal=Object.values(curEditPopSels.groups).flat().reduce((s,x)=>s+(x.priceAdj||0)*(x.qty||1),0);
     const totalPrice=(basePrice+adjTotal)*qty_;
-    const finalName=`${curEditItem.name}${xQty}${fn?` [${fn}]`:''}${gn?` (${gn})`:''}`;
+    const finalName=curEditItem.name+xQty+(fn?' ['+fn+']':'')+(gn?' ('+gn+')':'');
     if(reEditIndex>-1)editCart[reEditIndex]={name:finalName,price:totalPrice};
     else editCart.push({name:finalName,price:basePrice+adjTotal});
     closeEditPop();refreshEditCart();
 }
+
 async function saveOrderChange(){
     const total=editCart.reduce((s,i)=>s+Number(i.price),0);
     const{error}=await _s.from('orders').update({order_content:editCart,total_price:total}).eq('id',curEditOrder.id);
@@ -3815,6 +3909,7 @@ async function renderCalendar(){
     // 抓全部訂單
     const {data} = await _s.from('orders').select('*').order('booking_date',{ascending:true});
     const allOrders = data||[];
+    window.ordersRef = allOrders; // 供 openEditOrder 使用
 
     // 無訂位日期
     const noDate=allOrders.filter(o=>!o.booking_date);
@@ -3899,6 +3994,8 @@ function openCalDayModal(dateStr, focusId=null){
     const modal=document.getElementById('cal-day-modal');
     if(dateStr){
         _s.from('orders').select('*').then(({data})=>{
+            // 更新 ordersRef，讓 openEditOrder 可以找到日曆裡的訂單
+            if(data) window.ordersRef = (window.ordersRef||[]).concat(data.filter(o=>!window.ordersRef?.find(r=>r.id===o.id)));
             const orders=(data||[]).filter(o=>{
                 if(!o.booking_date)return false;
                 const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);
@@ -3995,7 +4092,50 @@ async function openOrderCardModal(orderId){
             <div class="order-section">
                 <div class="order-section-label">🍱 餐點明細</div>
                 <div style="background:#f8fafc;border-radius:10px;padding:10px 14px">
-                    ${o.order_content.map(i=>`<div class="order-item-row"><div class="order-item-dot"></div><div class="order-item-name">${i.name}</div><div style="font-weight:700;color:var(--stone)">$${i.price}</div></div>`).join('')}
+                ${(()=>{
+                    const sets=[], singles={};
+                    (o.order_content||[]).forEach(item=>{
+                        const{qty,flv:flvTag2,clean,inner,isSet,brand}=parseItemDisplay(item.name);
+                        if(isSet){const subList=parseSetSubs(inner);sets.push({brand,qty,subList});}
+                        else{const key=flvTag2?clean+'｜'+flvTag2:clean;if(!singles[key])singles[key]={name:clean,flv:flvTag2,qty:0};singles[key].qty+=qty;}
+                    });
+                    let html='';
+                    if(sets.length){html+=sets.map(set=>{
+                        const subsHtml2=set.subList.map(({name,flv,qty:sq})=>{
+                            const flvTag2=flv?'<span style="color:var(--gold);margin-left:3px;font-size:10px">['+flv+']</span>':'';
+                            return '<div class="order-item-row">'
+                                +'<div style="width:3px;height:3px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>'
+                                +'<div class="order-item-name" style="font-size:11px">'+name+flvTag2+'</div>'
+                                +'<div style="font-weight:900;color:var(--pine);font-size:12px">'+set.qty*sq+'</div>'
+                                +'<div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>'
+                                +'</div>';
+                        }).join('');
+                        return '<div style="border:1.5px solid rgba(184,145,80,0.3);border-radius:10px;overflow:hidden;margin-bottom:6px">'
+                            +'<div style="background:rgba(184,145,80,0.08);padding:6px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(184,145,80,0.2)">'
+                            +'<span style="font-weight:900;font-size:12px;color:var(--gold)">🍱 '+set.brand+'</span>'
+                            +'<span style="font-weight:900;font-size:13px;color:var(--gold)">'+set.qty+' 套</span>'
+                            +'</div>'
+                            +'<div style="padding:4px 12px">'+subsHtml2+'</div>'
+                            +'</div>';
+                    }).join(''); }
+                    const singleEntries=Object.values(singles);
+                    if(singleEntries.length){
+                        const singlesHtml=singleEntries.map(({name,flv,qty})=>{
+                            const flvS=flv?'<span style="font-size:10px;color:var(--gold);margin-left:4px">['+flv+']</span>':'';
+                            return '<div class="order-item-row">'
+                                +'<div class="order-item-dot"></div>'
+                                +'<div class="order-item-name">'+name+flvS+'</div>'
+                                +'<div style="font-weight:900;color:var(--pine);font-size:13px">'+qty+'</div>'
+                                +'<div style="font-size:10px;color:var(--stone);margin-left:2px">份</div>'
+                                +'</div>';
+                        }).join('');
+                        html+='<div style="border:1.5px solid var(--border);border-radius:10px;overflow:hidden">'
+                            +'<div style="background:#f8fafc;padding:6px 12px;border-bottom:1px solid var(--border)">'
+                            +'<span style="font-weight:900;font-size:11px;color:var(--stone);text-transform:uppercase;letter-spacing:.1em">單點</span>'
+                            +'</div><div style="padding:4px 12px">'+singlesHtml+'</div></div>';
+                    }
+                    return html;
+                })()}
                 </div>
                 ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
             </div>
