@@ -762,7 +762,7 @@
         <div id="ss-linenotify" class="ss-panel hidden space-y-5">
 
             <!-- ════ 平台通知概覽 ════ -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
 
                 <!-- ── LINE 平台 card ── -->
                 <div class="rounded-2xl border shadow-sm overflow-hidden" style="background:white">
@@ -778,7 +778,7 @@
                         <button onclick="openAddBotModal()" class="text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer transition" style="background:rgba(255,255,255,0.18);color:white;border:1px solid rgba(255,255,255,0.3)">＋ 新增 Bot</button>
                     </div>
                     <!-- Bot 列表 -->
-                    <div id="bot-list" class="p-4 space-y-2" style="min-height:80px">
+                    <div id="bot-list" class="p-4 space-y-2" style="min-height:60px;max-height:160px;overflow-y:auto">
                         <div class="text-center py-4 text-slate-300 text-xs font-bold">載入中…</div>
                     </div>
                     <!-- 通知對象 -->
@@ -790,7 +790,7 @@
                                 <button onclick="openAddTargetModal()" class="btn btn-primary btn-sm" style="font-size:10px;padding:4px 10px">＋ 新增</button>
                             </div>
                         </div>
-                        <div id="line-targets-list" class="space-y-2"></div>
+                        <div id="line-targets-list" class="space-y-2" style="max-height:200px;overflow-y:auto"></div>
                         <div class="mt-3 px-3 py-2 rounded-xl text-[10px] text-amber-700 font-semibold" style="background:#fffbeb;border:1px solid #fde68a">
                             💡 讓對方加 Bot 好友並傳訊息，從 Edge Function Logs 取得 User ID
                         </div>
@@ -833,7 +833,7 @@
                     <!-- Bot 功能 -->
                     <div class="px-5 py-4 space-y-2">
                         <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Bot 功能一覽</div>
-                        <div class="grid grid-cols-2 gap-2">
+                        <div class="grid grid-cols-2 gap-1.5">
                             <div class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs" style="background:#f0fdf4">
                                 <span>🔔</span><span class="font-bold text-slate-600">新訂單通知</span>
                             </div>
@@ -1195,7 +1195,14 @@
                                 <input type="radio" name="g-type" id="g-type-choose" value="choose" checked onchange="onGroupTypeChange()" class="accent-green-700">
                                 <div>
                                     <div class="font-bold text-xs" style="color:var(--pine)">任選 x 道</div>
-                                    <div class="text-[10px] text-slate-400">客人從下方選取指定數量</div>
+                                    <div class="text-[10px] text-slate-400">0=至少選一，無上限</div>
+                                </div>
+                            </label>
+                            <label class="flex-1 flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer transition hover:border-amber-400" id="type-multi-label">
+                                <input type="radio" name="g-type" id="g-type-multi" value="multi" onchange="onGroupTypeChange()" class="accent-blue-600">
+                                <div>
+                                    <div class="font-bold text-xs text-blue-600">複選＋數量</div>
+                                    <div class="text-[10px] text-slate-400">客人可選多項並加數量</div>
                                 </div>
                             </label>
                             <label class="flex-1 flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer transition hover:border-amber-400" id="type-include-label">
@@ -2519,8 +2526,9 @@ async function editSetGroup(gid){
         document.getElementById('g-name').value=g.group_name;
         document.getElementById('g-limit').value=g.selection_limit;
         const isInclude = g.selection_type==='include';
-        document.getElementById('g-type-include').checked=isInclude;
-        document.getElementById('g-type-choose').checked=!isInclude;
+        document.getElementById('g-type-include').checked = g.selection_type==='include';
+        document.getElementById('g-type-multi').checked   = g.selection_type==='multi';
+        document.getElementById('g-type-choose').checked  = g.selection_type==='choose';
         onGroupTypeChange();
         document.getElementById('set-modal-title').textContent='編輯分組';
         document.getElementById('btn-save-group').textContent='儲存更新';
@@ -2532,13 +2540,24 @@ async function editSetGroup(gid){
 }
 function onGroupTypeChange(){
     const isInclude = document.getElementById('g-type-include').checked;
-    document.getElementById('g-limit-wrap').style.opacity = isInclude ? '0.4' : '1';
-    document.getElementById('g-limit-wrap').style.pointerEvents = isInclude ? 'none' : '';
-    document.getElementById('type-choose-label').style.borderColor = isInclude ? '' : 'var(--pine)';
-    document.getElementById('type-choose-label').style.background = isInclude ? '' : '#f0fdf4';
-    document.getElementById('type-include-label').style.borderColor = isInclude ? 'var(--gold)' : '';
-    document.getElementById('type-include-label').style.background = isInclude ? '#fffbeb' : '';
+    const isMulti   = document.getElementById('g-type-multi').checked;
+    const isChoose  = document.getElementById('g-type-choose').checked;
+    // 任選數量：include/multi 時隱藏或提示
+    const limitWrap = document.getElementById('g-limit-wrap');
+    limitWrap.style.opacity = isInclude ? '0.4' : '1';
+    limitWrap.style.pointerEvents = isInclude ? 'none' : '';
+    // 數量欄位說明
+    const limitLabel = limitWrap.querySelector('label');
+    if(limitLabel) limitLabel.textContent = isMulti ? '數量上限（0=無上限）' : '任選數量（0=無上限）';
+    // 邊框樣式
+    document.getElementById('type-choose-label').style.borderColor  = isChoose ? 'var(--pine)' : '';
+    document.getElementById('type-choose-label').style.background   = isChoose ? '#f0fdf4' : '';
+    document.getElementById('type-multi-label').style.borderColor   = isMulti  ? '#2563eb' : '';
+    document.getElementById('type-multi-label').style.background    = isMulti  ? '#eff6ff' : '';
+    document.getElementById('type-include-label').style.borderColor = isInclude? 'var(--gold)' : '';
+    document.getElementById('type-include-label').style.background  = isInclude? '#fffbeb' : '';
 }
+
 function resetSetForm(){
     currentEditingGroupId=null;
     document.getElementById('g-name').value='';
@@ -2554,7 +2573,7 @@ function resetSetForm(){
 async function saveFullSet(){
     const n=document.getElementById('g-name').value;
     const l=document.getElementById('g-limit').value;
-    const stype=document.getElementById('g-type-include').checked?'include':'choose';
+    const stype=document.getElementById('g-type-include').checked?'include':document.getElementById('g-type-multi').checked?'multi':'choose';
     if(!n||!curPicks.length){toast('請填寫分組名稱並加入品項','warn');return;}
     let gid=currentEditingGroupId;
     if(gid){
@@ -2570,9 +2589,11 @@ async function loadSavedSets(){
     const{data}=await _s.from('set_menu_groups').select('*,set_menu_contents(*,price_adjustment,menu_items(*))').eq('parent_set_id',curItem).order('sort_order',{ascending:true});
     document.getElementById('saved-groups-view').innerHTML=(data||[]).map(g=>{
         const isInclude=g.selection_type==='include';
-        const badge=isInclude
-            ?`<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">包含</span>`
-            :`<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">任選 ${g.selection_limit}</span>`;
+        const badge = g.selection_type==='include'
+            ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">包含</span>`
+            : g.selection_type==='multi'
+            ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">複選${g.selection_limit>0?' 上限'+g.selection_limit:''}</span>`
+            : `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">任選 ${g.selection_limit||'無限'}</span>`;
         const itemSummary = g.set_menu_contents.map(c => {
             const mq = c.max_qty||1;
             const pa = c.price_adjustment||0;
@@ -3192,6 +3213,26 @@ async function deleteBot(id,name){
 }
 
 // ── LINE NOTIFY ──
+
+// ── 通知對象操作 handler（避免 onclick 字串引號問題）──
+async function handleTargetToggle(btn){
+    var tid   = btn.dataset.tid;
+    var field = btn.dataset.field;
+    var newval= btn.dataset.newval === 'true';
+    await updateTarget(tid, field, newval);
+    loadLineNotify();
+}
+async function handleTargetActiveToggle(btn){
+    var tid    = btn.dataset.tid;
+    var active = btn.dataset.active === 'true';
+    await toggleTarget(tid, active);
+}
+async function handleTargetDelete(btn){
+    var tid   = btn.dataset.tid;
+    var tname = btn.dataset.tname;
+    await deleteTarget(tid, tname);
+}
+
 async function loadLineNotify(){
     // 載入 Bot 列表
     await loadBots();
@@ -3211,49 +3252,59 @@ async function loadLineNotify(){
     const container=document.getElementById('line-targets-list');
     if(error){container.innerHTML=`<p class="text-red-400 text-sm font-bold p-4">${error.message}</p>`;return;}
     if(!data?.length){container.innerHTML=`<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-title">尚無通知對象</div><div class="empty-state-sub">點右上角「手動新增」加入第一位</div></div>`;return;}
-    container.innerHTML=`<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">`+data.map(t=>{
-        const isGroup=t.user_id?.startsWith('C');
-        const avatarId=`line-avatar-${t.id}`;
-        // LINE 只能透過 Bot API 取頭像，用 placeholder 顯示，之後非同步嘗試載入
-        const initials=t.name?.slice(0,1)||'?';
-        return`<div class="bg-white rounded-2xl border shadow-sm p-4 flex flex-col gap-3 ${t.is_active?'':'opacity-60'}">
-            <!-- 頭像 + 狀態 -->
-            <div class="flex items-center gap-3">
-                <div class="relative flex-shrink-0">
-                    <div id="${avatarId}" style="width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--pine),var(--pine-light));display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900;color:white;overflow:hidden;flex-shrink:0">
-                        ${isGroup?'👥':initials}
-                    </div>
-                    <div style="position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:50%;border:2px solid white;background:${t.is_active?'#10b981':'#94a3b8'}"></div>
-                </div>
+        // 通知對象列表渲染
+    const targetHtml = !data.length
+        ? '<div class="empty-state" style="padding:32px 16px"><div class="empty-state-icon" style="font-size:2rem">💬</div><div class="empty-state-title">尚無通知對象</div><div class="empty-state-sub">點上方「新增」加入第一位</div></div>'
+        : data.map(t => {
+            const isGroup = t.user_id?.startsWith('C');
+            const initials = t.name?.slice(0,1) || '?';
+            const orderOn = 'background:rgba(0,77,64,0.08);color:var(--pine);border-color:rgba(0,77,64,0.2)';
+            const orderOff = 'background:white;color:#94a3b8;border-color:#e2e8f0';
+            const photoOn  = orderOn;
+            const photoOff = orderOff;
+            return `<div class="flex items-center gap-3 px-4 py-3 bg-white rounded-xl border hover:border-slate-200 transition ${t.is_active?'':'opacity-60'}">
+                <div id="line-avatar-${t.id}" style="width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--pine),var(--pine-light));display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;color:white;overflow:hidden;flex-shrink:0">${isGroup?'👥':initials}</div>
                 <div class="flex-1 min-w-0">
-                    <div class="font-bold text-sm truncate" style="color:var(--pine)">${t.name}</div>
-                    <div class="text-[9px] font-mono text-slate-300 truncate">${t.user_id?.slice(0,16)}…</div>
-                    ${(t.is_group||t.user_id?.startsWith('C'))?`<span style="font-size:9px;font-weight:700;color:var(--gold);background:rgba(184,145,80,0.1);padding:1px 6px;border-radius:4px">群組</span>`:''}
+                    <div class="flex items-center">
+                        <span class="font-bold text-sm" style="color:var(--pine)">${t.name}</span>
+                        ${(t.is_group||isGroup)?'<span style="font-size:9px;font-weight:700;color:var(--gold);background:rgba(184,145,80,0.12);padding:1px 7px;border-radius:4px;margin-left:6px">群組</span>':''}
+                    </div>
+                    <div class="text-[10px] font-mono text-slate-300 truncate mt-0.5">${t.user_id?.slice(0,20)||'—'}</div>
                 </div>
-            </div>
-            <!-- 通知類型 -->
-            <div class="flex gap-2">
-                <label class="flex items-center gap-1 cursor-pointer bg-slate-50 rounded-lg px-2 py-1 flex-1 justify-center">
-                    <input type="checkbox" ${t.notify_order?'checked':''} onchange="updateTarget('${t.id}','notify_order',this.checked)" class="accent-green-700 w-3 h-3">
-                    <span class="text-[10px] font-bold text-slate-500">🔔 訂單</span>
-                </label>
-                <label class="flex items-center gap-1 cursor-pointer bg-slate-50 rounded-lg px-2 py-1 flex-1 justify-center">
-                    <input type="checkbox" ${t.notify_photo?'checked':''} onchange="updateTarget('${t.id}','notify_photo',this.checked)" class="accent-green-700 w-3 h-3">
-                    <span class="text-[10px] font-bold text-slate-500">📸 照片</span>
-                </label>
-                <label class="flex items-center gap-1 cursor-pointer rounded-lg px-2 py-1 flex-1 justify-center" style="background:${t.is_group?'rgba(184,145,80,0.1)':'#f8fafc'}">
-                    <input type="checkbox" ${t.is_group?'checked':''} onchange="updateTarget('${t.id}','is_group',this.checked)" class="accent-amber-500 w-3 h-3">
-                    <span class="text-[10px] font-bold" style="color:${t.is_group?'var(--gold)':'#94a3b8'}">👥 群組</span>
-                </label>
-            </div>
-            <!-- 操作 -->
-            <div class="flex gap-1.5 border-t pt-2.5">
-                <button onclick="toggleTarget('${t.id}',${t.is_active})" class="flex-1 text-[10px] font-bold py-1.5 rounded-lg border transition ${t.is_active?'border-slate-200 text-slate-400 hover:bg-slate-50':'bg-pine text-white border-transparent'}" style="${t.is_active?'':'background:var(--pine);color:white;border-color:var(--pine)'}">${t.is_active?'停用':'啟用'}</button>
-                <button onclick="testSendLine('${t.user_id}','${t.name}')" class="flex-1 text-[10px] font-bold py-1.5 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 transition">測試</button>
-                <button onclick="deleteTarget('${t.id}','${t.name}')" class="text-[10px] font-bold py-1.5 px-2 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition">🗑</button>
-            </div>
-        </div>`;
-    }).join('')+`</div>`;
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <button class="line-notify-toggle text-[10px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer"
+                        data-tid="${t.id}" data-field="notify_order" data-newval="${!t.notify_order}"
+                        style="${t.notify_order?orderOn:orderOff}">🔔 訂單</button>
+                    <button class="line-notify-toggle text-[10px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer"
+                        data-tid="${t.id}" data-field="notify_photo" data-newval="${!t.notify_photo}"
+                        style="${t.notify_photo?photoOn:photoOff}">📸 照片</button>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <span style="width:8px;height:8px;border-radius:50%;background:${t.is_active?'#10b981':'#94a3b8'};display:inline-block"></span>
+                    <button class="line-active-toggle text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 transition"
+                        data-tid="${t.id}" data-active="${t.is_active}">${t.is_active?'停用':'啟用'}</button>
+                    <button class="line-delete-btn text-[10px] font-bold px-2 py-1 rounded-lg text-red-300 hover:text-red-500 hover:bg-red-50 transition border border-transparent"
+                        data-tid="${t.id}" data-tname="${t.name}">🗑</button>
+                </div>
+            </div>`;
+        }).join('');
+    container.innerHTML = '<div class="space-y-2">'+targetHtml+'</div>';
+    // 綁定事件（用 event delegation，完全無 onclick 字串引號問題）
+    container.querySelectorAll('.line-notify-toggle').forEach(btn=>{
+        btn.addEventListener('click', async()=>{
+            await updateTarget(btn.dataset.tid, btn.dataset.field, btn.dataset.newval==='true');
+            loadLineNotify();
+        });
+    });
+    container.querySelectorAll('.line-active-toggle').forEach(btn=>{
+        btn.addEventListener('click', ()=>toggleTarget(btn.dataset.tid, btn.dataset.active==='true'));
+    });
+    container.querySelectorAll('.line-delete-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>deleteTarget(btn.dataset.tid, btn.dataset.tname));
+    });
+    
+    
+    
     // 嘗試非同步載入 LINE 頭像（個人帳號才支援，群組無法）
     data.forEach(async t=>{
         if(!t.user_id?.startsWith('U')) return; // 只處理個人帳號
