@@ -541,26 +541,24 @@ let allMenuItems=[],allCats=[],allCampaigns=[],ordersRef=[];
 
 // ── PARSE ──
 function parseItem(raw){
-  // qty：支援「品名(備註) x數字」和「品名 x數字」兩種格式
+  // 套餐份數：支援套餐名含括號（如「母親節套餐(4-6人份) x2 (子品項...)」）
   let qty=1;
-  const qM1_=raw.match(/^[^(]* x(\d+)\s*\(/);
-  const qM2_=raw.match(/\) x(\d+)$/);
-  const qM3_=raw.match(/^[^(]* x(\d+)$/);
+  const qM1_=raw.match(/ x(\d+) \(/);   // 「品名 x數字 (子品項」
+  const qM2_=raw.match(/\) x(\d+)$/);   // 「品名(備註) x數字」結尾
+  const qM3_=raw.match(/ x(\d+)$/);      // 「品名 x數字」結尾
   if(qM1_) qty=parseInt(qM1_[1]);
   else if(qM2_) qty=parseInt(qM2_[1]);
   else if(qM3_) qty=parseInt(qM3_[1]);
-  const top=raw.replace(/^([^(]+?) x\d+(\s*\()/,'$1$2').replace(/^([^(]+?) x\d+$/,'$1');
-  const pI=top.indexOf(' (');const inner=pI>-1?top.slice(pI+2,-1):null;
-  const isSet=!!(inner&&(inner.includes('、')||/x\d+/.test(inner)));
-  const nm=pI>-1?top.slice(0,pI):top;
-  const fM=nm.match(/\[([^\]]+)\]/);const flv=fM?fM[1]:'';
+  // 取 inner：去掉頂層份數，找最後 ' (' 的括號內容
+  let wo=raw;
+  if(qM1_) wo=raw.replace(/ x\d+ \(/, ' (');
+  else if(qM3_) wo=raw.replace(/ x\d+$/, '');
+  const pI=wo.lastIndexOf(' (');
+  const inner=pI>-1?wo.slice(pI+2,-1):null;
+  const isSet=!!(inner&&(inner.includes('、')||/ x\d+/.test(inner)));
+  const fM=raw.match(/\[([^\]]+)\]/);const flv=fM?fM[1]:'';
   const clean=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
   return{qty,flv,clean,inner,isSet,brand:isSet?clean.replace(/ \(.*$/,'').trim():null};
-}
-function parseSubs(innerRaw){
-  if(!innerRaw)return[];const map={};
-  innerRaw.split('、').filter(s=>s.trim()).forEach(r=>{const{clean,flv,qty}=parseItem(r.trim());if(!clean)return;const k=flv?clean+'｜'+flv:clean;if(!map[k])map[k]={name:clean,flv,qty:0};map[k].qty+=qty||1;});
-  return Object.values(map);
 }
 function twDate(iso){return new Date(new Date(iso).getTime()+8*3600000);}
 
@@ -946,14 +944,27 @@ function refreshEosCart(){
 function cartDel(idx){eosCart.splice(idx,1);refreshEosCart();}
 function cartQty(idx,delta){
   const item=eosCart[idx];if(!item)return;
-  const qM=item.name.match(/ x(\d+)/);const qty=qM?parseInt(qM[1]):1;
-  const newQty=Math.max(1,qty+delta);
-  // 取得基礎單價
-  const baseItem=allMenuItems.find(i=>i.name===item.name.split(' [')[0].split(' (')[0].replace(/ x\d+/g,'').trim());
-  const unitPrice=baseItem?Number(baseItem.price):Math.round(Number(item.price)/qty);
-  if(qM)item.name=item.name.replace(/ x\d+/,newQty>1?` x${newQty}`:'');
-  else if(newQty>1)item.name=item.name+` x${newQty}`;
-  item.price=unitPrice*newQty;
+  // 正確解析套餐份數（支援套餐名含括號）
+  const mA=item.name.match(/ x(\d+) \(/);
+  const mB=item.name.match(/\) x(\d+)$/);
+  const mC=item.name.match(/ x(\d+)$/);
+  const curQty=mA?parseInt(mA[1]):mB?parseInt(mB[1]):mC?parseInt(mC[1]):1;
+  const newQty=Math.max(1,curQty+delta);
+  if(newQty===curQty) return;
+  const basePrice=Math.round(Number(item.price)/curQty);
+  // 更新品名中的份數
+  if(mA){
+    item.name=item.name.replace(' x'+curQty+' (',(newQty>1?' x'+newQty:'')+' (');
+  } else if(mB){
+    item.name=item.name.replace(') x'+curQty, newQty>1?') x'+newQty:')');
+  } else if(mC){
+    item.name=item.name.replace(' x'+curQty, newQty>1?' x'+newQty:'');
+  } else if(newQty>1){
+    const lp=item.name.lastIndexOf(' (');
+    if(lp>-1) item.name=item.name.slice(0,lp)+' x'+newQty+item.name.slice(lp);
+    else item.name=item.name+' x'+newQty;
+  }
+  item.price=basePrice*newQty;
   refreshEosCart();
 }
 
@@ -1117,7 +1128,12 @@ function confirmPop(){
   });
   const gn=gnParts.join('、');
   let xQty='';
-  if(popEditIdx>-1){const qM=eosCart[popEditIdx].name.match(/ x(\d+)/);if(qM)xQty=` x${qM[1]}`;}
+  if(popEditIdx>-1){
+    const rn=eosCart[popEditIdx].name;
+    const mA_=rn.match(/ x(\d+) \(/), mB_=rn.match(/\) x(\d+)$/), mC_=rn.match(/ x(\d+)$/);
+    const mq_=mA_?mA_[1]:mB_?mB_[1]:mC_?mC_[1]:null;
+    if(mq_&&parseInt(mq_)>1) xQty=' x'+mq_;
+  }
   // 套餐單品項：加'、'結尾確保 isSet 識別
   const gnFinalM=popItem.is_set_menu&&gn&&!gn.includes('、')?gn+'、':gn;
   const finalName=popItem.name+xQty+(fn?' ['+fn+']':'')+(gnFinalM?' ('+gnFinalM+')':'');
