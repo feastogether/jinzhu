@@ -753,38 +753,36 @@ function showDateCard(){
     document.getElementById('mode-card').style.display='none';
     document.getElementById('date-card').style.display='block';
     const inner=document.getElementById('date-card-inner');
-    // 計算可選日期（今天起 30 天）
     const days=[];const today=new Date();
     for(let i=0;i<30;i++){const d=new Date(today);d.setDate(today.getDate()+i);days.push(d);}
-    const fmt=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const fmtDisp=(d)=>{const wd=['日','一','二','三','四','五','六'][d.getDay()];return`${d.getMonth()+1}/${d.getDate()}（週${wd}）`;}
+    // 日期格式化（純字串，不用 template literal）
+    function fmtVal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+    function fmtLabel(d){var wd=['日','一','二','三','四','五','六'][d.getDay()];return (d.getMonth()+1)+'/'+(d.getDate())+'（週'+wd+'）';}
+    var optHtml='<option value="">'+t('pickDate')+'</option>'+days.map(function(d){return'<option value="'+fmtVal(d)+'">'+fmtLabel(d)+'</option>';}).join('');
+    var selStyle='width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-weight:700;color:var(--pine);background:white;outline:none;font-family:Noto Sans TC,sans-serif;-webkit-appearance:none;appearance:none;cursor:pointer';
     if(orderMode==='dine-in'){
-        inner.innerHTML=`
-        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:var(--pine);margin-bottom:6px">🍽 預約日期</h3>
-        <p style="font-size:12px;color:var(--stone);margin-bottom:16px">請選擇您的用餐日期</p>
-        <select id="booking-date-sel" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-weight:700;color:var(--pine);background:white;outline:none;font-family:'Noto Sans TC',sans-serif;appearance:none;cursor:pointer">
-            <option value="">請選擇日期</option>
-            ${days.map(d=>'<option value="'+fmt(d)+'">'+fmtDisp(d)+'</option>').join('')}
-        </select>`;
+        inner.innerHTML=
+            '<h3 style="font-family:Noto Serif TC,serif;font-size:1.1rem;font-weight:900;color:var(--pine);margin-bottom:6px">🍽 '+t('dineInDate')+'</h3>'
+            +'<p style="font-size:12px;color:var(--stone);margin-bottom:16px">'+t('selectDateHint')+'</p>'
+            +'<select id="booking-date-sel" style="'+selStyle+'">'
+            +optHtml+'</select>';
     } else {
-        // 外帶：日期 + 時間
-        const timeSlots=takeoutSlots.length>0?takeoutSlots:['11:00','11:30','12:00','12:30','13:00','13:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00'];
-        inner.innerHTML=`
-        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:#d97706;margin-bottom:6px">🥡 取餐時間</h3>
-        <p style="font-size:12px;color:var(--stone);margin-bottom:16px">請選擇您的取餐日期與時間</p>
-        <div style="margin-bottom:14px">
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em">取餐日期</label>
-            <select id="pickup-date-sel" style="width:100%;padding:12px 14px;border:2px solid #f59e0b;border-radius:12px;font-size:14px;font-weight:700;color:var(--pine);background:white;outline:none;font-family:'Noto Sans TC',sans-serif;appearance:none;cursor:pointer">
-                <option value="">請選擇日期</option>
-                ${days.map(d=>'<option value="'+fmt(d)+'">'+fmtDisp(d)+'</option>').join('')}
-            </select>
-        </div>
-        <div>
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em">取餐時間</label>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-                ${timeSlots.map(slot=>'<button onclick="selectTimeSlot(this,\''+slot+'\')" data-time="'+slot+'" style="padding:9px 4px;border-radius:10px;border:1.5px solid var(--border);background:#f8fafc;font-size:13px;font-weight:700;cursor:pointer;color:var(--stone);transition:all 0.15s;font-family:\'Noto Sans TC\',sans-serif">'+slot+'</button>').join('')}
-            </div>
-        </div>`;
+        var selStyle2=selStyle.replace('var(--border)','#f59e0b');
+        var timeSlots=takeoutSlots.length>0?takeoutSlots:['11:00','11:30','12:00','12:30','13:00','13:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00'];
+        var btnHtml=timeSlots.map(function(slot){
+            return '<button onclick="selectTimeSlot(this,''+slot+'')" data-time="'+slot+'" style="padding:9px 4px;border-radius:10px;border:1.5px solid var(--border);background:#f8fafc;font-size:13px;font-weight:700;cursor:pointer;color:var(--stone);transition:all 0.15s">'+slot+'</button>';
+        }).join('');
+        inner.innerHTML=
+            '<h3 style="font-family:Noto Serif TC,serif;font-size:1.1rem;font-weight:900;color:#d97706;margin-bottom:6px">🥡 '+t('takeoutTime')+'</h3>'
+            +'<p style="font-size:12px;color:var(--stone);margin-bottom:16px">'+t('selectPickupHint')+'</p>'
+            +'<div style="margin-bottom:14px">'
+            +'<label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px">'+t('pickupDate')+'</label>'
+            +'<select id="pickup-date-sel" style="'+selStyle2+'">'+optHtml+'</select>'
+            +'</div>'
+            +'<div>'
+            +'<label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px">'+t('pickupTimeLabel')+'</label>'
+            +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+btnHtml+'</div>'
+            +'</div>';
     }
 }
 function selectTimeSlot(btn, time){
@@ -1376,14 +1374,20 @@ async function doFinalSubmit(){
     }
     // 姓名加外帶標記
     const displayName=orderMode==='takeout'?guest.name+'（外帶）':guest.name;
-    const{error}=await _s.from('orders').insert([{
+    const orderPayload={
         customer_name:displayName,phone:guest.phone,
         order_content:cart.map(i=>({name:i.nameCN||i.name,price:i.price})),
         total_price:cart.reduce((s,i)=>s+i.price,0),
         note:document.getElementById('order-note').value,
-        is_takeout:orderMode==='takeout',
         booking_date:finalBookingDate
-    }]);
+    };
+    // 嘗試帶 is_takeout，若欄位不存在則 fallback
+    let result=await _s.from('orders').insert([{...orderPayload,is_takeout:orderMode==='takeout'}]);
+    if(result.error&&result.error.message&&result.error.message.includes('is_takeout')){
+        // 欄位不存在，用不帶 is_takeout 的方式送出
+        result=await _s.from('orders').insert([orderPayload]);
+    }
+    const{error}=result;
     if(!error){
         document.getElementById('upsell-modal').classList.remove('visible');
         closePreview();
@@ -1397,7 +1401,8 @@ async function doFinalSubmit(){
             setTimeout(()=>{ try{liff.closeWindow();}catch(e){} },4000);
         }
     }else{
-        showToast('送出失敗，請再試一次');isSubmitting=false;
+        console.error('Order insert error:',error);
+        showToast('送出失敗：'+(error?.message||'請再試一次'));isSubmitting=false;
         if(btn){btn.disabled=false;btn.textContent=t('submitBtn');}
     }
 }
