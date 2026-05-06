@@ -317,9 +317,36 @@
 
 <main>
 <section id="step-1">
-    <div class="entry-card">
-        <h2 class="entry-title" data-i18n="s1Title">線上預點餐</h2>
-        <p class="entry-sub" data-i18n="s1Sub">文心店 · Pre-order Service</p>
+    <!-- Step 1a：選擇內用/外帶 -->
+    <div class="entry-card" id="mode-card">
+        <h2 class="entry-title">線上預點餐</h2>
+        <p class="entry-sub">文心店 · Pre-order Service</p>
+        <p style="font-size:13px;font-weight:700;color:var(--stone);margin-bottom:18px;text-align:center">請選擇用餐方式</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px">
+            <button id="mode-dine-btn" onclick="selectOrderMode('dine-in')" style="padding:22px 10px;border-radius:18px;border:2.5px solid var(--pine);background:rgba(0,77,64,0.06);cursor:pointer;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif;box-shadow:0 4px 16px rgba(0,77,64,0.12)">
+                <div style="font-size:2.2rem;margin-bottom:8px">🍽</div>
+                <div style="font-size:15px;font-weight:900;color:var(--pine)">內用</div>
+                <div style="font-size:11px;color:var(--stone);margin-top:3px">Dine-in</div>
+            </button>
+            <button id="mode-takeout-btn" onclick="selectOrderMode('takeout')" style="padding:22px 10px;border-radius:18px;border:2.5px solid var(--border);background:#f8fafc;cursor:pointer;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif">
+                <div style="font-size:2.2rem;margin-bottom:8px">🥡</div>
+                <div style="font-size:15px;font-weight:900;color:var(--stone)">外帶</div>
+                <div style="font-size:11px;color:var(--stone);margin-top:3px">Takeout</div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 1b：選擇日期（依模式不同） -->
+    <div class="entry-card" id="date-card" style="display:none">
+        <button onclick="backToModeSelect()" style="background:none;border:none;font-size:13px;color:var(--stone);cursor:pointer;margin-bottom:12px;font-family:'Noto Sans TC',sans-serif;padding:0">← 返回</button>
+        <div id="date-card-inner"></div>
+        <button onclick="confirmDateProceed()" style="width:100%;padding:14px;background:var(--pine);color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;margin-top:18px;font-family:'Noto Sans TC',sans-serif">繼續 →</button>
+    </div>
+
+    <!-- Step 1c：填寫姓名電話 -->
+    <div class="entry-card" id="info-card" style="display:none">
+        <button onclick="backToDateSelect()" style="background:none;border:none;font-size:13px;color:var(--stone);cursor:pointer;margin-bottom:12px;font-family:'Noto Sans TC',sans-serif;padding:0">← 返回</button>
+        <div id="order-mode-badge" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:16px"></div>
         <div class="field-wrap">
             <label class="field-label" data-i18n="nameLabel">姓名 Name</label>
             <input type="text" id="custName" class="field-input" data-i18n-ph="namePh">
@@ -328,7 +355,7 @@
             <label class="field-label" data-i18n="phoneLabel">電話 Phone</label>
             <input type="tel" id="custPhone" class="field-input" data-i18n-ph="phonePh">
         </div>
-        <button class="enter-btn" onclick="startOrder()" data-i18n="enterBtn">進入菜單</button>
+        <button class="enter-btn" onclick="startOrder()">進入菜單</button>
     </div>
 </section>
 
@@ -457,6 +484,9 @@ const SUPABASE_KEY='sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
 const _s=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let menuData=[],cart=[],guest={},tempItem=null,currentQty=1;
+let orderMode="dine-in"; // "dine-in" | "takeout"
+let bookingDate="", pickupDate="", pickupTime="";
+let takeoutSlots=[]; // 從後台取得的可選時段
 let allCats=[],curCatIndex=0;
 let curLang=localStorage.getItem('jinzhu_lang')||'zh';
 
@@ -662,6 +692,10 @@ function getLangCatName(cat){
 window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',window.scrollY>20));
 
 async function initLiff(){
+    if(typeof liff==='undefined'){
+        console.warn('LIFF SDK not loaded, skipping LIFF init');
+        return;
+    }
     try{
         await liff.init({liffId:'2009959283-MRTlwLY9'});
         // 在 LIFF 環境內才做特殊處理
@@ -699,7 +733,102 @@ function showToast(msg){
     setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity 0.4s';setTimeout(()=>el.remove(),400);},1800);
 }
 
-async function startOrder(){
+async // ── 內用/外帶流程 ──
+function selectOrderMode(mode){
+    orderMode=mode;
+    const dineBtn=document.getElementById('mode-dine-btn');
+    const tkBtn=document.getElementById('mode-takeout-btn');
+    // 高亮選中的按鈕
+    if(mode==='dine-in'){
+        dineBtn.style.borderColor='var(--pine)';dineBtn.style.background='rgba(0,77,64,0.08)';dineBtn.style.boxShadow='0 4px 16px rgba(0,77,64,0.18)';
+        tkBtn.style.borderColor='var(--border)';tkBtn.style.background='#f8fafc';tkBtn.style.boxShadow='none';
+    } else {
+        tkBtn.style.borderColor='#f59e0b';tkBtn.style.background='#fffbeb';tkBtn.style.boxShadow='0 4px 16px rgba(245,158,11,0.18)';
+        dineBtn.style.borderColor='var(--border)';dineBtn.style.background='#f8fafc';dineBtn.style.boxShadow='none';
+    }
+    // 短暫延遲後切到日期選擇
+    setTimeout(()=>showDateCard(), 300);
+}
+function showDateCard(){
+    document.getElementById('mode-card').style.display='none';
+    document.getElementById('date-card').style.display='block';
+    const inner=document.getElementById('date-card-inner');
+    // 計算可選日期（今天起 30 天）
+    const days=[];const today=new Date();
+    for(let i=0;i<30;i++){const d=new Date(today);d.setDate(today.getDate()+i);days.push(d);}
+    const fmt=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const fmtDisp=(d)=>{const wd=['日','一','二','三','四','五','六'][d.getDay()];return`${d.getMonth()+1}/${d.getDate()}（週${wd}）`;}
+    if(orderMode==='dine-in'){
+        inner.innerHTML=`
+        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:var(--pine);margin-bottom:6px">🍽 預約日期</h3>
+        <p style="font-size:12px;color:var(--stone);margin-bottom:16px">請選擇您的用餐日期</p>
+        <select id="booking-date-sel" style="width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:12px;font-size:14px;font-weight:700;color:var(--pine);background:white;outline:none;font-family:'Noto Sans TC',sans-serif;appearance:none;cursor:pointer">
+            <option value="">請選擇日期</option>
+            ${days.map(d=>'<option value="'+fmt(d)+'">'+fmtDisp(d)+'</option>').join('')}
+        </select>`;
+    } else {
+        // 外帶：日期 + 時間
+        const timeSlots=takeoutSlots.length>0?takeoutSlots:['11:00','11:30','12:00','12:30','13:00','13:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00'];
+        inner.innerHTML=`
+        <h3 style="font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:900;color:#d97706;margin-bottom:6px">🥡 取餐時間</h3>
+        <p style="font-size:12px;color:var(--stone);margin-bottom:16px">請選擇您的取餐日期與時間</p>
+        <div style="margin-bottom:14px">
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em">取餐日期</label>
+            <select id="pickup-date-sel" style="width:100%;padding:12px 14px;border:2px solid #f59e0b;border-radius:12px;font-size:14px;font-weight:700;color:var(--pine);background:white;outline:none;font-family:'Noto Sans TC',sans-serif;appearance:none;cursor:pointer">
+                <option value="">請選擇日期</option>
+                ${days.map(d=>'<option value="'+fmt(d)+'">'+fmtDisp(d)+'</option>').join('')}
+            </select>
+        </div>
+        <div>
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em">取餐時間</label>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+                ${timeSlots.map(slot=>'<button onclick="selectTimeSlot(this,\''+slot+'\')" data-time="'+slot+'" style="padding:9px 4px;border-radius:10px;border:1.5px solid var(--border);background:#f8fafc;font-size:13px;font-weight:700;cursor:pointer;color:var(--stone);transition:all 0.15s;font-family:\'Noto Sans TC\',sans-serif">'+slot+'</button>').join('')}
+            </div>
+        </div>`;
+    }
+}
+function selectTimeSlot(btn, time){
+    pickupTime=time;
+    document.querySelectorAll('#date-card-inner button[data-time]').forEach(b=>{
+        b.style.background='#f8fafc';b.style.borderColor='var(--border)';b.style.color='var(--stone)';
+    });
+    btn.style.background='#f59e0b';btn.style.borderColor='#d97706';btn.style.color='white';
+}
+function confirmDateProceed(){
+    if(orderMode==='dine-in'){
+        const sel=document.getElementById('booking-date-sel');
+        if(!sel?.value){showToast('請選擇預約日期');return;}
+        bookingDate=sel.value;
+    } else {
+        const dSel=document.getElementById('pickup-date-sel');
+        if(!dSel?.value){showToast('請選擇取餐日期');return;}
+        if(!pickupTime){showToast('請選擇取餐時間');return;}
+        pickupDate=dSel.value;
+    }
+    document.getElementById('date-card').style.display='none';
+    document.getElementById('info-card').style.display='block';
+    // 顯示已選模式
+    const badge=document.getElementById('order-mode-badge');
+    if(badge){
+        if(orderMode==='dine-in'){
+            badge.style.background='rgba(0,77,64,0.08)';badge.style.color='var(--pine)';badge.style.border='1.5px solid rgba(0,77,64,0.2)';
+            badge.textContent='🍽 內用 · '+bookingDate.slice(5).replace('-','/');
+        } else {
+            badge.style.background='#fffbeb';badge.style.color='#d97706';badge.style.border='1.5px solid #f59e0b';
+            badge.textContent='🥡 外帶 · '+pickupDate.slice(5).replace('-','/')+' '+pickupTime;
+        }
+    }
+}
+function backToModeSelect(){
+    document.getElementById('date-card').style.display='none';
+    document.getElementById('mode-card').style.display='block';
+}
+function backToDateSelect(){
+    document.getElementById('info-card').style.display='none';
+    document.getElementById('date-card').style.display='block';
+}
+
+function startOrder(){
     const name=document.getElementById('custName').value.trim(),phone=document.getElementById('custPhone').value.trim();
     if(!name||!phone){showToast(t('toastFill'));return;}
     guest={name,phone};
@@ -708,6 +837,13 @@ async function startOrder(){
     document.getElementById('step-2').classList.add('visible');
     document.getElementById('cart-bar').classList.add('visible');
     loadContent();loadAnnouncement();loadUpsellSettings();
+}
+
+async function loadTakeoutSlots(){
+    try{
+        const{data}=await _s.from('store_settings').select('takeout_slots').eq('id',1).single();
+        if(data?.takeout_slots&&data.takeout_slots.length>0) takeoutSlots=data.takeout_slots;
+    }catch(e){}
 }
 
 async function loadContent(){
@@ -1231,11 +1367,22 @@ async function doFinalSubmit(){
     if(isSubmitting)return;
     isSubmitting=true;
     const btn=document.querySelector('.submit-btn');if(btn){btn.disabled=true;btn.textContent='...';}
+    // 組合訂位/取餐時間
+    let finalBookingDate=null;
+    if(orderMode==='dine-in'&&bookingDate){
+        finalBookingDate=bookingDate+'T12:00:00+08:00'; // 內用：日期選了但無時間，預設中午
+    } else if(orderMode==='takeout'&&pickupDate&&pickupTime){
+        finalBookingDate=pickupDate+'T'+pickupTime+':00+08:00';
+    }
+    // 姓名加外帶標記
+    const displayName=orderMode==='takeout'?guest.name+'（外帶）':guest.name;
     const{error}=await _s.from('orders').insert([{
-        customer_name:guest.name,phone:guest.phone,
+        customer_name:displayName,phone:guest.phone,
         order_content:cart.map(i=>({name:i.nameCN||i.name,price:i.price})),
         total_price:cart.reduce((s,i)=>s+i.price,0),
-        note:document.getElementById('order-note').value
+        note:document.getElementById('order-note').value,
+        is_takeout:orderMode==='takeout',
+        booking_date:finalBookingDate
     }]);
     if(!error){
         document.getElementById('upsell-modal').classList.remove('visible');
