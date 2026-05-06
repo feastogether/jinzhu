@@ -560,6 +560,18 @@ function parseItem(raw){
   const clean=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
   return{qty,flv,clean,inner,isSet,brand:isSet?clean.replace(/ \(.*$/,'').trim():null};
 }
+function parseSubs(innerRaw){
+  if(!innerRaw)return[];
+  const map={};
+  innerRaw.split('、').filter(s=>s.trim()).forEach(r=>{
+    const{clean,flv,qty}=parseItem(r.trim());
+    if(!clean)return;
+    const k=flv?clean+'｜'+flv:clean;
+    if(!map[k])map[k]={name:clean,flv,qty:0};
+    map[k].qty+=qty||1;
+  });
+  return Object.values(map);
+}
 function twDate(iso){return new Date(new Date(iso).getTime()+8*3600000);}
 
 // ── TOAST ──
