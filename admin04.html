@@ -1574,10 +1574,6 @@ async function loadOrders() {
             curGroup.orders.push(o);
         });
         return groups.map(grp=>{
-            const label=grp.dk==='no-date'?'⚠ 尚未安排訂位日期':(()=>{const p=grp.dk.split('-');return parseInt(p[1])+'月'+parseInt(p[2])+'日';})();
-            const color=grp.dk==='no-date'?'#ef4444':'var(--pine)';
-            const borderColor=grp.dk==='no-date'?'#fca5a5':'rgba(0,77,64,0.2)';
-            const bg=grp.dk==='no-date'?'#fff5f5':'#f0fdf4';
             const groupHtml=grp.orders.map(o=>{
         let bTime='';
         if(o.booking_date){
@@ -1750,14 +1746,15 @@ async function loadOrders() {
             </div>
         </div>`;
         }).join('');
-            return '<div style="margin-bottom:16px;border:2px solid '+borderColor+';border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05)">'
-                +'<div style="background:'+bg+';padding:9px 16px;border-bottom:1.5px solid '+borderColor+';display:flex;align-items:center;gap:8px">'
-                +'<span style="font-size:12px;font-weight:900;color:'+color+'">'+label+'</span>'
-                +'<span style="font-size:11px;font-weight:700;color:var(--stone)">·</span>'
-                +'<span style="font-size:11px;font-weight:700;color:var(--stone)">'+grp.orders.length+' 筆</span>'
-                +'</div>'
-                +'<div style="padding:10px 10px 4px">'+groupHtml+'</div>'
+            // 簡潔分隔線風格
+            const isDanger=grp.dk==='no-date';
+            const label=isDanger?'⚠ 未安排訂位日期':(()=>{const p=grp.dk.split('-');return parseInt(p[1])+'/'+parseInt(p[2]);})();
+            const sepHtml='<div style="display:flex;align-items:center;gap:10px;margin:18px 0 8px;padding:0 2px">'
+                +'<div style="flex:1;height:1px;background:'+(isDanger?'#fca5a5':'var(--border)')+'"></div>'
+                +'<span style="font-size:11px;font-weight:900;color:'+(isDanger?'#ef4444':'var(--stone)')+';flex-shrink:0;letter-spacing:0.08em;padding:0 2px">'+label+'</span>'
+                +'<div style="flex:1;height:1px;background:'+(isDanger?'#fca5a5':'var(--border)')+'"></div>'
                 +'</div>';
+            return sepHtml+groupHtml;
         }).join('');
     })();
 }
