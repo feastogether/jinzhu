@@ -242,8 +242,13 @@
         .img-contain { object-fit: contain; background: white; }
         .input-mini { font-size: 11px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); width: 100%; outline: none; background: white; }
         .order-card-completed { opacity: 0.5; filter: grayscale(0.8); }
-        .order-card.is-takeout { border-color: #f59e0b; }
+        /* 訂單狀態顏色：未安排紅/外帶黃/內用綠 */
+        .order-card.no-booking { border-left-color: #ef4444 !important; }
+        .order-card.no-booking .order-header { background: #fff5f5; }
+        .order-card.is-takeout { border-left-color: #f59e0b !important; }
         .order-card.is-takeout .order-header { background: #fffbeb; }
+        .order-card.is-dine-in { border-left-color: #10b981 !important; }
+        .order-card.is-dine-in .order-header { background: #f0fdf4; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -1389,7 +1394,8 @@ function parseItemDisplay(rawName){
     // 實際判斷：rawName 有 ' (' 結構且 inner 有 '、' → 視為套餐
     // 但要排除：括號裡只有口味選項（通常是單一概念詞，不含 x數量）
     // → 保持原有邏輯，但在備料統計時特殊處理
-    const isSet=!!(inner&&inner.includes('、'));
+    // isSet：有'、'，或有 ' x數字' 格式的子品項（單一品項套餐）
+    const isSet=!!(inner&&(inner.includes('、')||/x\d+/.test(inner)));
     // flv 只從括號前的品名取（套餐本身口味，通常為空）
     const namePart=pI>-1?topQtyRemoved.slice(0,pI):topQtyRemoved;
     const flvM=namePart.match(/\[([^\]]+)\]/);
@@ -1403,7 +1409,7 @@ function parseItemDisplay(rawName){
 // inner 必須來自原始名稱（未移除口味的版本）
 function parseSetSubs(innerRaw){
     if(!innerRaw) return[];
-    const items=innerRaw.split('、');
+    const items=innerRaw.split('、').filter(s=>s.trim());
     const map={};
     items.forEach(raw=>{
         const{clean,flv,qty}=parseItemDisplay(raw.trim());
@@ -1556,12 +1562,16 @@ async function loadOrders() {
     document.getElementById('order-list').innerHTML=(data||[]).length===0
         ?`<div class="col-span-2 empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">找不到符合條件的訂單</div><div class="empty-state-sub">請調整篩選條件或重置後再試</div></div>`
         :(()=>{
-        // 加日期分隔線（按訂位日期或下單日期分組）
-        const sortVal=document.getElementById('filter-sort')?.value||'created_desc';
-        const dateType=document.getElementById('filter-date-type')?.value||'created';
-        const useBooking=sortVal.startsWith('booking')&&dateType==='booking';
+        // 未安排訂單排最上面，其次依原排序
+        const sorted=[...(data||[])].sort((a,b)=>{
+            const aNo=!a.booking_date, bNo=!b.booking_date;
+            if(aNo&&!bNo) return -1;
+            if(!aNo&&bNo) return 1;
+            return 0;
+        });
+        // 分隔線：只用訂位日期
         let lastDateKey='';
-        return (data||[]).map(o=>{
+        return sorted.map(o=>{
         let bTime='';
         if(o.booking_date){
             // booking_date 是 timestamptz，Supabase 回傳 UTC
@@ -1571,18 +1581,19 @@ async function loadOrders() {
             bTime = `${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}T${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`;
         }
         const synced=o.status==='synced';
-        // 計算日期分隔線
+        // 分隔線：只用訂位日期區分
         let sep='';
-        if(useBooking&&o.booking_date){
-            const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);
-            const dk=`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;
-            if(dk!==lastDateKey){lastDateKey=dk;sep=`<div style="display:flex;align-items:center;gap:10px;margin:10px 0 6px;col-span:2"><div style="flex:1;height:1.5px;background:linear-gradient(90deg,transparent,var(--border))"></div><span style="font-size:10px;font-weight:900;color:var(--stone);flex-shrink:0;padding:3px 10px;background:white;border:1px solid var(--border);border-radius:999px">${parseInt(dk.slice(5,7))}/${parseInt(dk.slice(8))} 訂位</span><div style="flex:1;height:1.5px;background:linear-gradient(90deg,var(--border),transparent)"></div></div>`;}
-        } else if(!useBooking){
-            const dk=new Date(o.created_at).toLocaleDateString('zh-TW',{month:'2-digit',day:'2-digit'});
-            if(dk!==lastDateKey){lastDateKey=dk;sep=`<div style="display:flex;align-items:center;gap:10px;margin:10px 0 6px"><div style="flex:1;height:1.5px;background:linear-gradient(90deg,transparent,var(--border))"></div><span style="font-size:10px;font-weight:900;color:var(--stone);flex-shrink:0;padding:3px 10px;background:white;border:1px solid var(--border);border-radius:999px">${dk} 下單</span><div style="flex:1;height:1.5px;background:linear-gradient(90deg,var(--border),transparent)"></div></div>`;}
+        const dk=o.booking_date
+            ? (()=>{const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);return `${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;})()
+            : 'no-date';
+        if(dk!==lastDateKey){
+            lastDateKey=dk;
+            const label=dk==='no-date'?'⚠ 尚未安排訂位日期':`📅 ${parseInt(dk.slice(5,7))} 月 ${parseInt(dk.slice(8))} 日`;
+            const color=dk==='no-date'?'#ef4444':'var(--pine)';
+            sep=`<div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:10px;font-weight:900;color:${color};flex-shrink:0;padding:3px 12px;background:white;border:1px solid ${color==='#ef4444'?'#fca5a5':'rgba(0,77,64,0.2)'};border-radius:999px">${label}</span><div style="flex:1;height:1px;background:var(--border)"></div></div>`;
         }
         return sep + `
-        <div id="order-card-${o.id}" class="order-card ${synced?'completed':''} ${o.is_takeout?'is-takeout':''} collapsed ${selectedOrderIds.has(o.id)?'ring-2 ring-red-300':''}">
+        <div id="order-card-${o.id}" class="order-card ${synced?'completed':''} ${!o.booking_date?'no-booking':o.is_takeout?'is-takeout':'is-dine-in'} collapsed ${selectedOrderIds.has(o.id)?'ring-2 ring-red-300':''}">
             <div class="order-header" onclick="toggleOrderCard('${o.id}')">
                 <input type="checkbox" ${selectedOrderIds.has(o.id)?'checked':''} onclick="event.stopPropagation()"
                     onchange="toggleOrderSelect('${o.id}',this.checked)"
@@ -1763,6 +1774,7 @@ async function updateOrderData(id,field,val,inputEl){
     if(inputEl){inputEl.classList.add('field-saving');}
     const obj={};
     if(field==='booking_date'&&val)obj[field]=new Date(val).toISOString();
+    else if(typeof val==='boolean')obj[field]=val;
     else obj[field]=val||null;
     const{error}=await _s.from('orders').update(obj).eq('id',id);
     if(inputEl){
@@ -1931,8 +1943,59 @@ async function openEditOrder(id){
     refreshEditCart();
 }
 function refreshEditCart(){
-    document.getElementById('edit-cart-list').innerHTML=editCart.map((i,idx)=>`<div class="flex flex-col bg-slate-50 p-3 rounded-xl border mb-2 relative"><div onclick="openEditPop(null,${idx})" class="cursor-pointer pr-8"><span class="font-bold text-xs underline" style="color:var(--pine)">${i.name}</span><div class="text-[9px] text-slate-400 mt-1">$${i.price}</div></div><button onclick="editCart.splice(${idx},1);refreshEditCart();" class="absolute top-2 right-2 text-red-300 font-bold px-2">✕</button></div>`).join('');
-    document.getElementById('edit-total-price').textContent=`$${editCart.reduce((s,i)=>s+Number(i.price),0)}`;
+    document.getElementById('edit-cart-list').innerHTML=editCart.map((i,idx)=>{
+        // 解析套餐份數（頂層 x數字）
+        const qM=i.name.match(/^[^(]* x(\d+)\s*\(/) || i.name.match(/^[^(]* x(\d+)$/);
+        const curQty=qM?parseInt(qM[1]):1;
+        // 顯示品名（去掉括號內容讓清單簡潔）
+        const displayName=i.name.replace(/ x\d+\s*\(.*\)$/, '').replace(/ x\d+$/, '').replace(/\s*\(.*\)$/, '');
+        // 解析子品項（括號內）
+        const pI=i.name.lastIndexOf(' (');
+        const subStr=pI>-1?i.name.slice(pI+2,-1):'';
+        return '<div class="flex flex-col bg-slate-50 p-3 rounded-xl border mb-2 relative">'
+            +'<div onclick="openEditPop(null,'+idx+')" class="cursor-pointer pr-8 mb-2">'
+            +'<span class="font-bold text-xs" style="color:var(--pine)">'+displayName+'</span>'
+            +(subStr?'<div class="text-[9px] text-slate-400 mt-0.5 line-clamp-1">'+subStr+'</div>':'')
+            +'<div class="text-[9px] text-amber-600 font-bold mt-0.5">$'+i.price+'</div>'
+            +'</div>'
+            +'<div class="flex items-center gap-2">'
+            +'<span class="text-[9px] text-slate-400 font-bold">數量</span>'
+            +'<button onclick="event.stopPropagation();adjustCartQty('+idx+',-1)" style="width:20px;height:20px;border-radius:6px;border:1px solid var(--border);background:white;font-size:12px;font-weight:900;cursor:pointer;color:var(--stone)">−</button>'
+            +'<span style="font-size:13px;font-weight:900;color:var(--pine);min-width:20px;text-align:center">'+curQty+'</span>'
+            +'<button onclick="event.stopPropagation();adjustCartQty('+idx+',1)" style="width:20px;height:20px;border-radius:6px;background:var(--pine);border:none;font-size:12px;font-weight:700;cursor:pointer;color:white">＋</button>'
+            +'<span class="text-[9px] text-slate-300 ml-1">份</span>'
+            +'</div>'
+            +'<button onclick="editCart.splice('+idx+',1);refreshEditCart();" class="absolute top-2 right-2 text-red-300 hover:text-red-500 font-bold px-1.5 py-0.5" style="font-size:14px">✕</button>'
+            +'</div>';
+    }).join('');
+    document.getElementById('edit-total-price').textContent='$'+editCart.reduce((s,i)=>s+Number(i.price),0);
+}
+
+// 調整購物車品項的套餐份數
+function adjustCartQty(idx, delta){
+    const item=editCart[idx]; if(!item) return;
+    // 解析現有份數
+    const qM=item.name.match(/^([^(]+ )x(\d+)(\s*\(.*\))?$/);
+    const hasSet=qM&&qM[3]; // 有括號 = 套餐
+    const plainQM=item.name.match(/ x(\d+)$/);
+    let curQty=1;
+    if(qM) curQty=parseInt(qM[2]);
+    else if(plainQM) curQty=parseInt(plainQM[1]);
+    const newQty=Math.max(1,curQty+delta);
+    // 取基礎單價
+    const basePrice=Math.round(Number(item.price)/curQty);
+    // 更新名稱中的份數
+    if(qM){
+        item.name=qM[1]+(newQty>1?'x'+newQty+' ':'')+( qM[3]||'').trim();
+        if(newQty===1) item.name=item.name.replace(/ x1\s*/,' ').trim();
+        else item.name=qM[1].trimEnd()+' x'+newQty+(qM[3]?qM[3]:'');
+    } else if(plainQM){
+        item.name=item.name.replace(/ x\d+$/,'')+( newQty>1?' x'+newQty:'');
+    } else {
+        if(newQty>1) item.name=item.name+' x'+newQty;
+    }
+    item.price=basePrice*newQty;
+    refreshEditCart();
 }
 function openEditPop(itemId,index=-1){
     reEditIndex=index;let prevNames=[],prevFlvs=[];
@@ -1945,7 +2008,8 @@ function openEditPop(itemId,index=-1){
         const pStart=raw.lastIndexOf(' (');
         if(pStart>-1){
             const inner=raw.slice(pStart+2,-1);
-            prevNames=inner.split('、').map(n=>n.split(' [')[0].replace(/ x\d+/g,'').trim());
+            // 保留 x數量，供 groupPrevQty 使用（不刪除）
+            prevNames=inner.split('、').map(n=>n.split(' [')[0].trim());
         }
         // 取口味（方括號內容）
         const fM=raw.match(/\[(.*?)\]/);
@@ -2091,7 +2155,10 @@ function confirmEditPop(){
     const basePrice=Number(curEditItem.price);
     const adjTotal=Object.values(curEditPopSels.groups).flat().reduce((s,x)=>s+(x.priceAdj||0)*(x.qty||1),0);
     const totalPrice=(basePrice+adjTotal)*qty_;
-    const finalName=curEditItem.name+xQty+(fn?' ['+fn+']':'')+(gn?' ('+gn+')':'');
+    // 套餐品項：gn 如果只有一項（無'、'）也確保格式正確讓 isSet=true
+    let gnFinal=gn;
+    if(curEditItem.is_set_menu&&gn&&!gn.includes('、')) gnFinal=gn+'、';
+    const finalName=curEditItem.name+xQty+(fn?' ['+fn+']':'')+(gnFinal?' ('+gnFinal+')':'');
     if(reEditIndex>-1)editCart[reEditIndex]={name:finalName,price:totalPrice};
     else editCart.push({name:finalName,price:basePrice+adjTotal});
     closeEditPop();refreshEditCart();
