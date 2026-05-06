@@ -934,11 +934,21 @@ function refreshEosCart(){
   if(!eosCart.length){listEl.innerHTML='';emptyEl.style.display='block';return;}
   emptyEl.style.display='none';
   listEl.innerHTML=eosCart.map((item,idx)=>{
-    // 解析qty
-    const qM=item.name.match(/ x(\d+)/);const qty=qM?parseInt(qM[1]):1;
+    // 正確解析套餐份數（支援套餐名含括號）
+    const mA=item.name.match(/ x(\d+) \(/);
+    const mB=item.name.match(/\) x(\d+)$/);
+    const mC=item.name.match(/ x(\d+)$/);
+    const qty=mA?parseInt(mA[1]):mB?parseInt(mB[1]):mC?parseInt(mC[1]):1;
+    // 顯示簡化品名
+    let wo=item.name;
+    if(mA) wo=item.name.replace(/ x\d+ \(/, ' (');
+    else if(mC) wo=item.name.replace(/ x\d+$/, '');
+    const pI2=wo.lastIndexOf(' (');
+    const dispName=pI2>-1?wo.slice(0,pI2):wo;
+    const subStr=pI2>-1?wo.slice(pI2+2,-1):'';
     return`<div class="cart-item">
       <div style="flex:1;min-width:0">
-        <div class="cart-item-name" onclick="openPop(null,${idx})">${item.name}</div>
+        <div class="cart-item-name" onclick="openPop(null,${idx})">${dispName}${subStr?'<div style="font-size:10px;color:var(--stone);margin-top:2px;line-height:1.4">'+subStr+'</div>':''}</div>
         <div class="qty-ctrl">
           <button class="qty-btn" onclick="cartQty(${idx},-1)">−</button>
           <span class="qty-val">${qty}</span>
@@ -1075,7 +1085,7 @@ function openPop(itemId,editIdx=-1){
             +'<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px">'
             +'<button data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-pa="'+pa__+'" data-sl="'+limit+'" data-iid="'+c.menu_items.id+'"'
             +' onclick="event.stopPropagation();mobPopMultiAdj(this,-1)" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--gold);background:white;font-size:13px;font-weight:900;cursor:pointer;color:var(--gold);display:flex;align-items:center;justify-content:center">&#8722;</button>'
-            +'<span id="mob-epop-qty-'+g.id+'-'+c.menu_items.id+'" style="font-size:14px;font-weight:900;color:var(--pine);min-width:18px;text-align:center">'+curQ+'</span>'
+            +'<span id="mob-epop-qty-'+g.id+'-'+c.menu_items.id+'" style="font-size:14px;font-weight:900;color:white;min-width:18px;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,0.3)">'+curQ+'</span>'
             +'<button data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-pa="'+pa__+'" data-sl="'+limit+'" data-iid="'+c.menu_items.id+'"'
             +' onclick="event.stopPropagation();mobPopMultiAdj(this,+1)" style="width:22px;height:22px;border-radius:50%;background:var(--pine);border:none;font-size:13px;font-weight:900;cursor:pointer;color:white;display:flex;align-items:center;justify-content:center">&#43;</button>'
             +'</div></div>';
@@ -1197,7 +1207,8 @@ async function saveEditOrder(){
     window.Telegram?.WebApp?.sendData(JSON.stringify({action:'order_updated',order_id:eosOrder.id}));
   } else {
     window.tgHaptic?.error();
-    toast('儲存失敗','error');
+    console.error('saveEditOrder error:', error);
+    toast('儲存失敗：'+(error?.message||error?.code||'未知錯誤'),'error',4000);
   }
 }
 
