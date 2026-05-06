@@ -1589,16 +1589,6 @@ async function loadOrders() {
         }
         const synced=o.status==='synced';
         // 分隔線：只用訂位日期區分
-        let sep='';
-        const dk=o.booking_date
-            ? (()=>{const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);return `${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;})()
-            : 'no-date';
-        if(dk!==lastDateKey){
-            lastDateKey=dk;
-            const label=dk==='no-date'?'⚠ 尚未安排訂位日期':`📅 ${parseInt(dk.slice(5,7))} 月 ${parseInt(dk.slice(8))} 日`;
-            const color=dk==='no-date'?'#ef4444':'var(--pine)';
-            sep=`<div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:10px;font-weight:900;color:${color};flex-shrink:0;padding:3px 12px;background:white;border:1px solid ${color==='#ef4444'?'#fca5a5':'rgba(0,77,64,0.2)'};border-radius:999px">${label}</span><div style="flex:1;height:1px;background:var(--border)"></div></div>`;
-        }
         return `
         <div id="order-card-${o.id}" class="order-card ${synced?'completed':''} ${!o.booking_date?'no-booking':o.is_takeout?'is-takeout':'is-dine-in'} collapsed ${selectedOrderIds.has(o.id)?'ring-2 ring-red-300':''}">
             <div class="order-header" onclick="toggleOrderCard('${o.id}')">
