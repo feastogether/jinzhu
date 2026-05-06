@@ -1374,35 +1374,29 @@
 
 // ── 品項名稱解析 helper（保留口味標籤） ──
 function parseItemDisplay(rawName){
-    // qty：只取頂層品名數量（括號前），不誤抓子品項的 x數量
-    // qty：支援「品名(備註) x數字」和「品名 x數字」兩種格式
+    // 套餐份數：找「 x數字 (」或「) x數字$」或「 x數字$」
+    // 套餐名本身可能含括號，如「母親節套餐(4-6人份) x2 (子品項...)」
     let qty=1;
-    const qM1=rawName.match(/^[^(]* x(\d+)\s*\(/);  // 套餐：品名 x數字 (子品項...)
-    const qM2=rawName.match(/\) x(\d+)$/);           // 單點備註：品名(備註) x數字
-    const qM3=rawName.match(/^[^(]* x(\d+)$/);       // 單點：品名 x數字
+    const qM1=rawName.match(/ x(\d+) \(/);   // 套餐+份數: 「品名 x數字 (子品項」
+    const qM2=rawName.match(/\) x(\d+)$/);   // 單點備註: 「品名(備註) x數字」結尾
+    const qM3=rawName.match(/ x(\d+)$/);      // 單點: 「品名 x數字」結尾
     if(qM1) qty=parseInt(qM1[1]);
     else if(qM2) qty=parseInt(qM2[1]);
     else if(qM3) qty=parseInt(qM3[1]);
-    // inner：保留子品項的 x數量和口味，只移除頂層的 x數量
-    const topQtyRemoved=rawName.replace(/^([^(]+?) x\d+(\s*\()/, '$1$2').replace(/^([^(]+?) x\d+$/, '$1');
-    const pI=topQtyRemoved.indexOf(' (');
-    const inner=pI>-1?topQtyRemoved.slice(pI+2,-1):null;
-    // isSet：inner 有'、'且裡面包含 menu_item 名稱（非純口味）
-    // 套餐的 inner 格式：「主食 x1、配菜 x1」或「主食、配菜」
-    // 口味的 inner 格式：「黃瓜愛裝蒜、涮嘴脆蘿蔔」— 這些是從 set_menu_contents.menu_items.name 來的
-    // 關鍵區別：套餐子品項是從 set_menu_groups/set_menu_contents 建的，口味是從 flavor_groups 建的
-    // 實際判斷：rawName 有 ' (' 結構且 inner 有 '、' → 視為套餐
-    // 但要排除：括號裡只有口味選項（通常是單一概念詞，不含 x數量）
-    // → 保持原有邏輯，但在備料統計時特殊處理
-    // isSet：有'、'，或有 ' x數字' 格式的子品項（單一品項套餐）
-    const isSet=!!(inner&&(inner.includes('、')||/x\d+/.test(inner)));
-    // flv 只從括號前的品名取（套餐本身口味，通常為空）
-    const namePart=pI>-1?topQtyRemoved.slice(0,pI):topQtyRemoved;
-    const flvM=namePart.match(/\[([^\]]+)\]/);
+    // 去掉頂層份數後，取最後一個 ' (' 到結尾的括號內容
+    let wo=rawName;
+    if(qM1) wo=rawName.replace(/ x\d+ \(/, ' (');
+    else if(qM3) wo=rawName.replace(/ x\d+$/, '');
+    const pI=wo.lastIndexOf(' (');
+    const inner=pI>-1?wo.slice(pI+2,-1):null;
+    // isSet：inner 有'、'或含 x數字（子品項格式）
+    const isSet=!!(inner&&(inner.includes('、')||/ x\d+/.test(inner)));
+    // flv：方括號內的口味
+    const flvM=rawName.match(/\[([^\]]+)\]/);
     const flv=flvM?flvM[1]:'';
-    // clean：移除所有口味標籤和數量
+    // clean：移除口味標籤和數量
     const clean=rawName.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-    const brand=isSet?clean.replace(/ \(.*$/,'').trim():null;
+    const brand=isSet?clean.replace(/ \(.*$/, '').trim():null;
     return{qty,flv,clean,inner,isSet,brand};
 }
 // 解析套餐子品項（含口味），回傳 [{name, flv, qty}]
@@ -1569,9 +1563,22 @@ async function loadOrders() {
             if(!aNo&&bNo) return 1;
             return 0;
         });
-        // 分隔線：只用訂位日期
-        let lastDateKey='';
-        return sorted.map(o=>{
+        // 依訂位日期分組，每組用框框包住
+        const groups=[];
+        let curGroup=null, curDk='';
+        sorted.forEach(o=>{
+            const dk=o.booking_date
+                ?(()=>{const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);return tw.getUTCFullYear()+'-'+String(tw.getUTCMonth()+1).padStart(2,'0')+'-'+String(tw.getUTCDate()).padStart(2,'0');})()
+                :'no-date';
+            if(dk!==curDk){curDk=dk;curGroup={dk,orders:[]};groups.push(curGroup);}
+            curGroup.orders.push(o);
+        });
+        return groups.map(grp=>{
+            const label=grp.dk==='no-date'?'⚠ 尚未安排訂位日期':(()=>{const p=grp.dk.split('-');return parseInt(p[1])+'月'+parseInt(p[2])+'日';})();
+            const color=grp.dk==='no-date'?'#ef4444':'var(--pine)';
+            const borderColor=grp.dk==='no-date'?'#fca5a5':'rgba(0,77,64,0.2)';
+            const bg=grp.dk==='no-date'?'#fff5f5':'#f0fdf4';
+            const groupHtml=grp.orders.map(o=>{
         let bTime='';
         if(o.booking_date){
             // booking_date 是 timestamptz，Supabase 回傳 UTC
@@ -1592,7 +1599,7 @@ async function loadOrders() {
             const color=dk==='no-date'?'#ef4444':'var(--pine)';
             sep=`<div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:10px;font-weight:900;color:${color};flex-shrink:0;padding:3px 12px;background:white;border:1px solid ${color==='#ef4444'?'#fca5a5':'rgba(0,77,64,0.2)'};border-radius:999px">${label}</span><div style="flex:1;height:1px;background:var(--border)"></div></div>`;
         }
-        return sep + `
+        return `
         <div id="order-card-${o.id}" class="order-card ${synced?'completed':''} ${!o.booking_date?'no-booking':o.is_takeout?'is-takeout':'is-dine-in'} collapsed ${selectedOrderIds.has(o.id)?'ring-2 ring-red-300':''}">
             <div class="order-header" onclick="toggleOrderCard('${o.id}')">
                 <input type="checkbox" ${selectedOrderIds.has(o.id)?'checked':''} onclick="event.stopPropagation()"
@@ -1645,10 +1652,10 @@ async function loadOrders() {
                             <label>桌號</label>
                             <div style="display:flex;align-items:center;gap:6px">
                                 <input type="text" value="${o.table_no||''}" onchange="updateOrderData('${o.id}','table_no',this.value,this)" placeholder="無" style="flex:1">
-                                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;flex-shrink:0;padding:6px 8px;border-radius:8px;border:1.5px solid ${o.is_takeout?'#f59e0b':'var(--border)'};background:${o.is_takeout?'#fffbeb':'#f8fafc'};transition:all 0.2s" title="外帶訂單">
-                                    <input type="checkbox" ${o.is_takeout?'checked':''} onchange="updateOrderData('${o.id}','is_takeout',this.checked,null);this.closest('label').style.borderColor=this.checked?'#f59e0b':'var(--border)';this.closest('label').style.background=this.checked?'#fffbeb':'#f8fafc';this.closest('div.order-card').classList.toggle('is-takeout',this.checked);" class="accent-amber-500 w-3.5 h-3.5">
-                                    <span style="font-size:10px;font-weight:700;color:${o.is_takeout?'#d97706':'var(--stone)'}">外帶</span>
-                                </label>
+                                <button type="button" onclick="handleTakeoutChange('${o.id}',this)" data-checked="${o.is_takeout?'1':''}" style="display:inline-flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;padding:5px 9px;border-radius:8px;border:1.5px solid ${o.is_takeout?'#f59e0b':'var(--border)'};background:${o.is_takeout?'#fffbeb':'#f8fafc'};cursor:pointer;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif">
+                                    <span style="font-size:13px;line-height:1">${o.is_takeout?'🥡':'🍽'}</span>
+                                    <span style="font-size:10px;font-weight:700;color:${o.is_takeout?'#d97706':'var(--stone)'};line-height:1">外帶</span>
+                                </button>
                             </div>
                         </div>
                         <div class="order-field">
@@ -1752,7 +1759,16 @@ async function loadOrders() {
                 </div>
             </div>
         </div>`;
-    }).filter(Boolean).join('');
+        }).join('');
+            return '<div style="margin-bottom:16px;border:2px solid '+borderColor+';border-radius:18px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.05)">'
+                +'<div style="background:'+bg+';padding:9px 16px;border-bottom:1.5px solid '+borderColor+';display:flex;align-items:center;gap:8px">'
+                +'<span style="font-size:12px;font-weight:900;color:'+color+'">'+label+'</span>'
+                +'<span style="font-size:11px;font-weight:700;color:var(--stone)">·</span>'
+                +'<span style="font-size:11px;font-weight:700;color:var(--stone)">'+grp.orders.length+' 筆</span>'
+                +'</div>'
+                +'<div style="padding:10px 10px 4px">'+groupHtml+'</div>'
+                +'</div>';
+        }).join('');
     })();
 }
 
@@ -1768,6 +1784,21 @@ function toggleOrderCard(id) {
         if(curOrderView==='calendar') setTimeout(()=>renderCalendar(),300);
         else setTimeout(()=>loadOrders(),300);
     }
+}
+
+function handleTakeoutChange(orderId, btn){
+    const isNow = btn.dataset.checked !== '1';
+    btn.dataset.checked = isNow ? '1' : '';
+    btn.style.borderColor = isNow ? '#f59e0b' : 'var(--border)';
+    btn.style.background = isNow ? '#fffbeb' : '#f8fafc';
+    btn.innerHTML = '<span style="font-size:13px;line-height:1">'+(isNow?'🥡':'🍽')+'</span>'
+        +'<span style="font-size:10px;font-weight:700;color:'+(isNow?'#d97706':'var(--stone)')+';line-height:1">外帶</span>';
+    const card = document.getElementById('order-card-'+orderId);
+    if(card){
+        card.classList.toggle('is-takeout', isNow);
+        card.classList.toggle('is-dine-in', !isNow && !!(card.querySelector('[data-checked]')?.closest('.order-card')?.querySelector('[data-bookdate]')?.textContent));
+    }
+    updateOrderData(orderId, 'is_takeout', isNow, null);
 }
 
 async function updateOrderData(id,field,val,inputEl){
@@ -1943,29 +1974,38 @@ async function openEditOrder(id){
     refreshEditCart();
 }
 function refreshEditCart(){
-    document.getElementById('edit-cart-list').innerHTML=editCart.map((i,idx)=>{
-        // 解析套餐份數（頂層 x數字）
-        const qM=i.name.match(/^[^(]* x(\d+)\s*\(/) || i.name.match(/^[^(]* x(\d+)$/);
-        const curQty=qM?parseInt(qM[1]):1;
-        // 顯示品名（去掉括號內容讓清單簡潔）
-        const displayName=i.name.replace(/ x\d+\s*\(.*\)$/, '').replace(/ x\d+$/, '').replace(/\s*\(.*\)$/, '');
-        // 解析子品項（括號內）
-        const pI=i.name.lastIndexOf(' (');
-        const subStr=pI>-1?i.name.slice(pI+2,-1):'';
-        return '<div class="flex flex-col bg-slate-50 p-3 rounded-xl border mb-2 relative">'
-            +'<div onclick="openEditPop(null,'+idx+')" class="cursor-pointer pr-8 mb-2">'
-            +'<span class="font-bold text-xs" style="color:var(--pine)">'+displayName+'</span>'
-            +(subStr?'<div class="text-[9px] text-slate-400 mt-0.5 line-clamp-1">'+subStr+'</div>':'')
-            +'<div class="text-[9px] text-amber-600 font-bold mt-0.5">$'+i.price+'</div>'
+    document.getElementById('edit-cart-list').innerHTML=editCart.map((item,idx)=>{
+        const nm=item.name;
+        // 正確解析套餐份數（支援套餐名含括號）
+        const mA=nm.match(/ x(\d+) \(/);
+        const mB=nm.match(/\) x(\d+)$/);
+        const mC=nm.match(/ x(\d+)$/);
+        const curQty=mA?parseInt(mA[1]):mB?parseInt(mB[1]):mC?parseInt(mC[1]):1;
+        // 品名：去掉 份數+子品項 括號
+        let wo=nm;
+        if(mA) wo=nm.replace(/ x\d+ \(/, ' (');
+        else if(mC) wo=nm.replace(/ x\d+$/, '');
+        const pI2=wo.lastIndexOf(' (');
+        const displayName=pI2>-1?wo.slice(0,pI2):wo;
+        const subStr=pI2>-1?wo.slice(pI2+2,-1):'';
+        return '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;position:relative">'
+            // 刪除按鈕
+            +'<button onclick="editCart.splice('+idx+',1);refreshEditCart();" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#ef4444;font-size:16px;cursor:pointer;font-weight:900;line-height:1">✕</button>'
+            // 品名（可點擊修改細項）
+            +'<div onclick="openEditPop(null,'+idx+')" style="cursor:pointer;padding-right:24px;margin-bottom:10px">'
+            +'<div style="font-weight:900;font-size:13px;color:var(--pine)">'+displayName+'</div>'
+            +(subStr?'<div style="font-size:10px;color:var(--stone);margin-top:3px;line-height:1.4">'+subStr+'</div>':'')
+            +'<div style="font-size:11px;font-weight:900;color:var(--gold);margin-top:4px">$'+item.price+'</div>'
             +'</div>'
-            +'<div class="flex items-center gap-2">'
-            +'<span class="text-[9px] text-slate-400 font-bold">數量</span>'
-            +'<button onclick="event.stopPropagation();adjustCartQty('+idx+',-1)" style="width:20px;height:20px;border-radius:6px;border:1px solid var(--border);background:white;font-size:12px;font-weight:900;cursor:pointer;color:var(--stone)">−</button>'
-            +'<span style="font-size:13px;font-weight:900;color:var(--pine);min-width:20px;text-align:center">'+curQty+'</span>'
-            +'<button onclick="event.stopPropagation();adjustCartQty('+idx+',1)" style="width:20px;height:20px;border-radius:6px;background:var(--pine);border:none;font-size:12px;font-weight:700;cursor:pointer;color:white">＋</button>'
-            +'<span class="text-[9px] text-slate-300 ml-1">份</span>'
+            // 份數控制
+            +'<div style="display:flex;align-items:center;gap:8px;border-top:1px solid var(--border);padding-top:10px">'
+            +'<span style="font-size:10px;font-weight:700;color:var(--stone)">份數</span>'
+            +'<button onclick="event.stopPropagation();adjustCartQty('+idx+',-1)" style="width:26px;height:26px;border-radius:8px;border:1.5px solid var(--border);background:#f8fafc;font-size:16px;font-weight:900;cursor:pointer;color:var(--stone);display:flex;align-items:center;justify-content:center">&#8722;</button>'
+            +'<span style="font-size:15px;font-weight:900;color:var(--pine);min-width:24px;text-align:center;line-height:1">'+curQty+'</span>'
+            +'<button onclick="event.stopPropagation();adjustCartQty('+idx+',1)" style="width:26px;height:26px;border-radius:8px;background:var(--pine);border:none;font-size:14px;font-weight:700;cursor:pointer;color:white;display:flex;align-items:center;justify-content:center">&#43;</button>'
+            +'<span style="font-size:10px;color:var(--stone);margin-left:2px">份</span>'
+            +'<span style="font-size:10px;color:var(--stone);margin-left:auto">點名稱修改細項</span>'
             +'</div>'
-            +'<button onclick="editCart.splice('+idx+',1);refreshEditCart();" class="absolute top-2 right-2 text-red-300 hover:text-red-500 font-bold px-1.5 py-0.5" style="font-size:14px">✕</button>'
             +'</div>';
     }).join('');
     document.getElementById('edit-total-price').textContent='$'+editCart.reduce((s,i)=>s+Number(i.price),0);
@@ -1974,25 +2014,35 @@ function refreshEditCart(){
 // 調整購物車品項的套餐份數
 function adjustCartQty(idx, delta){
     const item=editCart[idx]; if(!item) return;
-    // 解析現有份數
-    const qM=item.name.match(/^([^(]+ )x(\d+)(\s*\(.*\))?$/);
-    const hasSet=qM&&qM[3]; // 有括號 = 套餐
-    const plainQM=item.name.match(/ x(\d+)$/);
+    // 解析現有份數（支援套餐名含括號）
+    const m1=item.name.match(/ x(\d+) \(/);  // 「品名 x數字 (子品項」
+    const m2=item.name.match(/\) x(\d+)$/);  // 「品名(備註) x數字」
+    const m3=item.name.match(/ x(\d+)$/);     // 「品名 x數字」
     let curQty=1;
-    if(qM) curQty=parseInt(qM[2]);
-    else if(plainQM) curQty=parseInt(plainQM[1]);
+    if(m1) curQty=parseInt(m1[1]);
+    else if(m2) curQty=parseInt(m2[1]);
+    else if(m3) curQty=parseInt(m3[1]);
     const newQty=Math.max(1,curQty+delta);
+    if(newQty===curQty) return;
     // 取基礎單價
     const basePrice=Math.round(Number(item.price)/curQty);
-    // 更新名稱中的份數
-    if(qM){
-        item.name=qM[1]+(newQty>1?'x'+newQty+' ':'')+( qM[3]||'').trim();
-        if(newQty===1) item.name=item.name.replace(/ x1\s*/,' ').trim();
-        else item.name=qM[1].trimEnd()+' x'+newQty+(qM[3]?qM[3]:'');
-    } else if(plainQM){
-        item.name=item.name.replace(/ x\d+$/,'')+( newQty>1?' x'+newQty:'');
+    // 更新品名中的份數
+    if(m1){
+        // 「品名 x舊份數 (子品項...)」
+        const old=' x'+curQty+' (';
+        const next=newQty>1?' x'+newQty+' (':' (';
+        item.name=item.name.replace(old, next);
+    } else if(m2){
+        item.name=item.name.replace(') x'+curQty, newQty>1?') x'+newQty:')');
+    } else if(m3){
+        item.name=item.name.replace(' x'+curQty, newQty>1?' x'+newQty:'');
     } else {
-        if(newQty>1) item.name=item.name+' x'+newQty;
+        // 無份數標記（份數=1），增加時插入
+        if(newQty>1){
+            const lastParen=item.name.lastIndexOf(' (');
+            if(lastParen>-1) item.name=item.name.slice(0,lastParen)+' x'+newQty+item.name.slice(lastParen);
+            else item.name=item.name+' x'+newQty;
+        }
     }
     item.price=basePrice*newQty;
     refreshEditCart();
@@ -2145,11 +2195,15 @@ function confirmEditPop(){
         else if(!x.qty||x.qty>=1) gnParts.push(x.name);
     });
     const gn=gnParts.join('、');
-    // 保留原本的套餐數量（x2、x3…）
+    // 保留原本的套餐份數（用正確的解析邏輯）
     let xQty='';
     if(reEditIndex>-1){
-        const qM=editCart[reEditIndex].name.match(/ x(\d+)/);
-        if(qM) xQty=` x${qM[1]}`;
+        const rn=editCart[reEditIndex].name;
+        const mA=rn.match(/ x(\d+) \(/);  // 「品名 x數字 (子品項」
+        const mB=rn.match(/\) x(\d+)$/);  // 「品名(備註) x數字」結尾
+        const mC=rn.match(/ x(\d+)$/);     // 「品名 x數字」結尾
+        const matchedQty=mA?mA[1]:mB?mB[1]:mC?mC[1]:null;
+        if(matchedQty&&parseInt(matchedQty)>1) xQty=' x'+matchedQty;
     }
     const qty_=parseInt(xQty.replace(' x','')||'1');
     const basePrice=Number(curEditItem.price);
