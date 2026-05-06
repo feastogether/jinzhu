@@ -1826,7 +1826,14 @@ async function updateOrderData(id,field,val,inputEl){
         if(!window._pendingRefresh) window._pendingRefresh=new Set();
         window._pendingRefresh.add(id);
         showSaveIndicator(id);
-    } else toast('更新失敗','error');
+    } else {
+        console.error('updateOrderData error:',error,field,val);
+        if(error?.message?.includes('is_takeout')){
+            toast('請先執行 SQL：ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_takeout boolean DEFAULT false;','warn',6000);
+        } else {
+            toast('更新失敗：'+(error?.message||'未知錯誤'),'error');
+        }
+    }
 }
 
 // 右下角顯示「已自動儲存」提示，節流避免重複
@@ -1865,7 +1872,14 @@ async function saveBookingDate(id, newDate){
         if(!window._pendingRefresh) window._pendingRefresh=new Set();
         window._pendingRefresh.add(id);
         showSaveIndicator(id);
-    } else toast('更新失敗','error');
+    } else {
+        console.error('updateOrderData error:',error,field,val);
+        if(error?.message?.includes('is_takeout')){
+            toast('請先執行 SQL：ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_takeout boolean DEFAULT false;','warn',6000);
+        } else {
+            toast('更新失敗：'+(error?.message||'未知錯誤'),'error');
+        }
+    }
 }
 async function saveBookingTime(id, newTime){
     if(!newTime) return;
@@ -1889,7 +1903,14 @@ async function saveBookingTime(id, newTime){
         if(!window._pendingRefresh) window._pendingRefresh=new Set();
         window._pendingRefresh.add(id);
         showSaveIndicator(id);
-    } else toast('更新失敗','error');
+    } else {
+        console.error('updateOrderData error:',error,field,val);
+        if(error?.message?.includes('is_takeout')){
+            toast('請先執行 SQL：ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_takeout boolean DEFAULT false;','warn',6000);
+        } else {
+            toast('更新失敗：'+(error?.message||'未知錯誤'),'error');
+        }
+    }
 }
 async function toggleSync(id,cur){
     await _s.from('orders').update({status:cur==='synced'?'pending':'synced'}).eq('id',id);
