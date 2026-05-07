@@ -926,18 +926,35 @@
         <!-- 外帶時段設定 -->
         <div id="ss-takeout" class="ss-panel hidden space-y-4">
             <div class="bg-white rounded-2xl border shadow-sm p-6 space-y-5">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 mb-2">
                     <div style="width:36px;height:36px;border-radius:10px;background:#fffbeb;display:flex;align-items:center;justify-content:center;font-size:1.1rem">🥡</div>
                     <div>
-                        <div class="font-bold text-sm" style="color:var(--pine)">外帶可選取餐時段</div>
-                        <div class="text-xs text-slate-400 mt-0.5">客人選外帶時可選擇的取餐時間，每行一個時間（格式：HH:MM）</div>
+                        <div class="font-bold text-sm" style="color:var(--pine)">外帶取餐時段設定</div>
+                        <div class="text-xs text-slate-400 mt-0.5">平日（一～五）與週六日可分開設定，每行一個時間（格式：HH:MM）</div>
                     </div>
                 </div>
-                <div>
-                    <label class="filter-label mb-2">時段列表（每行一個，如：11:00）</label>
-                    <textarea id="takeout-slots-input" rows="12" class="filter-input font-mono text-sm resize-none mt-1" placeholder="11:00&#10;11:30&#10;12:00&#10;12:30&#10;13:00&#10;17:00&#10;17:30&#10;18:00&#10;18:30&#10;19:00&#10;19:30&#10;20:00"></textarea>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="p-4 rounded-xl border" style="border-color:rgba(0,77,64,0.2);background:#f0fdf4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span style="font-size:1rem">📅</span>
+                            <div class="font-bold text-sm" style="color:var(--pine)">平日（週一至週五）</div>
+                        </div>
+                        <label class="filter-label mb-1">取餐時段（每行一個）</label>
+                        <textarea id="takeout-slots-weekday" rows="10" class="filter-input font-mono text-xs resize-none mt-1" placeholder="11:00&#10;11:30&#10;12:00&#10;12:30&#10;13:00&#10;17:00&#10;17:30&#10;18:00&#10;18:30&#10;19:00&#10;19:30&#10;20:00"></textarea>
+                    </div>
+                    <div class="p-4 rounded-xl border" style="border-color:rgba(184,145,80,0.3);background:#fffbeb">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span style="font-size:1rem">🎉</span>
+                            <div class="font-bold text-sm" style="color:var(--gold)">週六日 / 假日</div>
+                        </div>
+                        <label class="filter-label mb-1">取餐時段（每行一個）</label>
+                        <textarea id="takeout-slots-weekend" rows="10" class="filter-input font-mono text-xs resize-none mt-1" placeholder="10:30&#10;11:00&#10;11:30&#10;12:00&#10;12:30&#10;13:00&#10;17:00&#10;17:30&#10;18:00&#10;18:30&#10;19:00&#10;19:30&#10;20:00&#10;20:30"></textarea>
+                    </div>
                 </div>
-                <button onclick="saveTakeoutSlots()" class="btn btn-primary">💾 儲存時段設定</button>
+                <div class="flex items-center gap-3 pt-2">
+                    <button onclick="saveTakeoutSlots()" class="btn btn-primary">💾 儲存時段設定</button>
+                    <div class="text-xs text-slate-400">儲存後即時生效，客人下次選擇外帶時會看到更新後的時段</div>
+                </div>
             </div>
         </div>
 
@@ -3703,16 +3720,20 @@ let upsellData={enabled:true,title:'加購推薦',title_en:'Add-on Recommendatio
 let upsellAllItems=[];
 
 async function loadTakeoutSlots(){
-    const{data}=await _s.from('store_settings').select('takeout_slots').eq('id',1).single();
+    const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend').eq('id',1).single();
     const slots=(data?.takeout_slots||[]);
-    const el=document.getElementById('takeout-slots-input');
+    const slotsWe=(data?.takeout_slots_weekend||[]);
+    const el=document.getElementById('takeout-slots-weekday');
+    const el2=document.getElementById('takeout-slots-weekend');
     if(el) el.value=slots.join('\n');
+    if(el2) el2.value=slotsWe.join('\n');
 }
 async function saveTakeoutSlots(){
-    const raw=document.getElementById('takeout-slots-input').value;
-    const slots=raw.split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
-    const{error}=await _s.from('store_settings').update({takeout_slots:slots}).eq('id',1);
-    if(!error) toast(`外帶時段已儲存（${slots.length} 個時段）`);
+    const parse=(id)=>(document.getElementById(id)?.value||'').split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
+    const weekday=parse('takeout-slots-weekday');
+    const weekend=parse('takeout-slots-weekend');
+    const{error}=await _s.from('store_settings').update({takeout_slots:weekday,takeout_slots_weekend:weekend}).eq('id',1);
+    if(!error) toast('外帶時段已儲存 ✓（平日 '+weekday.length+' 個 / 週末 '+weekend.length+' 個）');
     else toast('儲存失敗：'+error.message,'error');
 }
 
