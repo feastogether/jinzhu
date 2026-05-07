@@ -525,7 +525,7 @@ const I18N={
         toastFill:'請填寫姓名與電話',toastAdded:'已加入預點清單 ✓',
         toastFlv:'請選取客製口味',toastSetFull:'本區上限為',toastSetItem:'尚未選滿',
         noteFlavor:'請選擇',noteDesc:'真心款待，誠摯滋味。',
-        selectCta:'選擇',setChoose:'任選',setInclude:'含',upsellSkip:'不用了，直接送出',
+        selectCta:'選擇',setChoose:'任選',setInclude:'含',upsellSkip:'不用了，直接送出',upsellConfirm:'加入並送出',
         modeSelectTitle:'請選擇用餐方式',dineIn:'內用',takeout:'外帶',
         continueBtn:'繼續 →',backBtn2:'← 返回',
         dineInDate:'預約日期',selectDateHint:'請選擇用餐日期',
@@ -559,7 +559,7 @@ const I18N={
         toastFlv:'Please select flavor options',toastSetFull:'Max items in this section:',
         toastSetItem:'Please complete your selection',
         noteFlavor:'Please select',noteDesc:'Heartfelt flavors, crafted with care.',
-        selectCta:'Select',setChoose:'Choose',setInclude:'Includes',upsellSkip:'Skip, just submit',
+        selectCta:'Select',setChoose:'Choose',setInclude:'Includes',upsellSkip:'Skip, just submit',upsellConfirm:'Add & Submit',
         modeSelectTitle:'How would you like to dine?',dineIn:'Dine-in',takeout:'Takeout',
         continueBtn:'Continue →',backBtn2:'← Back',
         dineInDate:'Reservation Date',selectDateHint:'Select your dining date',
@@ -593,7 +593,7 @@ const I18N={
         toastFlv:'フレーバーを選択してください',toastSetFull:'このセクションの上限：',
         toastSetItem:'まだ選択が完了していません',
         noteFlavor:'選択してください',noteDesc:'心を込めた味わい。',
-        selectCta:'選ぶ',setChoose:'選択',setInclude:'含む',upsellSkip:'スキップして送信',
+        selectCta:'選ぶ',setChoose:'選択',setInclude:'含む',upsellSkip:'スキップして送信',upsellConfirm:'追加して送信',
         modeSelectTitle:'食事スタイルをお選びください',dineIn:'店内飲食',takeout:'テイクアウト',
         continueBtn:'次へ →',backBtn2:'← 戻る',
         dineInDate:'予約日',selectDateHint:'ご来店日をお選びください',
@@ -627,7 +627,7 @@ const I18N={
         toastFlv:'맛 옵션을 선택해 주세요',toastSetFull:'이 섹션의 최대 수량：',
         toastSetItem:'선택을 완료해 주세요',
         noteFlavor:'선택하세요',noteDesc:'마음을 담은 맛.',
-        selectCta:'선택',setChoose:'선택',setInclude:'포함',upsellSkip:'건너뛰고 주문하기',
+        selectCta:'선택',setChoose:'선택',setInclude:'포함',upsellSkip:'건너뛰고 주문하기',upsellConfirm:'추가하고 주문',
         modeSelectTitle:'식사 방법을 선택해 주세요',dineIn:'매장 식사',takeout:'포장',
         continueBtn:'계속 →',backBtn2:'← 뒤로',
         dineInDate:'예약 날짜',selectDateHint:'식사 날짜를 선택해 주세요',
@@ -754,6 +754,7 @@ async function initLiff(){
 }
 
 async function init(){
+    loadTakeoutSlots(); // 預先載入外帶時段設定
     const isMob=window.innerWidth<=768;
     document.getElementById('kv-bg').src=isMob
         ?'https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg'
@@ -1420,7 +1421,7 @@ async function doFinalSubmit(){
     // 組合訂位/取餐時間
     let finalBookingDate=null;
     if(orderMode==='dine-in'&&bookingDate){
-        finalBookingDate=bookingDate+'T12:00:00+08:00'; // 內用：日期選了但無時間，預設中午
+        finalBookingDate=bookingDate; // 內用：只帶日期，不帶時間
     } else if(orderMode==='takeout'&&pickupDate&&pickupTime){
         finalBookingDate=pickupDate+'T'+pickupTime+':00+08:00';
     }
