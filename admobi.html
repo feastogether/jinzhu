@@ -795,7 +795,8 @@ function renderOrders(orders){
 function orderHtml(o){
   const synced=o.status==='synced';
   let bStr='';
-  if(o.booking_date){const tw=twDate(o.booking_date);bStr=`${String(tw.getUTCMonth()+1).padStart(2,'0')}/${String(tw.getUTCDate()).padStart(2,'0')} ${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`;}
+  if(o.booking_date){const tw=twDate(o.booking_date);const hhmm_=String(tw.getUTCHours()).padStart(2,'0')+':'+String(tw.getUTCMinutes()).padStart(2,'0');
+    bStr=(tw.getUTCMonth()+1)+'/'+tw.getUTCDate()+(hhmm_!=='00:00'?' '+hhmm_:'');}
   // parse items for display
   const sets=[],singles={};
   (o.order_content||[]).forEach(item=>{
@@ -825,8 +826,10 @@ function orderHtml(o){
     <div class="order-sec">
       <div class="order-sec-lbl">🍱 餐點明細</div>
       <div class="items-box">${itemsHtml||'<p style="padding:8px;font-size:12px;color:var(--stone)">無餐點資料</p>'}</div>
-      ${o.note?`<div class="note-blk">📝 ${o.note}</div>`:''}
-    </div>
+      <div class="note-blk" style="background:#f0fdf4;border-left:3px solid var(--pine);padding:8px 10px;margin-top:6px;border-radius:0 8px 8px 0">
+      <div style="font-size:9px;font-weight:700;color:var(--stone);margin-bottom:4px">📝 顧客備註</div>
+      <textarea rows="2" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11px;resize:none;outline:none;background:white;color:var(--pine);font-weight:600" onblur="saveNoteField('${o.id}','note',this.value)">${o.note||''}</textarea>
+      </div>    </div>
     <!-- 操作 -->
     <div class="order-actions">
       <button class="btn btn-danger btn-icon" onclick="deleteOrder('${o.id}')">🗑</button>
@@ -1173,6 +1176,13 @@ function confirmPop(){
 }
 
 // ── SAVE EDIT ORDER ──
+function saveNoteField(orderId, field, val){
+  _s.from('orders').update({[field]:val||null}).eq('id',orderId).then(({error})=>{
+    if(!error) toast('✅ 已儲存','success',1000);
+    else toast('儲存失敗','error');
+  });
+}
+
 async function saveEditOrder(){
   if(!eosOrder)return;
   const name=document.getElementById('eos-name').value.trim();
