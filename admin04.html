@@ -2070,13 +2070,21 @@ function refreshEditCart(){
         const mB=nm.match(/\) x(\d+)$/);
         const mC=nm.match(/ x(\d+)$/);
         const curQty=mA?parseInt(mA[1]):mB?parseInt(mB[1]):mC?parseInt(mC[1]):1;
-        // 品名：去掉 份數+子品項 括號
+        // 品名：用括號深度追蹤找套餐子品項分隔符（避免品名內括號干擾）
         let wo=nm;
         if(mA) wo=nm.replace(/ x\d+ \(/, ' (');
         else if(mC) wo=nm.replace(/ x\d+$/, '');
-        const pI2=wo.lastIndexOf(' (');
-        const displayName=pI2>-1?wo.slice(0,pI2):wo;
-        const subStr=pI2>-1?wo.slice(pI2+2,-1):'';
+        // 找第一個包含「、」的括號（套餐分隔符）
+        let displayName=wo, subStr='';
+        let _sp=0;
+        while(_sp<wo.length){
+            const _pi=wo.indexOf(' (',_sp);
+            if(_pi===-1)break;
+            let _dep=1,_j=_pi+2;
+            while(_j<wo.length&&_dep>0){if(wo[_j]==='(')_dep++;else if(wo[_j]===')')_dep--;_j++;}
+            if(_dep===0){const _cand=wo.slice(_pi+2,_j-1);if(_cand.includes('、')){displayName=wo.slice(0,_pi);subStr=_cand;break;}}
+            _sp=_pi+1;
+        }
         return '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;position:relative">'
             // 刪除按鈕
             +'<button onclick="editCart.splice('+idx+',1);refreshEditCart();" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#ef4444;font-size:16px;cursor:pointer;font-weight:900;line-height:1">✕</button>'
