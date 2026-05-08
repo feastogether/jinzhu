@@ -956,6 +956,28 @@
                     <div class="text-xs text-slate-400">儲存後即時生效，客人下次選擇外帶時會看到更新後的時段</div>
                 </div>
             </div>
+
+            <!-- 特殊日期時段 -->
+            <div class="bg-white rounded-2xl border shadow-sm p-6 space-y-4 mt-4">
+                <div class="flex items-center gap-3">
+                    <div style="width:36px;height:36px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:1.1rem">🌟</div>
+                    <div>
+                        <div class="font-bold text-sm" style="color:var(--gold)">特殊日期取餐時段</div>
+                        <div class="text-xs text-slate-400 mt-0.5">指定日期使用特別時段（會覆蓋平日/週末設定），適用假日或特殊活動</div>
+                    </div>
+                </div>
+                <!-- 新增特殊日期 -->
+                <div class="flex gap-2 items-end">
+                    <div class="flex-1">
+                        <label class="filter-label mb-1">指定日期</label>
+                        <input type="date" id="special-date-input" class="filter-input mt-1" style="font-size:13px">
+                    </div>
+                    <button onclick="addSpecialDateSlot()" class="btn btn-primary flex-shrink-0" style="height:40px">＋ 新增</button>
+                </div>
+                <!-- 特殊日期列表 -->
+                <div id="special-dates-list" class="space-y-3"></div>
+                <button onclick="saveSpecialSlots()" class="btn btn-primary w-full">💾 儲存特殊日期設定</button>
+            </div>
         </div>
 
         <!-- 網址配置 -->
@@ -1412,28 +1434,51 @@
 // ── 品項名稱解析 helper（保留口味標籤） ──
 function parseItemDisplay(rawName){
     // 套餐份數：找「 x數字 (」或「) x數字$」或「 x數字$」
-    // 套餐名本身可能含括號，如「母親節套餐(4-6人份) x2 (子品項...)」
     let qty=1;
-    const qM1=rawName.match(/ x(\d+) \(/);   // 套餐+份數: 「品名 x數字 (子品項」
-    const qM2=rawName.match(/\) x(\d+)$/);   // 單點備註: 「品名(備註) x數字」結尾
-    const qM3=rawName.match(/ x(\d+)$/);      // 單點: 「品名 x數字」結尾
+    const qM1=rawName.match(/ x(\d+) \(/);
+    const qM2=rawName.match(/\) x(\d+)$/);
+    const qM3=rawName.match(/ x(\d+)$/);
     if(qM1) qty=parseInt(qM1[1]);
     else if(qM2) qty=parseInt(qM2[1]);
     else if(qM3) qty=parseInt(qM3[1]);
-    // 去掉頂層份數後，取最後一個 ' (' 到結尾的括號內容
+    // 去掉頂層份數，準備找 inner
     let wo=rawName;
     if(qM1) wo=rawName.replace(/ x\d+ \(/, ' (');
     else if(qM3) wo=rawName.replace(/ x\d+$/, '');
-    const pI=wo.lastIndexOf(' (');
-    const inner=pI>-1?wo.slice(pI+2,-1):null;
-    // isSet：inner 有'、'或含 x數字（子品項格式）
-    const isSet=!!(inner&&(inner.includes('、')||/ x\d+/.test(inner)));
+    // 用括號深度追蹤找正確的套餐分隔符 ' ('
+    // 套餐格式：「品名 (子品項1、子品項2...)」
+    // 子品項名裡也可能有括號（如「紫米紅豆湯 (冰)」）
+    // 正確做法：找第一個 ' ('，然後追蹤深度找對應的 ')'，確認括號內有「、」
+    let inner=null;
+    let searchPos=0;
+    while(searchPos<wo.length){
+        const pI=wo.indexOf(' (',searchPos);
+        if(pI===-1) break;
+        // 從 ' (' 後追蹤括號深度
+        let depth=1, j=pI+2;
+        while(j<wo.length&&depth>0){
+            if(wo[j]==='(') depth++;
+            else if(wo[j]===')') depth--;
+            j++;
+        }
+        if(depth===0){
+            const candidate=wo.slice(pI+2,j-1);
+            // 套餐特徵：括號內含「、」（多個子品項）
+            if(candidate.includes('、')){
+                inner=candidate;
+                break;
+            }
+        }
+        searchPos=pI+1;
+    }
+    // isSet：inner 有「、」（多個子品項）
+    const isSet=!!(inner&&inner.includes('、'));
     // flv：方括號內的口味
     const flvM=rawName.match(/\[([^\]]+)\]/);
     const flv=flvM?flvM[1]:'';
     // clean：移除口味標籤和數量
     const clean=rawName.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-    const brand=isSet?clean.replace(/ \(.*$/, '').trim():null;
+    const brand=isSet?clean.split(' (')[0].trim():null;
     return{qty,flv,clean,inner,isSet,brand};
 }
 // 解析套餐子品項（含口味），回傳 [{name, flv, qty}]
@@ -1625,7 +1670,7 @@ async function loadOrders() {
                 <div class="order-amount">$${o.total_price}</div>
                 <div class="ml-1 text-right flex-shrink-0">
                     ${bTime
-                        ?`<div style="font-size:13px;font-weight:900;color:var(--pine);letter-spacing:0.02em">📅 ${bTime.slice(5,10).replace('-','/')} ${bTime.slice(11,16)}</div>
+                        ?`<div style="font-size:13px;font-weight:900;color:var(--pine);letter-spacing:0.02em">📅 ${bTime.slice(5,10).replace('-','/')}${bTime.slice(11,16)!=='00:00'?' '+bTime.slice(11,16):''}</div>
                           <div class="order-time-badge" style="margin-top:2px;opacity:0.6">下單 ${new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`
                         :`<div class="order-time-badge">${new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>`
                     }
@@ -1758,7 +1803,10 @@ async function loadOrders() {
                         }
                         return html;
                     })()}
-                    ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
+                    ${`<div style="margin-bottom:10px">
+                    <div class="order-section-label">📝 顧客備註</div>
+                    <textarea id="cust-note-${o.id}" rows="2" placeholder="無備註" onblur="updateOrderData('${o.id}','note',this.value,this)" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;font-family:'Noto Sans TC',sans-serif;resize:none;outline:none;background:#f8fafc;color:var(--pine);font-weight:600">${o.note||''}</textarea>
+                </div>`}
                 </div>
 
                 <!-- 後台備註 -->
@@ -2022,13 +2070,21 @@ function refreshEditCart(){
         const mB=nm.match(/\) x(\d+)$/);
         const mC=nm.match(/ x(\d+)$/);
         const curQty=mA?parseInt(mA[1]):mB?parseInt(mB[1]):mC?parseInt(mC[1]):1;
-        // 品名：去掉 份數+子品項 括號
+        // 品名：用括號深度追蹤找套餐子品項分隔符（避免品名內括號干擾）
         let wo=nm;
         if(mA) wo=nm.replace(/ x\d+ \(/, ' (');
         else if(mC) wo=nm.replace(/ x\d+$/, '');
-        const pI2=wo.lastIndexOf(' (');
-        const displayName=pI2>-1?wo.slice(0,pI2):wo;
-        const subStr=pI2>-1?wo.slice(pI2+2,-1):'';
+        // 找第一個包含「、」的括號（套餐分隔符）
+        let displayName=wo, subStr='';
+        let _sp=0;
+        while(_sp<wo.length){
+            const _pi=wo.indexOf(' (',_sp);
+            if(_pi===-1)break;
+            let _dep=1,_j=_pi+2;
+            while(_j<wo.length&&_dep>0){if(wo[_j]==='(')_dep++;else if(wo[_j]===')')_dep--;_j++;}
+            if(_dep===0){const _cand=wo.slice(_pi+2,_j-1);if(_cand.includes('、')){displayName=wo.slice(0,_pi);subStr=_cand;break;}}
+            _sp=_pi+1;
+        }
         return '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;position:relative">'
             // 刪除按鈕
             +'<button onclick="editCart.splice('+idx+',1);refreshEditCart();" style="position:absolute;top:8px;right:10px;background:none;border:none;color:#ef4444;font-size:16px;cursor:pointer;font-weight:900;line-height:1">✕</button>'
@@ -3131,7 +3187,10 @@ function renderReports(orders, setMenuNames=new Set()){
                 <div class="order-section">
                     <div class="order-section-label">🍱 餐點明細</div>
                     ${itemsHtml}
-                    ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
+                    ${`<div style="margin-bottom:10px">
+                    <div class="order-section-label">📝 顧客備註</div>
+                    <textarea id="cust-note-${o.id}" rows="2" placeholder="無備註" onblur="updateOrderData('${o.id}','note',this.value,this)" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;font-family:'Noto Sans TC',sans-serif;resize:none;outline:none;background:#f8fafc;color:var(--pine);font-weight:600">${o.note||''}</textarea>
+                </div>`}
                 </div>
                 <div class="order-section" style="background:#f8fafc;border-radius:12px;padding:12px 14px">
                     <div class="flex flex-wrap gap-2 text-xs">
@@ -3719,14 +3778,20 @@ async function testSummaryNotify(){
 let upsellData={enabled:true,title:'加購推薦',title_en:'Add-on Recommendations',title_ja:'オプション追加',title_ko:'추가 주문',item_ids:[]};
 let upsellAllItems=[];
 
+// 特殊日期暫存（{ "2025-06-01": ["11:00","12:00"], ... }）
+let specialSlotsMap={};
+
 async function loadTakeoutSlots(){
-    const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend').eq('id',1).single();
+    const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend,takeout_slots_special').eq('id',1).single();
     const slots=(data?.takeout_slots||[]);
     const slotsWe=(data?.takeout_slots_weekend||[]);
     const el=document.getElementById('takeout-slots-weekday');
     const el2=document.getElementById('takeout-slots-weekend');
     if(el) el.value=slots.join('\n');
     if(el2) el2.value=slotsWe.join('\n');
+    // 載入特殊日期
+    try{ specialSlotsMap=JSON.parse(data?.takeout_slots_special||'{}'); }catch(e){ specialSlotsMap={}; }
+    renderSpecialDates();
 }
 async function saveTakeoutSlots(){
     const parse=(id)=>(document.getElementById(id)?.value||'').split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
@@ -3734,6 +3799,54 @@ async function saveTakeoutSlots(){
     const weekend=parse('takeout-slots-weekend');
     const{error}=await _s.from('store_settings').update({takeout_slots:weekday,takeout_slots_weekend:weekend}).eq('id',1);
     if(!error) toast('外帶時段已儲存 ✓（平日 '+weekday.length+' 個 / 週末 '+weekend.length+' 個）');
+    else toast('儲存失敗：'+error.message,'error');
+}
+
+// ── 特殊日期管理 ──
+function addSpecialDateSlot(){
+    const dateEl=document.getElementById('special-date-input');
+    const date=dateEl?.value;
+    if(!date){ toast('請選擇日期','warn'); return; }
+    if(specialSlotsMap[date]!==undefined){ toast('此日期已設定過','warn'); return; }
+    // 預設填入週末時段（若有）否則平日
+    const wdVal=(document.getElementById('takeout-slots-weekday')?.value||'').split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
+    const weVal=(document.getElementById('takeout-slots-weekend')?.value||'').split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
+    const d=new Date(date+'T12:00:00+08:00');
+    const isWe=(d.getDay()===0||d.getDay()===6);
+    specialSlotsMap[date]=isWe&&weVal.length>0?[...weVal]:(wdVal.length>0?[...wdVal]:['11:00','12:00','13:00','17:00','18:00','19:00']);
+    dateEl.value='';
+    renderSpecialDates();
+    toast('已新增 '+date+' 特殊時段，記得儲存');
+}
+function deleteSpecialDate(date){
+    delete specialSlotsMap[date];
+    renderSpecialDates();
+}
+function renderSpecialDates(){
+    const el=document.getElementById('special-dates-list');
+    if(!el) return;
+    const sorted=Object.keys(specialSlotsMap).sort();
+    if(!sorted.length){ el.innerHTML='<div class="text-xs text-slate-400 py-2 text-center">尚未設定特殊日期</div>'; return; }
+    el.innerHTML=sorted.map(date=>{
+        const d=new Date(date+'T12:00:00+08:00');
+        const wd=['日','一','二','三','四','五','六'][d.getDay()];
+        const slots=specialSlotsMap[date]||[];
+        const escapedDate=date.replace(/'/g,"\\'");
+        return '<div class="border rounded-xl p-3 space-y-2" style="border-color:rgba(184,145,80,0.3);background:#fffbeb">'
+            +'<div class="flex items-center justify-between">'
+            +'<div class="font-bold text-sm" style="color:var(--gold)">🌟 '+date+'（週'+wd+'）</div>'
+            +'<button data-d="'+escapedDate+'" onclick="deleteSpecialDate(this.dataset.d)" class="text-red-400 hover:text-red-600 font-bold text-xs px-2 py-1 rounded">✕ 刪除</button>'
+            +'</div>'
+            +'<textarea rows="3" class="filter-input font-mono text-xs resize-none w-full" placeholder="每行一個時間…" data-sd="'+escapedDate+'" onchange="updateSpecialSlots(this.dataset.sd,this.value)" style="font-size:11px">'+slots.join('\n')+'</textarea>'
+            +'</div>';
+    }).join('');
+}
+function updateSpecialSlots(date, val){
+    specialSlotsMap[date]=val.split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
+}
+async function saveSpecialSlots(){
+    const{error}=await _s.from('store_settings').update({takeout_slots_special:JSON.stringify(specialSlotsMap)}).eq('id',1);
+    if(!error) toast('特殊日期時段已儲存 ✓（共 '+Object.keys(specialSlotsMap).length+' 個日期）');
     else toast('儲存失敗：'+error.message,'error');
 }
 
@@ -4325,7 +4438,10 @@ async function openOrderCardModal(orderId){
                     return html;
                 })()}
                 </div>
-                ${o.note?`<div class="px-4 py-3 rounded-xl text-xs font-bold mt-2" style="background:#f0fdf4;border-left:3px solid var(--pine);color:var(--pine)">📝 ${o.note}</div>`:''}
+                ${`<div style="margin-bottom:10px">
+                    <div class="order-section-label">📝 顧客備註</div>
+                    <textarea id="cust-note-${o.id}" rows="2" placeholder="無備註" onblur="updateOrderData('${o.id}','note',this.value,this)" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;font-size:12px;font-family:'Noto Sans TC',sans-serif;resize:none;outline:none;background:#f8fafc;color:var(--pine);font-weight:600">${o.note||''}</textarea>
+                </div>`}
             </div>
         </div>
         <div class="px-5 py-4 border-t flex gap-3 flex-shrink-0">
