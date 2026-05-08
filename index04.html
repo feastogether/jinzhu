@@ -815,7 +815,8 @@ function showDateCard(){
         var selStyle2=selStyle.replace('var(--border)','#f59e0b');
         // 預設用平日時段；使用者選好取餐日期後再動態更新（見 updateSlotsForDate）
     var timeSlots=takeoutSlots.length>0?takeoutSlots:['11:00','11:30','12:00','12:30','13:00','13:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00'];
-        var btnHtml=timeSlots.map(function(slot){
+        var initSlots=getSlotsForDate('');
+        var btnHtml=initSlots.map(function(slot){
             return '<button data-time="'+slot+'" onclick="selectTimeSlot(this,this.dataset.time)" style="padding:9px 4px;border-radius:10px;border:1.5px solid var(--border);background:#f8fafc;font-size:13px;font-weight:700;cursor:pointer;color:var(--stone);transition:all 0.15s">'+slot+'</button>';
         }).join('');
         inner.innerHTML=
@@ -823,11 +824,14 @@ function showDateCard(){
             +'<p style="font-size:12px;color:var(--stone);margin-bottom:16px">'+t('selectPickupHint')+'</p>'
             +'<div style="margin-bottom:14px">'
             +'<label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px">'+t('pickupDate')+'</label>'
-            +'<select id="pickup-date-sel" style="'+selStyle2+'">'+optHtml+'</select>'
+            +'<select id="pickup-date-sel" onchange="updateSlotsForDate(this.value)" style="'+selStyle2+'">'+optHtml+'</select>'
             +'</div>'
             +'<div>'
-            +'<label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px">'+t('pickupTimeLabel')+'</label>'
-            +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+btnHtml+'</div>'
+            +'<label style="display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:8px">'
+            +'<span>'+t('pickupTimeLabel')+'</span>'
+            +'<span id="slot-date-hint" style="margin-left:6px;font-size:10px;color:var(--stone);font-weight:500"></span>'
+            +'</label>'
+            +'<div id="time-slot-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+btnHtml+'</div>'
             +'</div>';
     }
 }
@@ -883,18 +887,56 @@ function startOrder(){
     loadContent();loadAnnouncement();loadUpsellSettings();
 }
 
+// 儲存全部時段設定（依日期動態決定）
+let takeoutSlotsWeekday=[], takeoutSlotsWeekend=[], takeoutSlotsSpecial={};
+
 async function loadTakeoutSlots(){
     try{
-        const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend').eq('id',1).single();
+        const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend,takeout_slots_special').eq('id',1).single();
         if(data){
-            // 依今天星期幾決定顯示哪組時段（0=日,6=六 = 週末）
-            const dow=new Date().getDay();
-            const isWeekend=(dow===0||dow===6);
-            const wdSlots=data.takeout_slots||[];
-            const weSlots=data.takeout_slots_weekend||[];
-            takeoutSlots=(isWeekend&&weSlots.length>0)?weSlots:(wdSlots.length>0?wdSlots:[]);
+            takeoutSlotsWeekday=data.takeout_slots||[];
+            takeoutSlotsWeekend=data.takeout_slots_weekend||[];
+            // takeout_slots_special: {"2025-06-01":["11:00","12:00"],...}
+            try{ takeoutSlotsSpecial=JSON.parse(data.takeout_slots_special||'{}'); }catch(e){ takeoutSlotsSpecial={}; }
         }
     }catch(e){}
+}
+
+// 依選取日期決定顯示哪組時段
+function getSlotsForDate(dateStr){
+    // 1. 特殊日期優先
+    if(takeoutSlotsSpecial[dateStr]&&takeoutSlotsSpecial[dateStr].length>0) return takeoutSlotsSpecial[dateStr];
+    // 2. 依星期判斷
+    if(dateStr){
+        const d=new Date(dateStr+'T12:00:00+08:00');
+        const dow=d.getDay();
+        const isWeekend=(dow===0||dow===6);
+        if(isWeekend&&takeoutSlotsWeekend.length>0) return takeoutSlotsWeekend;
+        if(!isWeekend&&takeoutSlotsWeekday.length>0) return takeoutSlotsWeekday;
+    }
+    // 3. fallback 預設
+    return takeoutSlots.length>0?takeoutSlots:['11:00','11:30','12:00','12:30','13:00','13:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00'];
+}
+
+// 依選取日期動態更新時段按鈕
+function updateSlotsForDate(dateStr){
+    pickupTime=''; // 清除已選時間
+    const slots=getSlotsForDate(dateStr);
+    const grid=document.getElementById('time-slot-grid');
+    if(!grid) return;
+    grid.innerHTML=slots.map(function(slot){
+        return '<button data-time="'+slot+'" onclick="selectTimeSlot(this,this.dataset.time)" style="padding:9px 4px;border-radius:10px;border:1.5px solid var(--border);background:#f8fafc;font-size:13px;font-weight:700;cursor:pointer;color:var(--stone);transition:all 0.15s">'+slot+'</button>';
+    }).join('');
+    // 更新提示文字
+    const hint=document.getElementById('slot-date-hint');
+    if(hint&&dateStr){
+        const d=new Date(dateStr+'T12:00:00+08:00');
+        const wd=['日','一','二','三','四','五','六'][d.getDay()];
+        const isWeekend=(d.getDay()===0||d.getDay()===6);
+        const special=takeoutSlotsSpecial[dateStr];
+        const label=special?'🌟 特殊時段':'（'+(isWeekend?'週末':'平日')+'時段）';
+        hint.textContent=label;
+    }
 }
 
 async function loadContent(){
