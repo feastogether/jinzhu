@@ -541,24 +541,30 @@ let allMenuItems=[],allCats=[],allCampaigns=[],ordersRef=[];
 
 // ── PARSE ──
 function parseItem(raw){
-  // 套餐份數：支援套餐名含括號（如「母親節套餐(4-6人份) x2 (子品項...)」）
   let qty=1;
-  const qM1_=raw.match(/ x(\d+) \(/);   // 「品名 x數字 (子品項」
-  const qM2_=raw.match(/\) x(\d+)$/);   // 「品名(備註) x數字」結尾
-  const qM3_=raw.match(/ x(\d+)$/);      // 「品名 x數字」結尾
+  const qM1_=raw.match(/ x(\d+) \(/);
+  const qM2_=raw.match(/\) x(\d+)$/);
+  const qM3_=raw.match(/ x(\d+)$/);
   if(qM1_) qty=parseInt(qM1_[1]);
   else if(qM2_) qty=parseInt(qM2_[1]);
   else if(qM3_) qty=parseInt(qM3_[1]);
-  // 取 inner：去掉頂層份數，找最後 ' (' 的括號內容
   let wo=raw;
   if(qM1_) wo=raw.replace(/ x\d+ \(/, ' (');
   else if(qM3_) wo=raw.replace(/ x\d+$/, '');
-  const pI=wo.lastIndexOf(' (');
-  const inner=pI>-1?wo.slice(pI+2,-1):null;
-  const isSet=!!(inner&&(inner.includes('、')||/ x\d+/.test(inner)));
+  // 用括號深度追蹤找套餐分隔符
+  let inner=null,sp=0;
+  while(sp<wo.length){
+    const pi=wo.indexOf(' (',sp);
+    if(pi===-1) break;
+    let depth=1,j=pi+2;
+    while(j<wo.length&&depth>0){if(wo[j]==='(')depth++;else if(wo[j]===')')depth--;j++;}
+    if(depth===0){const cand=wo.slice(pi+2,j-1);if(cand.includes('、')){inner=cand;break;}}
+    sp=pi+1;
+  }
+  const isSet=!!(inner&&inner.includes('、'));
   const fM=raw.match(/\[([^\]]+)\]/);const flv=fM?fM[1]:'';
   const clean=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-  return{qty,flv,clean,inner,isSet,brand:isSet?clean.replace(/ \(.*$/,'').trim():null};
+  return{qty,flv,clean,inner,isSet,brand:isSet?clean.split(' (')[0].trim():null};
 }
 function parseSubs(innerRaw){
   if(!innerRaw)return[];
@@ -795,7 +801,8 @@ function renderOrders(orders){
 function orderHtml(o){
   const synced=o.status==='synced';
   let bStr='';
-  if(o.booking_date){const tw=twDate(o.booking_date);bStr=`${String(tw.getUTCMonth()+1).padStart(2,'0')}/${String(tw.getUTCDate()).padStart(2,'0')} ${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`;}
+  if(o.booking_date){const tw=twDate(o.booking_date);const hhmm_=String(tw.getUTCHours()).padStart(2,'0')+':'+String(tw.getUTCMinutes()).padStart(2,'0');
+    bStr=(tw.getUTCMonth()+1)+'/'+tw.getUTCDate()+(hhmm_!=='00:00'?' '+hhmm_:'');}
   // parse items for display
   const sets=[],singles={};
   (o.order_content||[]).forEach(item=>{
@@ -825,8 +832,10 @@ function orderHtml(o){
     <div class="order-sec">
       <div class="order-sec-lbl">🍱 餐點明細</div>
       <div class="items-box">${itemsHtml||'<p style="padding:8px;font-size:12px;color:var(--stone)">無餐點資料</p>'}</div>
-      ${o.note?`<div class="note-blk">📝 ${o.note}</div>`:''}
-    </div>
+      <div class="note-blk" style="background:#f0fdf4;border-left:3px solid var(--pine);padding:8px 10px;margin-top:6px;border-radius:0 8px 8px 0">
+      <div style="font-size:9px;font-weight:700;color:var(--stone);margin-bottom:4px">📝 顧客備註</div>
+      <textarea rows="2" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11px;resize:none;outline:none;background:white;color:var(--pine);font-weight:600" onblur="saveNoteField('${o.id}','note',this.value)">${o.note||''}</textarea>
+      </div>    </div>
     <!-- 操作 -->
     <div class="order-actions">
       <button class="btn btn-danger btn-icon" onclick="deleteOrder('${o.id}')">🗑</button>
@@ -1173,6 +1182,13 @@ function confirmPop(){
 }
 
 // ── SAVE EDIT ORDER ──
+function saveNoteField(orderId, field, val){
+  _s.from('orders').update({[field]:val||null}).eq('id',orderId).then(({error})=>{
+    if(!error) toast('✅ 已儲存','success',1000);
+    else toast('儲存失敗','error');
+  });
+}
+
 async function saveEditOrder(){
   if(!eosOrder)return;
   const name=document.getElementById('eos-name').value.trim();
@@ -1239,7 +1255,8 @@ async function renderCal(){
     html+=`<div class="cal-cell ${isToday?'today':''}" onclick="openCalDay('${ds}')">
       <div class="dn ${isToday?'':nc}">${d}</div>
       ${ords.length?`<div class="cal-cnt">${ords.length}</div>`:''}
-      <div class="cal-dots">${ords.slice(0,2).map(o=>{const tw=twDate(o.booking_date);return`<div class="cal-dot-item">${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')} ${o.customer_name}</div>`;}).join('')}${ords.length>2?`<div style="font-size:8px;color:var(--stone);font-weight:700">+${ords.length-2}</div>`:''}</div>
+      <div class="cal-dots">${ords.slice(0,2).map(o=>{const tw=twDate(o.booking_date);const dotStyle=o.is_takeout?'background:rgba(245,158,11,0.15);color:#d97706':'';
+            return`<div class="cal-dot-item" style="${dotStyle}">${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')} ${o.customer_name}${o.is_takeout?'🥡':''}</div>`;}).join('')}${ords.length>2?`<div style="font-size:8px;color:var(--stone);font-weight:700">+${ords.length-2}</div>`:''}</div>
     </div>`;
   }
   document.getElementById('cal-cells').innerHTML=html;
@@ -1260,7 +1277,7 @@ async function openCalDay(ds){
       const tw=twDate(o.booking_date);const hhmm=`${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`;
       const synced=o.status==='synced';
       const pax=[o.adult_count>0?`大${o.adult_count}`:'',o.kid_count>0?`小${o.kid_count}`:'',o.child_count>0?`幼${o.child_count}`:''].filter(Boolean).join(' ');
-      return`<div style="background:white;border:1px solid var(--border);border-left:3px solid ${synced?'#10b981':'var(--gold)'};border-radius:12px;padding:12px 14px;margin-bottom:8px">
+      return`<div style="background:white;border:1px solid var(--border);border-left:3px solid ${o.is_takeout?'#f59e0b':synced?'#10b981':'var(--gold)'};border-radius:12px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <div class="status-dot ${synced?'synced':'pending'}"></div>
           <div style="font-weight:900;font-size:14px;flex:1">${o.customer_name}</div>
@@ -1356,7 +1373,7 @@ async function fetchReport(){
   document.getElementById('rpt-prepare').innerHTML=`<div style="background:white;border:1px solid var(--border);border-radius:16px;overflow:hidden"><div style="padding:12px 14px;background:#1e293b;display:flex;justify-content:space-between;align-items:center"><span style="color:white;font-weight:700;font-size:13px">🍳 備料總表</span><span style="background:#475569;color:white;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">${sorted.length} 項</span></div><div style="overflow-y:auto;max-height:50vh">${sorted.map(([k,count],i)=>{const pct=Math.round(count/maxQ*100);return`<div style="padding:10px 14px;border-bottom:1px solid #f8fafc;display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:700;color:#94a3b8;width:20px;flex-shrink:0">${i+1}</span><div style="flex:1"><div style="font-size:13px;font-weight:700;word-break:break-all">${k}</div><div style="height:5px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin-top:4px"><div style="height:100%;border-radius:999px;width:${pct}%;background:var(--pine)"></div></div></div><div style="font-family:'Noto Serif TC',serif;font-size:18px;font-weight:900;color:var(--pine);flex-shrink:0">${count}</div></div>`;}).join('')||'<div style="text-align:center;padding:32px;color:var(--stone);font-size:13px;font-weight:700">查無資料</div>'}</div></div>`;
   const setEntries=Object.entries(setCount).sort((a,b)=>b[1]-a[1]);
   document.getElementById('rpt-setmenu').innerHTML=setEntries.length===0?'<div style="text-align:center;padding:32px;color:var(--stone);font-size:13px;font-weight:700">查無套餐</div>':setEntries.map(([name,count])=>`<div style="background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:8px"><div style="padding:10px 14px;background:rgba(184,145,80,.08);border-bottom:1px solid rgba(184,145,80,.2);display:flex;justify-content:space-between;align-items:center"><span style="font-weight:900;color:var(--pine)">${name}</span><span style="font-family:'Noto Serif TC',serif;font-size:18px;font-weight:900;color:var(--gold)">${count} 套</span></div><div style="padding:8px 14px">${Object.entries(setDetail[name]||{}).map(([sn,sc])=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f8fafc"><span style="font-size:12px;flex:1;font-weight:600">${sn}</span><span style="font-weight:900;color:var(--pine)">${sc} 份</span></div>`).join('')}</div></div>`).join('');
-  document.getElementById('rpt-orders').innerHTML=o.length===0?'<div style="text-align:center;padding:32px;color:var(--stone);font-size:13px;font-weight:700">查無訂單</div>':o.map(ord=>{const tw=ord.booking_date?twDate(ord.booking_date):null;const hhmm=tw?`${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`:'—';const synced=ord.status==='synced';return`<div style="background:white;border:1px solid var(--border);border-left:3px solid ${synced?'#10b981':'var(--gold)'};border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px"><div class="status-dot ${synced?'synced':'pending'}"></div><div style="flex:1;min-width:0"><div style="font-weight:900;font-size:14px">${ord.customer_name}</div><div style="font-size:12px;color:var(--stone);margin-top:2px">${ord.phone||'—'} · <span style="font-weight:900;color:var(--pine)">$${ord.total_price}</span>${ord.table_no?' · 桌'+ord.table_no:''}</div></div><div style="font-family:'Noto Serif TC',serif;font-weight:900;color:var(--gold);flex-shrink:0">${hhmm}</div></div>`;}).join('');
+  document.getElementById('rpt-orders').innerHTML=o.length===0?'<div style="text-align:center;padding:32px;color:var(--stone);font-size:13px;font-weight:700">查無訂單</div>':o.map(ord=>{const tw=ord.booking_date?twDate(ord.booking_date):null;const hhmm=tw?`${String(tw.getUTCHours()).padStart(2,'0')}:${String(tw.getUTCMinutes()).padStart(2,'0')}`:'—';const synced=ord.status==='synced';return`<div style="background:white;border:1px solid var(--border);border-left:3px solid ${o.is_takeout?'#f59e0b':synced?'#10b981':'var(--gold)'};border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px"><div class="status-dot ${synced?'synced':'pending'}"></div><div style="flex:1;min-width:0"><div style="font-weight:900;font-size:14px">${ord.customer_name}</div><div style="font-size:12px;color:var(--stone);margin-top:2px">${ord.phone||'—'} · <span style="font-weight:900;color:var(--pine)">$${ord.total_price}</span>${ord.table_no?' · 桌'+ord.table_no:''}</div></div><div style="font-family:'Noto Serif TC',serif;font-weight:900;color:var(--gold);flex-shrink:0">${hhmm}</div></div>`;}).join('');
   document.getElementById('rpt-export-btn').style.display='block';
 }
 function exportXls(){
