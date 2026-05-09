@@ -1308,7 +1308,7 @@ async function renderCal(){
   }
   document.getElementById('cal-cells').innerHTML=html;
 }
-async function calItemHtml(o){
+function calItemHtml(o){
   const synced=(o.status==='confirmed'||o.status==='synced');
   const isConfirming=(!o.status||o.status==='confirming'||o.status==='pending');
   const isEnded=o.status==='ended';
