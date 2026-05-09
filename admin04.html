@@ -1662,7 +1662,7 @@ async function loadOrders() {
     document.getElementById('order-list').innerHTML=(data||[]).length===0
         ?`<div class="col-span-2 empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-title">找不到符合條件的訂單</div><div class="empty-state-sub">請調整篩選條件或重置後再試</div></div>`
         :(()=>{
-        // 確認中 → 最上方（紅色），其次無訂位日期，其次原排序
+        // 確認中最上方 → 無訂位日期 → 依訂位日期時間升序
         const sorted=[...(data||[])].sort((a,b)=>{
             const aConf=(!a.status||a.status==='confirming'||a.status==='pending');
             const bConf=(!b.status||b.status==='confirming'||b.status==='pending');
@@ -1671,7 +1671,12 @@ async function loadOrders() {
             const aNo=!a.booking_date, bNo=!b.booking_date;
             if(aNo&&!bNo) return -1;
             if(!aNo&&bNo) return 1;
-            return 0;
+            // 依訂位日期時間升序
+            const at=new Date(a.booking_date).getTime();
+            const bt=new Date(b.booking_date).getTime();
+            if(at!==bt) return at-bt;
+            // 同時間依下單時間降序
+            return new Date(b.created_at)-new Date(a.created_at);
         });
         return sorted.map(o=>{
         let bTime='';
