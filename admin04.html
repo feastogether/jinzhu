@@ -3091,11 +3091,8 @@ function renderReports(orders, setMenuNames=new Set()){
                         const sQM2=raw.match(/\) x(\d+)$/);
                         const sQM3=raw.match(/^[^(]* x(\d+)$/);
                         const sq=sQM1?parseInt(sQM1[1]):sQM2?parseInt(sQM2[1]):sQM3?parseInt(sQM3[1]):1;
-                        let sc=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
-                        // 把括號內的「、」分隔選項轉成 [選項] 格式，方便閱讀
-                        sc=sc.replace(/\s*\(([^)]+)\)/g,(_,inner)=>{
-                            return inner.split('、').map(s=>`[${s.trim()}]`).join('');
-                        });
+                        // 統一格式：先把 [口味] → (口味)，再移除份數，與單點 key 一致
+                        let sc=raw.replace(/\[([^\]]+)\]/g,'($1)').replace(/ x\d+/g,'').trim();
                         if(!sc)return;
                         dishCount[sc]=(dishCount[sc]||0)+qty*sq;
                         setMenuDetail[brand][sc]=(setMenuDetail[brand][sc]||0)+qty*sq;
@@ -3103,7 +3100,7 @@ function renderReports(orders, setMenuNames=new Set()){
                 } else {
                     // 口味選擇型（如三喜小菜拼盤）→ 整組作一個備料品項
                     // 格式：品名[選項1][選項2][選項3]
-                    const innerFmt=inner?inner.split('、').map(s=>`[${s.trim()}]`).join(''):'';
+                    const innerFmt=inner?inner.split('、').map(s=>`(${s.trim()})`).join(''):'';
                     const fullKey=brand+innerFmt;
                     dishCount[fullKey]=(dishCount[fullKey]||0)+qty;
                     setMenuDetail[brand][fullKey]=(setMenuDetail[brand][fullKey]||0)+qty;
@@ -3111,7 +3108,8 @@ function renderReports(orders, setMenuNames=new Set()){
             }
             else{
                 // 單點：以品名（含口味）作 key
-                const key=flv?`${cleanName} [${flv}]`:cleanName;
+                // 統一 key 格式：cleanName 已含品名括號，flv 是額外口味標記
+                const key=flv?`${cleanName}(${flv})`:cleanName;
                 dishCount[key]=(dishCount[key]||0)+qty;
             }
         });
