@@ -2188,18 +2188,25 @@ function openEditPop(itemId,index=-1){
     reEditIndex=index;let prevNames=[],prevFlvs=[];
     if(index>-1){
         const raw=editCart[index].name;
-        // 取套餐名稱（去掉數量、口味、子品項）
-        const base=raw.split(' [')[0].split(' (')[0].replace(/ x\d+/g,'').trim();
-        curEditItem=allMenuItems.find(i=>i.name===base);
-        // 取子品項列表（括號內容，找最後一個括號區段）
-        const pStart=raw.lastIndexOf(' (');
-        if(pStart>-1){
-            const inner=raw.slice(pStart+2,-1);
-            // 保留 x數量，供 groupPrevQty 使用（不刪除）
-            prevNames=inner.split('、').map(n=>n.split(' [')[0].trim());
+        // 用 parseItemDisplay 正確解析（與前台相同邏輯）
+        const parsed=parseItemDisplay(raw);
+        curEditItem=allMenuItems.find(i=>i.name===parsed.brand||i.name===(parsed.clean.split(' (')[0].trim()));
+        // 取子品項：用括號深度追蹤找正確的 inner
+        if(parsed.inner){
+            // 用括號深度正確分割「、」（不切括號內的）
+            const subs=[];let depth=0,cur='';
+            for(const ch of parsed.inner){
+                if(ch==='('||ch==='['){depth++;cur+=ch;}
+                else if(ch===')'||ch===']'){depth--;cur+=ch;}
+                else if(ch==='、'&&depth===0){subs.push(cur.trim());cur='';}
+                else cur+=ch;
+            }
+            if(cur.trim())subs.push(cur.trim());
+            // 保留 x數量，去掉口味標記
+            prevNames=subs.map(n=>n.replace(/\s*\[.*?\]/g,'').trim());
         }
         // 取口味（方括號內容）
-        const fM=raw.match(/\[(.*?)\]/);
+        const fM=raw.match(/\[([^\]]+)\]/);
         if(fM)prevFlvs=fM[1].split('/');
     }
     else{curEditItem=allMenuItems.find(i=>i.id===itemId);}
@@ -2216,11 +2223,13 @@ function openEditPop(itemId,index=-1){
             const limit=g.selection_limit||0;
             const groupItemNames=new Set(sortedContents.map(c=>c.menu_items.name));
             // 從 prevNames 中找屬於這個分組的品項（含數量）
+            // 依序消耗 prevNames，只取屬於本分組的品項
             const groupPrev={};// name -> qty
             let scan=0;
-            const maxScan=limit>0?limit:sortedContents.length;
-            while(scan<prevNames.length){
-                // prevNames 中的元素可能帶 x數量
+            // 計算本分組應該消耗多少 prevNames（limit 或全部）
+            const expectCount=stype==='include'?sortedContents.length:(limit>0?limit:sortedContents.length);
+            let taken=0;
+            while(scan<prevNames.length && (limit===0||taken<expectCount)){
                 const rawN=prevNames[scan];
                 const qM=rawN.match(/ x(\d+)$/);
                 const baseName=qM?rawN.replace(/ x\d+$/,'').trim():rawN;
@@ -2228,8 +2237,11 @@ function openEditPop(itemId,index=-1){
                 if(groupItemNames.has(baseName)){
                     groupPrev[baseName]=(groupPrev[baseName]||0)+qty_;
                     prevNames.splice(scan,1);
+                    taken++;
                 } else {
                     scan++;
+                    // 如果已超過本分組可能的品項範圍，停止
+                    if(scan>expectCount*2) break;
                 }
             }
             // 根據 stype 設定初始選取狀態
@@ -2262,9 +2274,19 @@ function openEditPop(itemId,index=-1){
                     return'<div id="epop-card-'+g.id+'-'+c.menu_items.id+'" class="p-3 border rounded-xl text-[11px] font-bold text-center '+(isSelected?'opt-selected':'bg-slate-50')+'" style="position:relative">'
                         +c.menu_items.name+priceTag+qtyHtml+'</div>';
                 } else {
+                    // 子品項口味
+                    const subFlvRels=c.menu_items.item_flavor_relation||[];
+                    const subFlvHtml=subFlvRels.length>0&&isM?subFlvRels.map(r=>{
+                        const prevSubFlv=(groupPrev[c.menu_items.name+'_flv_'+r.flavor_groups.id])||'';
+                        return '<div style="margin-top:6px"><p style="font-size:9px;color:var(--stone);font-weight:700;margin-bottom:4px">'+r.flavor_groups.name+'</p>'                            +'<div style="display:flex;flex-wrap:wrap;gap:4px">'                            +r.flavor_groups.flavor_options.map(o=>{
+                                const isSel=prevSubFlv===o.option_name;
+                                if(isSel&&curEditPopSels.groups[g.id]){const ex=curEditPopSels.groups[g.id].find(x=>x.name===c.menu_items.name);if(ex)ex['flv_'+r.flavor_groups.id]=o.option_name;}
+                                return '<div data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-fgid="'+r.flavor_groups.id+'" data-fval="'+o.option_name+'"'                                    +' onclick="event.stopPropagation();setEditSubFlv(this)" style="padding:3px 8px;border-radius:999px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid;'                                    +(isSel?'background:var(--pine);color:white;border-color:var(--pine)':'background:white;color:var(--stone);border-color:#e2e8f0')                                    +'">'+o.option_name+'</div>';
+                            }).join('')                            +'</div></div>';
+                    }).join(''):'';
                     return'<div data-gid="'+g.id+'" data-name="'+c.menu_items.name+'" data-limit="'+limit+'" data-pa="'+pa+'"'
                         +' onclick="setEditPopGroupByData(this)"'
-                        +' class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold '+(isM?'opt-selected':'bg-slate-50')+' '+(stype==='include'?'pointer-events-none opacity-70':'')+'">'                        +c.menu_items.name+priceTag+'</div>';
+                        +' class="p-3 border rounded-xl text-[11px] cursor-pointer text-center font-bold '+(isM?'opt-selected':'bg-slate-50')+' '+(stype==='include'?'pointer-events-none opacity-70':'')+'">'                        +c.menu_items.name+priceTag+subFlvHtml+'</div>';
                 }
             });
             return'<div style="margin-bottom:16px"><p class="text-[10px] font-bold mb-2 uppercase" style="color:var(--pine)">'+g.group_name+' '+typeLabel+'</p><div class="grid grid-cols-2 gap-2">'+pa_items.join('')+'</div></div>';
@@ -2275,6 +2297,19 @@ function openEditPop(itemId,index=-1){
     document.getElementById('edit-flavor-popup').classList.remove('hidden');
 }
 function setEditPopFlv(el,gid,name){Array.from(el.parentElement.children).forEach(c=>{c.classList.remove('flavor-selected');c.classList.add('bg-slate-50');});el.classList.add('flavor-selected');el.classList.remove('bg-slate-50');curEditPopSels.flavors[gid]=name;}
+// 套餐子品項的口味選擇
+function setEditSubFlv(el){
+    const gid=el.dataset.gid, name=el.dataset.name, fgid=el.dataset.fgid, fval=el.dataset.fval;
+    // 同分組同口味組只選一個
+    el.parentElement.querySelectorAll('[data-fgid="'+fgid+'"][data-name="'+name+'"]').forEach(b=>{
+        b.style.background='white';b.style.color='var(--stone)';b.style.borderColor='#e2e8f0';
+    });
+    el.style.background='var(--pine)';el.style.color='white';el.style.borderColor='var(--pine)';
+    // 儲存到 curEditPopSels
+    if(!curEditPopSels.groups[gid])curEditPopSels.groups[gid]=[];
+    const ex=curEditPopSels.groups[gid].find(x=>x.name===name);
+    if(ex) ex['flv_'+fgid]=fval;
+}
 function ePopMultiAdj(btn, delta){
     const gid=btn.dataset.gid, name=btn.dataset.name, pa=parseFloat(btn.dataset.pa)||0, sl=parseInt(btn.dataset.sl)||0;
     if(!curEditPopSels.groups[gid]) curEditPopSels.groups[gid]=[];
@@ -2328,8 +2363,11 @@ function confirmEditPop(){
     // multi 類型：品名帶 x數量，include/choose：只帶品名
     const gnParts=[];
     Object.values(curEditPopSels.groups).flat().forEach(x=>{
-        if(x.qty&&x.qty>1) gnParts.push(x.name+' x'+x.qty);
-        else if(!x.qty||x.qty>=1) gnParts.push(x.name);
+        // 取子品項口味標記（如 flv_123 = '冰'）
+        const subFlvs=Object.entries(x).filter(([k])=>k.startsWith('flv_')).map(([,v])=>v);
+        const subFlvStr=subFlvs.length>0?' ['+subFlvs.join('/')+']':'';
+        if(x.qty&&x.qty>1) gnParts.push(x.name+subFlvStr+' x'+x.qty);
+        else if(!x.qty||x.qty>=1) gnParts.push(x.name+subFlvStr);
     });
     const gn=gnParts.join('、');
     // 保留原本的套餐份數（用正確的解析邏輯）
