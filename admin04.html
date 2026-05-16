@@ -3809,13 +3809,103 @@ async function loadTgNotifySetting(){
 }
 
 async function testTgSummaryNotify(){
-    toast('📤 正在發送 TG 測試彙整...','info',2000);
+    toast('📤 正在產生彙整...','info',2000);
     try{
-        const{data,error} = await _s.functions.invoke('jin-zhu-tg',{body:{action:'daily-summary'}});
-        if(error) throw error;
-        toast('✓ TG 測試發送成功','success',3000);
+        const TG_TOKEN='8685808662:AAFqm_ApVxnfUSHeYKyknRHqEsW2GDaXsXc';
+        const TG_CHAT='-5163908895';
+
+        // 台灣時間今天
+        const twNow=new Date(Date.now()+8*3600000);
+        const twToday=twNow.toISOString().split('T')[0];
+
+        // 1. 今日訂位訂單
+        const{data:orders}=await _s.from('orders').select('*')
+            .gte('booking_date',`${twToday}T00:00:00+08:00`)
+            .lte('booking_date',`${twToday}T23:59:59+08:00`)
+            .order('booking_date',{ascending:true});
+
+        // 2. 待處理（confirming/pending，不限日期）
+        const{count:pendingCount}=await _s.from('orders').select('*',{count:'exact',head:true})
+            .in('status',['confirming','pending']);
+
+        // 3. 計算統計
+        const todayOrders=orders||[];
+        const totalRevenue=todayOrders.reduce((s,o)=>s+(o.total_price||0),0);
+        const totalPax=todayOrders.reduce((s,o)=>s+(o.adult_count||0)+(o.kid_count||0)+(o.child_count||0),0);
+        const completedCount=todayOrders.filter(o=>o.status==='confirmed'||o.status==='synced').length;
+
+        // 4. 組裝訊息（格式化排版）
+        const dateStr=`${parseInt(twToday.slice(5,7))}/${parseInt(twToday.slice(8,10))}`;
+        const dayNames=['日','一','二','三','四','五','六'];
+        const dayName=dayNames[new Date(twToday+'T12:00:00+08:00').getDay()];
+
+        let msg=`📋 *${dateStr} 當日訂單彙整*
+`;
+        msg+=`─────────────────
+`;
+        msg+=`💰 今日預估　\$${totalRevenue.toLocaleString()}
+`;
+        msg+=`👥 總人數　${totalPax} 位
+`;
+        msg+=`📊 今日訂單　${todayOrders.length} 筆 (已完成 ${completedCount} 筆)
+`;
+        if(pendingCount>0) msg+=`⚠️ 待處理　${pendingCount} 筆
+`;
+        msg+=`─────────────────
+`;
+
+        if(todayOrders.length>0){
+            msg+=`📅 今日訂位
+`;
+            todayOrders.forEach(o=>{
+                const tw=new Date(new Date(o.booking_date).getTime()+8*3600000);
+                const hhmm=String(tw.getUTCHours()).padStart(2,'0')+':'+String(tw.getUTCMinutes()).padStart(2,'0');
+                const statusIcon=o.status==='confirmed'||o.status==='synced'?'✅':o.status==='ended'?'🔘':'⏳';
+                const pax=[o.adult_count>0?`大${o.adult_count}`:'',o.kid_count>0?`小${o.kid_count}`:'',o.child_count>0?`幼${o.child_count}`:''].filter(Boolean).join(' ');
+                const table=o.table_no?` 桌${o.table_no}`:'';
+                const takeout=o.is_takeout?'🥡':'';
+                msg+=`${statusIcon} *${hhmm}* ${takeout}${o.customer_name}\n`;
+                msg+=`   📞 ${o.phone||'—'}${table?' · '+table:''}${pax?' · '+pax:''}  \$${o.total_price}\n`;
+            });
+            msg+=`─────────────────
+`;
+        }
+
+        // 待處理訂單列表
+        if(pendingCount>0){
+            const{data:pendingOrders}=await _s.from('orders').select('*')
+                .in('status',['confirming','pending'])
+                .order('created_at',{ascending:false});
+            if(pendingOrders?.length>0){
+                msg+=`🔔 待確認訂單
+`;
+                pendingOrders.forEach(o=>{
+                    const ct=new Date(o.created_at).toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+                    const bd=o.booking_date?new Date(new Date(o.booking_date).getTime()+8*3600000):null;
+                    const bdStr=bd?`${bd.getUTCMonth()+1}/${bd.getUTCDate()} ${String(bd.getUTCHours()).padStart(2,'0')}:${String(bd.getUTCMinutes()).padStart(2,'0')} `:'未定';
+                    msg+=`🔔 *${o.customer_name}*\n`;
+                    msg+=`   📅 ${bdStr}  📞 ${o.phone||'—'}  \$${o.total_price}\n`;
+                });
+                msg+=`─────────────────
+`;
+            }
+        }
+
+        const totalCompleted=pendingCount===0?'✅ 全部訂單已完成':'';
+        if(totalCompleted) msg+=totalCompleted;
+
+        // 5. 發送
+        const res=await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({chat_id:TG_CHAT,text:msg,parse_mode:'Markdown'})
+        });
+        const json=await res.json();
+        if(!json.ok) throw new Error(json.description||'TG API 錯誤');
+        toast('✓ TG 彙整發送成功','success',3000);
     }catch(e){
         toast('TG 發送失敗：'+(e?.message||e),'error',4000);
+        console.error(e);
     }
 }
 
