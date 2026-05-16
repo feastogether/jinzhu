@@ -560,12 +560,13 @@ function parseItem(raw){
   while(sp<wo.length){
     const pi=wo.indexOf(' (',sp);
     if(pi===-1) break;
+    if(!wo.slice(0,pi).trim()){sp=pi+1;continue;}
     let depth=1,j=pi+2;
     while(j<wo.length&&depth>0){if(wo[j]==='(')depth++;else if(wo[j]===')')depth--;j++;}
-    if(depth===0){const cand=wo.slice(pi+2,j-1);if(cand.includes('、')){inner=cand;break;}}
+    if(depth===0){const cand=wo.slice(pi+2,j-1);if(cand.includes('、')||j===wo.length){inner=cand;break;}}
     sp=pi+1;
   }
-  const isSet=!!(inner&&inner.includes('、'));
+  const isSet=!!(inner);
   const fM=raw.match(/\[([^\]]+)\]/);const flv=fM?fM[1]:'';
   const clean=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
   return{qty,flv,clean,inner,isSet,brand:isSet?clean.split(' (')[0].trim():null};
