@@ -1622,9 +1622,10 @@ async function loadOrders() {
     // booking_asc/desc 時 null 的訂單（沒有訂位日期）排到最後
     if(sortField==='booking_date') q=q.order('created_at',{ascending:false});
     // 主列表預設排除訂位日期已過去的訂單（已過去的在「已完成」視圖）
-    // 只在沒有手動指定日期篩選時才自動排除
+    // 確認中訂單不管日期都要顯示；其他狀態才過濾過去日期
     if(preset==='all'||preset===''){
-        q=q.or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null`);
+        // booking_date >= 今天 OR booking_date is null OR status=confirming/pending
+        q=q.or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null,status.eq.confirming,status.eq.pending`);
     }
     if (search)           q=q.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
     if (status!=='all')   q=q.eq('status',status);
@@ -2118,14 +2119,16 @@ function refreshEditCart(){
         if(mA) wo=nm.replace(/ x\d+ \(/, ' (');
         else if(mC) wo=nm.replace(/ x\d+$/, '');
         // 找第一個包含「、」的括號（套餐分隔符）
+        // 用括號深度找套餐分隔符（含「、」或單個子品項在末尾）
         let displayName=wo, subStr='';
         let _sp=0;
         while(_sp<wo.length){
             const _pi=wo.indexOf(' (',_sp);
             if(_pi===-1)break;
+            if(!wo.slice(0,_pi).trim()){_sp=_pi+1;continue;}
             let _dep=1,_j=_pi+2;
             while(_j<wo.length&&_dep>0){if(wo[_j]==='(')_dep++;else if(wo[_j]===')')_dep--;_j++;}
-            if(_dep===0){const _cand=wo.slice(_pi+2,_j-1);if(_cand.includes('、')){displayName=wo.slice(0,_pi);subStr=_cand;break;}}
+            if(_dep===0){const _cand=wo.slice(_pi+2,_j-1);if(_cand.includes('、')||_j===wo.length){displayName=wo.slice(0,_pi);subStr=_cand;break;}}
             _sp=_pi+1;
         }
         return '<div style="background:white;border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;position:relative">'
@@ -2217,7 +2220,19 @@ function openEditPop(itemId,index=-1){
         }
         // 取主品口味（套餐括號 ' (inner)' 之前的 []）
         {
-            const nameOnly=parsed.inner?raw.slice(0,raw.indexOf(' ('+parsed.inner)):raw;
+            // 找套餐括號起點（考慮 x數量 可能在括號前）
+            let _nlEnd=raw.length;
+            if(parsed.inner){
+              const _ns=' ('+parsed.inner;
+              const _ni=raw.indexOf(_ns);
+              if(_ni>-1) _nlEnd=_ni;
+              else{
+                // 備用：找最後一個完整套餐括號
+                const _alt=raw.lastIndexOf(' (');
+                if(_alt>-1)_nlEnd=_alt;
+              }
+            }
+            const nameOnly=raw.slice(0,_nlEnd);
             const fM=nameOnly.match(/\[([^\]]+)\]/);
             if(fM)prevFlvs=fM[1].split('/');
         }
@@ -4779,7 +4794,7 @@ async function updateOrdersKpi(){
     // 尚未處理（status = pending）
     const {count:pendingCount} = await _s.from('orders')
         .select('*',{count:'exact',head:true})
-        .eq('status','pending');
+        .in('status',['confirming','pending']);
     const todayEl=document.getElementById('kpi-today-bookings');
     const pendingEl=document.getElementById('kpi-pending-orders');
     if(todayEl) todayEl.textContent=todayCount??0;
