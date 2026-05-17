@@ -2,870 +2,578 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>真珠 · 總管理後台</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>真珠 · 超級後台</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{
-  --pine:#004d40;--pine-light:#00695c;--gold:#b89150;
-  --ink:#1a1a2e;--stone:#64748b;--border:#e2e8f0;--paper:#f8fafc;
-  --red:#dc2626;--blue:#2563eb;--green:#16a34a;
-}
+:root{--pine:#004d40;--pine2:#00695c;--gold:#b89150;--ink:#1a1a2e;--stone:#64748b;--border:#e2e8f0;--paper:#f0f4f8;--red:#dc2626;--blue:#2563eb;--green:#16a34a;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans TC',sans-serif;background:#0f1923;color:var(--ink);min-height:100vh;}
-
-/* ── LOGIN ── */
-#login-screen{
-  position:fixed;inset:0;background:linear-gradient(135deg,#0f1923 0%,#1a2d1a 50%,#0f1923 100%);
-  display:flex;align-items:center;justify-content:center;z-index:999;
-}
-.login-card{
-  background:rgba(255,255,255,0.04);backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,0.1);border-radius:24px;
-  padding:48px 40px;width:100%;max-width:400px;text-align:center;
-}
-.login-logo{font-family:'Noto Serif TC',serif;font-size:2rem;font-weight:900;color:var(--gold);margin-bottom:6px;}
-.login-sub{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:36px;letter-spacing:.2em;}
-.login-input{
-  width:100%;padding:12px 16px;background:rgba(255,255,255,0.07);
-  border:1px solid rgba(255,255,255,0.15);border-radius:12px;
-  color:white;font-size:14px;font-family:'Noto Sans TC',sans-serif;
-  margin-bottom:12px;outline:none;transition:border .2s;
-}
-.login-input::placeholder{color:rgba(255,255,255,0.3);}
-.login-input:focus{border-color:var(--gold);}
-.login-btn{
-  width:100%;padding:13px;background:var(--pine);color:white;
-  border:none;border-radius:12px;font-size:14px;font-weight:700;
-  cursor:pointer;font-family:'Noto Sans TC',sans-serif;
-  transition:background .2s;margin-top:4px;
-}
-.login-btn:hover{background:var(--pine-light);}
-.login-error{color:#f87171;font-size:12px;margin-top:8px;display:none;}
-
-/* ── LAYOUT ── */
+body{font-family:'Noto Sans TC',sans-serif;background:#0c1a12;color:var(--ink);min-height:100vh;}
+#login-screen{position:fixed;inset:0;background:radial-gradient(ellipse at 30% 40%,#1a3a1a,#0c1a12 65%);display:flex;align-items:center;justify-content:center;z-index:999;}
+.lc{background:rgba(255,255,255,0.04);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.09);border-radius:28px;padding:52px 44px;width:100%;max-width:400px;text-align:center;}
+.lc-logo{font-family:'Noto Serif TC',serif;font-size:2.2rem;font-weight:900;color:var(--gold);}
+.lc-sub{font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:40px;letter-spacing:.25em;margin-top:6px;}
+.li{width:100%;padding:13px 16px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:14px;color:white;font-size:14px;font-family:'Noto Sans TC',sans-serif;margin-bottom:12px;outline:none;transition:border .2s;}
+.li::placeholder{color:rgba(255,255,255,0.25);}.li:focus{border-color:var(--gold);}
+.lb{width:100%;padding:14px;background:var(--pine);color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:.2s;margin-top:6px;}
+.lb:hover{background:var(--pine2);}#login-err{color:#f87171;font-size:12px;margin-top:10px;display:none;}
 #app{display:flex;height:100vh;overflow:hidden;}
-
-/* ── SIDEBAR ── */
-.sidebar{
-  width:220px;flex-shrink:0;background:#111c14;
-  display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,0.06);
-}
-.sidebar-logo{
-  padding:24px 20px 20px;font-family:'Noto Serif TC',serif;
-  color:var(--gold);font-size:1.1rem;font-weight:900;
-  border-bottom:1px solid rgba(255,255,255,0.06);
-}
-.sidebar-logo span{display:block;font-size:10px;color:rgba(255,255,255,0.3);font-family:'Noto Sans TC',sans-serif;margin-top:3px;letter-spacing:.15em;}
-.nav-item{
-  display:flex;align-items:center;gap:10px;padding:11px 20px;
-  color:rgba(255,255,255,0.45);font-size:13px;font-weight:500;
-  cursor:pointer;transition:all .18s;border-left:3px solid transparent;
-}
-.nav-item:hover{color:rgba(255,255,255,0.8);background:rgba(255,255,255,0.04);}
-.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(184,145,80,0.08);}
-.nav-icon{font-size:16px;width:20px;text-align:center;}
-.sidebar-bottom{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,0.06);}
-.logout-btn{
-  width:100%;padding:9px;background:rgba(255,255,255,0.06);
-  color:rgba(255,255,255,0.4);border:none;border-radius:10px;
-  font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;
-  transition:all .18s;
-}
-.logout-btn:hover{background:rgba(255,255,255,0.1);color:white;}
-
-/* ── MAIN ── */
-.main{flex:1;overflow-y:auto;background:#f0f4f8;}
-.page{display:none;padding:28px;max-width:1400px;}
-.page.active{display:block;}
-
-/* ── PAGE HEADER ── */
-.page-header{margin-bottom:24px;}
-.page-title{font-family:'Noto Serif TC',serif;font-size:1.4rem;font-weight:900;color:var(--pine);}
-.page-sub{font-size:12px;color:var(--stone);margin-top:4px;}
-
-/* ── CARDS ── */
-.card{background:white;border-radius:18px;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.04);padding:24px;margin-bottom:16px;}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
-.card-title{font-weight:900;font-size:14px;color:var(--pine);}
-
-/* ── STATS ── */
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
-.stat-card{
-  background:white;border-radius:14px;border:1px solid var(--border);
-  padding:18px 20px;display:flex;flex-direction:column;gap:6px;
-}
-.stat-val{font-size:1.8rem;font-weight:900;font-family:'Noto Serif TC',serif;color:var(--pine);}
-.stat-label{font-size:11px;color:var(--stone);font-weight:600;}
-
-/* ── STORE CARDS ── */
-.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
-.store-card{
-  background:white;border-radius:18px;border:1px solid var(--border);
-  padding:20px;position:relative;overflow:hidden;
-  box-shadow:0 2px 12px rgba(0,0,0,0.04);transition:box-shadow .2s;
-}
-.store-card:hover{box-shadow:0 6px 24px rgba(0,77,64,0.12);}
-.store-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--pine);}
-.store-name{font-weight:900;font-size:16px;color:var(--pine);margin-bottom:4px;}
-.store-meta{font-size:12px;color:var(--stone);line-height:1.6;}
-.store-badge{
-  display:inline-flex;align-items:center;gap:4px;
-  padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;margin-top:10px;
-}
-.badge-active{background:#dcfce7;color:#16a34a;}
-.badge-inactive{background:#f1f5f9;color:#64748b;}
-.store-actions{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
-
-/* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;border:none;transition:all .18s;}
-.btn-primary{background:var(--pine);color:white;}
-.btn-primary:hover{background:var(--pine-light);}
-.btn-ghost{background:#f1f5f9;color:var(--stone);}
-.btn-ghost:hover{background:#e2e8f0;color:var(--ink);}
-.btn-danger{background:#fef2f2;color:var(--red);}
-.btn-danger:hover{background:#fee2e2;}
-.btn-sm{padding:5px 12px;font-size:11px;border-radius:8px;}
-.btn-gold{background:rgba(184,145,80,0.1);color:var(--gold);}
-.btn-gold:hover{background:rgba(184,145,80,0.2);}
-
-/* ── TABLE ── */
-.table-wrap{overflow-x:auto;}
+.sb{width:230px;flex-shrink:0;background:#0f1f14;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,0.05);}
+.sb-logo{padding:26px 22px 22px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.sb-logo-name{font-family:'Noto Serif TC',serif;color:var(--gold);font-size:1.15rem;font-weight:900;}
+.sb-badge{display:inline-block;background:rgba(184,145,80,0.15);color:var(--gold);font-size:9px;font-weight:700;letter-spacing:.15em;padding:2px 8px;border-radius:999px;margin-top:6px;}
+nav{flex:1;padding:10px 0;overflow-y:auto;}
+.ni{display:flex;align-items:center;gap:10px;padding:11px 22px;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;transition:.15s;border-left:3px solid transparent;}
+.ni:hover{color:rgba(255,255,255,0.75);background:rgba(255,255,255,0.03);}
+.ni.on{color:var(--gold);border-left-color:var(--gold);background:rgba(184,145,80,0.07);}
+.ni-icon{font-size:15px;width:18px;text-align:center;}
+.sb-foot{padding:14px 22px;border-top:1px solid rgba(255,255,255,0.05);}
+.user-lbl{font-size:11px;color:rgba(255,255,255,0.2);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lo-btn{width:100%;padding:8px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.35);border:none;border-radius:10px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:.15s;}
+.lo-btn:hover{background:rgba(255,255,255,0.09);color:white;}
+.main{flex:1;overflow-y:auto;background:var(--paper);}
+.page{display:none;padding:32px;max-width:1300px;}
+.page.on{display:block;}
+.ph{margin-bottom:28px;}.pt{font-family:'Noto Serif TC',serif;font-size:1.5rem;font-weight:900;color:var(--pine);}
+.ps{font-size:12px;color:var(--stone);margin-top:4px;}
+.card{background:white;border-radius:20px;border:1px solid var(--border);box-shadow:0 2px 16px rgba(0,0,0,0.04);padding:24px;margin-bottom:16px;}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.ct{font-weight:900;font-size:14px;color:var(--pine);}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+.sc{background:white;border-radius:16px;border:1px solid var(--border);padding:20px;}
+.sv{font-size:2rem;font-weight:900;font-family:'Noto Serif TC',serif;color:var(--pine);}
+.sl{font-size:11px;color:var(--stone);font-weight:600;margin-top:4px;}
+.store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+.store-card{background:white;border-radius:20px;border:1px solid var(--border);padding:22px;position:relative;overflow:hidden;transition:box-shadow .2s;}
+.store-card:hover{box-shadow:0 8px 28px rgba(0,77,64,0.12);}
+.store-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--pine),var(--pine2));}
+.sid-badge{position:absolute;top:14px;right:16px;background:#f0fdf4;color:var(--pine);font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;}
+.sn{font-weight:900;font-size:16px;color:var(--pine);margin-bottom:6px;}
+.sm{font-size:12px;color:var(--stone);line-height:1.7;}
+.s-badge{display:inline-flex;gap:4px;padding:3px 10px;border-radius:999px;font-size:10px;font-weight:700;margin-top:12px;}
+.ba{background:#dcfce7;color:#16a34a;}.bi{background:#f1f5f9;color:#64748b;}
+.sa{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;border:none;transition:.15s;}
+.btn-p{background:var(--pine);color:white;}.btn-p:hover{background:var(--pine2);}
+.btn-g{background:#f1f5f9;color:var(--stone);}.btn-g:hover{background:#e2e8f0;}
+.btn-d{background:#fef2f2;color:var(--red);}.btn-d:hover{background:#fee2e2;}
+.btn-gold{background:rgba(184,145,80,0.1);color:var(--gold);}.btn-gold:hover{background:rgba(184,145,80,0.2);}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:8px;}
+.tw{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 thead th{text-align:left;padding:10px 14px;font-size:10px;font-weight:700;color:var(--stone);text-transform:uppercase;letter-spacing:.1em;border-bottom:2px solid var(--border);white-space:nowrap;}
-tbody td{padding:12px 14px;border-bottom:1px solid #f8fafc;vertical-align:middle;}
+tbody td{padding:13px 14px;border-bottom:1px solid #f8fafc;vertical-align:middle;}
 tbody tr:last-child td{border-bottom:none;}
 tbody tr:hover td{background:#fafcff;}
-
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
-.modal-overlay.open{display:flex;}
-.modal{background:white;border-radius:24px;padding:32px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.25);}
-.modal-title{font-family:'Noto Serif TC',serif;font-size:1.2rem;font-weight:900;color:var(--pine);margin-bottom:20px;}
-.form-group{margin-bottom:14px;}
-.form-label{display:block;font-size:11px;font-weight:700;color:var(--stone);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;}
-.form-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:border .2s;}
-.form-input:focus{border-color:var(--pine);}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.modal-actions{display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
-
-/* ── STATUS BADGES ── */
-.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.dot-confirming{background:#dc2626;}
-.dot-confirmed{background:#16a34a;}
-.dot-ended{background:#94a3b8;}
-
-/* ── ORDER TABLE STATUS ── */
-.order-status{padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;}
-.s-confirming{background:#fde8e8;color:#dc2626;}
-.s-confirmed{background:#dcfce7;color:#16a34a;}
-.s-ended{background:#f1f5f9;color:#64748b;}
-
-/* ── IFRAME ── */
-.iframe-wrap{background:white;border-radius:18px;overflow:hidden;border:1px solid var(--border);height:calc(100vh - 120px);}
-.iframe-wrap iframe{width:100%;height:100%;border:none;}
-
-/* ── TOAST ── */
-#toast-wrap{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
-.toast{background:white;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;animation:toastIn .3s ease;border-left:4px solid var(--pine);}
-.toast.error{border-left-color:var(--red);}
-.toast.warn{border-left-color:var(--gold);}
-@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
-
-/* ── TG SECTION ── */
-.tg-info{background:linear-gradient(135deg,#0f1923,#1a2d1a);border-radius:16px;padding:20px;color:white;}
-.tg-bot-name{font-size:1.1rem;font-weight:900;color:var(--gold);}
-.tg-desc{font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;line-height:1.6;}
-.tg-flow{display:flex;gap:0;margin-top:16px;flex-wrap:wrap;gap:8px;}
-.tg-step{background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.7);flex:1;min-width:120px;text-align:center;}
-.tg-step-num{font-size:18px;font-weight:900;color:var(--gold);display:block;margin-bottom:4px;}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.mo.open{display:flex;}
+.mb{background:white;border-radius:26px;padding:34px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 28px 64px rgba(0,0,0,0.2);}
+.mt{font-family:'Noto Serif TC',serif;font-size:1.2rem;font-weight:900;color:var(--pine);margin-bottom:22px;}
+.fg{margin-bottom:14px;}
+.fl{display:block;font-size:10px;font-weight:700;color:var(--stone);margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;}
+.fi{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:.2s;}
+.fi:focus{border-color:var(--pine);}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ma{display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+.info-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px 16px;font-size:12px;color:#166534;line-height:1.7;margin-bottom:16px;}
+.os{padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;}
+.os-c{background:#fde8e8;color:#dc2626;}.os-ok{background:#dcfce7;color:#16a34a;}.os-e{background:#f1f5f9;color:#64748b;}
+.iw{background:white;border-radius:20px;overflow:hidden;border:1px solid var(--border);height:calc(100vh - 130px);}
+.iw iframe{width:100%;height:100%;border:none;}
+#tw{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:white;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;border-left:4px solid var(--pine);animation:tin .3s ease;}
+.toast.err{border-left-color:var(--red);}.toast.warn{border-left-color:var(--gold);}
+@keyframes tin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.pw-wrap{position:relative;}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--stone);}
 </style>
 </head>
 <body>
-
-<div id="toast-wrap"></div>
+<div id="tw"></div>
 
 <!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-card">
-    <div class="login-logo">真珠集團</div>
-    <div class="login-sub">JINZHU GROUP · 總管理後台</div>
-    <input class="login-input" type="email" id="sa-email" placeholder="管理員帳號">
-    <input class="login-input" type="password" id="sa-password" placeholder="密碼">
-    <button class="login-btn" onclick="doLogin()">登入</button>
-    <div class="login-error" id="sa-error">帳號或密碼錯誤</div>
+  <div class="lc">
+    <div class="lc-logo">真珠</div>
+    <div class="lc-sub">SUPER ADMIN</div>
+    <input class="li" type="email" id="sa-email" placeholder="超級管理員帳號">
+    <input class="li" type="password" id="sa-pw" placeholder="密碼" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="lb" onclick="doLogin()">登入</button>
+    <div id="login-err">帳號或密碼錯誤</div>
   </div>
 </div>
 
 <!-- APP -->
 <div id="app" style="display:none">
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <div class="sidebar-logo">真珠集團<span>SUPER ADMIN</span></div>
-    <nav style="flex:1;padding:12px 0;overflow-y:auto">
-      <div class="nav-item active" onclick="switchPage('overview')" id="nav-overview">
-        <span class="nav-icon">📊</span>總覽
-      </div>
-      <div class="nav-item" onclick="switchPage('stores')" id="nav-stores">
-        <span class="nav-icon">🏪</span>店家管理
-      </div>
-      <div class="nav-item" onclick="switchPage('admins')" id="nav-admins">
-        <span class="nav-icon">👤</span>帳號管理
-      </div>
-      <div class="nav-item" onclick="switchPage('orders')" id="nav-orders">
-        <span class="nav-icon">📋</span>訂單總覽
-      </div>
-      <div class="nav-item" onclick="switchPage('menu')" id="nav-menu">
-        <span class="nav-icon">🍽</span>菜單管理
-      </div>
-      <div class="nav-item" onclick="switchPage('tg')" id="nav-tg">
-        <span class="nav-icon">📱</span>TG 通知設定
-      </div>
+  <div class="sb">
+    <div class="sb-logo">
+      <div class="sb-logo-name">真珠集團</div>
+      <div class="sb-badge">SUPER ADMIN</div>
+    </div>
+    <nav>
+      <div class="ni on" onclick="go('overview')" id="ni-overview"><span class="ni-icon">📊</span>集團總覽</div>
+      <div class="ni" onclick="go('stores')" id="ni-stores"><span class="ni-icon">🏪</span>店家管理</div>
+      <div class="ni" onclick="go('users')" id="ni-users"><span class="ni-icon">👤</span>帳號管理</div>
+      <div class="ni" onclick="go('orders')" id="ni-orders"><span class="ni-icon">📋</span>訂單總覽</div>
+      <div class="ni" onclick="go('menu')" id="ni-menu"><span class="ni-icon">🍽</span>菜單管理</div>
     </nav>
-    <div class="sidebar-bottom">
-      <div style="font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:8px;text-align:center" id="sa-user-email"></div>
-      <button class="logout-btn" onclick="doLogout()">登出</button>
+    <div class="sb-foot">
+      <div class="user-lbl" id="cur-email"></div>
+      <button class="lo-btn" onclick="doLogout()">登出</button>
     </div>
   </div>
-
-  <!-- MAIN -->
   <div class="main">
-    <!-- 總覽 -->
-    <div class="page active" id="page-overview">
-      <div class="page-header">
-        <div class="page-title">集團總覽</div>
-        <div class="page-sub">所有店家的即時數據</div>
-      </div>
-      <div class="stats-grid" id="overview-stats">
-        <div class="stat-card"><div class="stat-val" id="stat-stores">—</div><div class="stat-label">📍 店家數</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-today-orders">—</div><div class="stat-label">📋 今日訂單</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-pending">—</div><div class="stat-label">⏳ 待確認</div></div>
-        <div class="stat-card"><div class="stat-val" id="stat-today-revenue">—</div><div class="stat-label">💰 今日預估營收</div></div>
+
+    <!-- ① 總覽 -->
+    <div class="page on" id="page-overview">
+      <div class="ph"><div class="pt">集團總覽</div><div class="ps">所有店家即時數據</div></div>
+      <div class="sg">
+        <div class="sc"><div class="sv" id="kpi-stores">—</div><div class="sl">🏪 店家數</div></div>
+        <div class="sc"><div class="sv" id="kpi-orders">—</div><div class="sl">📋 今日訂單</div></div>
+        <div class="sc"><div class="sv" id="kpi-pending">—</div><div class="sl">⏳ 待確認</div></div>
+        <div class="sc"><div class="sv" id="kpi-rev">—</div><div class="sl">💰 今日預估</div></div>
       </div>
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">今日各店訂單</div>
-          <button class="btn btn-ghost btn-sm" onclick="loadOverview()">🔄 更新</button>
-        </div>
-        <div id="overview-stores-list">
-          <div style="text-align:center;padding:32px;color:var(--stone)">載入中...</div>
-        </div>
+        <div class="ch"><div class="ct">各店今日狀況</div><button class="btn btn-g btn-sm" onclick="loadOverview()">🔄 更新</button></div>
+        <div id="overview-body"><div style="text-align:center;padding:32px;color:var(--stone)">載入中...</div></div>
       </div>
     </div>
 
-    <!-- 店家管理 -->
+    <!-- ② 店家管理 -->
     <div class="page" id="page-stores">
-      <div class="page-header">
-        <div class="page-title">店家管理</div>
-        <div class="page-sub">新增、編輯各分店資訊</div>
-      </div>
+      <div class="ph"><div class="pt">店家管理</div><div class="ps">新增、編輯各分店基本資訊</div></div>
+      <div class="info-box">現有文心店 ID=1，所有舊資料已屬於 ID=1，完全不影響現有系統。新增店家會自動遞增 ID。</div>
       <div style="margin-bottom:16px;display:flex;justify-content:flex-end">
-        <button class="btn btn-primary" onclick="openStoreModal()">＋ 新增店家</button>
+        <button class="btn btn-p" onclick="openStoreModal()">＋ 新增店家</button>
       </div>
-      <div class="store-grid" id="stores-grid">
-        <div style="text-align:center;padding:32px;color:var(--stone)">載入中...</div>
-      </div>
+      <div class="store-grid" id="stores-grid"></div>
     </div>
 
-    <!-- 帳號管理 -->
-    <div class="page" id="page-admins">
-      <div class="page-header">
-        <div class="page-title">帳號管理</div>
-        <div class="page-sub">各店登入帳號的建立與管理</div>
-      </div>
+    <!-- ③ 帳號管理 -->
+    <div class="page" id="page-users">
+      <div class="ph"><div class="pt">帳號管理</div><div class="ps">各店登入帳號建立與管理（直接在後台建立）</div></div>
       <div class="card">
-        <div class="card-header">
-          <div class="card-title">管理員帳號列表</div>
-          <button class="btn btn-primary" onclick="openAdminModal()">＋ 新增帳號</button>
-        </div>
-        <div class="table-wrap">
+        <div class="ch"><div class="ct">管理員帳號列表</div><button class="btn btn-p" onclick="openUserModal()">＋ 新增帳號</button></div>
+        <div class="tw">
           <table>
-            <thead>
-              <tr>
-                <th>帳號</th><th>所屬店家</th><th>角色</th><th>建立時間</th><th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="admins-tbody">
-              <tr><td colspan="5" style="text-align:center;color:var(--stone);padding:24px">載入中...</td></tr>
-            </tbody>
+            <thead><tr><th>帳號</th><th>所屬店家</th><th>角色</th><th>建立時間</th><th>操作</th></tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="5" style="text-align:center;color:var(--stone);padding:24px">載入中...</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- 訂單總覽 -->
+    <!-- ④ 訂單總覽 -->
     <div class="page" id="page-orders">
-      <div class="page-header">
-        <div class="page-title">訂單總覽</div>
-        <div class="page-sub">跨店訂單查詢與管理</div>
-      </div>
+      <div class="ph"><div class="pt">訂單總覽</div><div class="ps">跨店訂單查詢</div></div>
       <div class="card" style="margin-bottom:16px">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-          <div>
-            <label class="form-label">店家</label>
-            <select class="form-input" id="order-filter-store" style="width:auto;padding:8px 10px" onchange="loadAllOrders()">
-              <option value="all">全部店家</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label">日期</label>
-            <input type="date" class="form-input" id="order-filter-date" style="width:auto" onchange="loadAllOrders()">
-          </div>
-          <div>
-            <label class="form-label">狀態</label>
-            <select class="form-input" id="order-filter-status" style="width:auto;padding:8px 10px" onchange="loadAllOrders()">
-              <option value="all">全部</option>
-              <option value="confirming">確認中</option>
-              <option value="confirmed">確認完成</option>
-              <option value="ended">已結束</option>
-            </select>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="loadAllOrders()">🔍 搜尋</button>
+          <div><label class="fl">店家</label><select class="fi" id="of-store" style="width:auto" onchange="loadOrders()"><option value="0">全部店家</option></select></div>
+          <div><label class="fl">日期</label><input type="date" class="fi" id="of-date" style="width:auto" onchange="loadOrders()"></div>
+          <div><label class="fl">狀態</label><select class="fi" id="of-status" style="width:auto" onchange="loadOrders()">
+            <option value="all">全部</option><option value="confirming">確認中</option>
+            <option value="confirmed">確認完成</option><option value="ended">已結束</option>
+          </select></div>
+          <button class="btn btn-p btn-sm" onclick="loadOrders()">🔍 查詢</button>
         </div>
       </div>
       <div class="card">
-        <div class="table-wrap">
+        <div id="orders-count" style="font-size:12px;color:var(--stone);margin-bottom:12px"></div>
+        <div class="tw">
           <table>
-            <thead>
-              <tr><th>店家</th><th>訂位時間</th><th>顧客</th><th>電話</th><th>人數</th><th>金額</th><th>狀態</th></tr>
-            </thead>
-            <tbody id="orders-tbody">
-              <tr><td colspan="7" style="text-align:center;color:var(--stone);padding:24px">請選擇篩選條件</td></tr>
-            </tbody>
+            <thead><tr><th>店家</th><th>訂位時間</th><th>顧客</th><th>電話</th><th>人數</th><th>金額</th><th>狀態</th></tr></thead>
+            <tbody id="orders-tbody"><tr><td colspan="7" style="text-align:center;color:var(--stone);padding:24px">請選擇查詢條件</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- 菜單管理 -->
+    <!-- ⑤ 菜單管理 -->
     <div class="page" id="page-menu">
-      <div class="page-header">
-        <div class="page-title">菜單管理</div>
-        <div class="page-sub">選擇店家後進入該店後台管理菜單</div>
-      </div>
+      <div class="ph"><div class="pt">菜單管理</div><div class="ps">選擇店家後開啟該店後台管理菜單</div></div>
       <div class="card" style="margin-bottom:16px">
-        <label class="form-label">選擇店家</label>
-        <select class="form-input" id="menu-store-sel" style="width:auto;min-width:200px" onchange="loadMenuAdmin()">
-          <option value="">-- 選擇店家 --</option>
+        <label class="fl">選擇店家</label>
+        <select class="fi" id="menu-sel" style="width:auto;min-width:220px;margin-top:6px" onchange="openMenuAdmin()">
+          <option value="">— 選擇店家 —</option>
         </select>
       </div>
-      <div id="menu-admin-wrap" style="display:none">
-        <div class="iframe-wrap">
-          <iframe id="menu-admin-iframe" src="about:blank"></iframe>
-        </div>
-      </div>
-      <div id="menu-no-store" style="text-align:center;padding:48px;color:var(--stone)">
-        <div style="font-size:2rem;margin-bottom:12px">🍽</div>
-        <div style="font-weight:700">請先選擇店家</div>
-      </div>
-    </div>
-
-    <!-- TG 通知 -->
-    <div class="page" id="page-tg">
-      <div class="page-header">
-        <div class="page-title">TG 通知設定</div>
-        <div class="page-sub">Telegram 機器人多店通知管理</div>
-      </div>
-      <div class="card">
-        <div class="tg-info">
-          <div class="tg-bot-name">@jinzhutw_bot</div>
-          <div class="tg-desc">
-            同一個機器人服務所有分店。用戶加入後選擇店家，即可接收該店的訂單通知。
-          </div>
-          <div class="tg-flow" style="margin-top:16px">
-            <div class="tg-step"><span class="tg-step-num">1</span>用戶加入 Bot</div>
-            <div class="tg-step"><span class="tg-step-num">2</span>Bot 顯示店家選單</div>
-            <div class="tg-step"><span class="tg-step-num">3</span>選擇訂閱的店家</div>
-            <div class="tg-step"><span class="tg-step-num">4</span>收到該店通知</div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">各店 TG 訂閱者</div>
-          <button class="btn btn-ghost btn-sm" onclick="loadTgSubscribers()">🔄 更新</button>
-        </div>
-        <div id="tg-subscribers-list">
-          <div style="text-align:center;padding:24px;color:var(--stone)">載入中...</div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">📋 架構說明與 SQL</div></div>
-        <div style="background:#f8fafc;border-radius:12px;padding:16px;font-size:12px;line-height:1.8;color:var(--stone)">
-          <strong style="color:var(--pine)">多店 TG 通知架構：</strong><br>
-          1. 同一個 Bot Token 處理所有店<br>
-          2. 各店在 <code>stores</code> 表存訂閱的 <code>tg_chat_ids[]</code><br>
-          3. 新訂單進來時，Edge Function 查對應店家的 chat_ids 發送通知<br>
-          4. 用戶可訂閱多個店家<br><br>
-          <strong style="color:var(--pine)">需要執行的 SQL：</strong>
-          <pre id="tg-sql" style="margin-top:8px;white-space:pre-wrap;font-family:monospace;font-size:11px;background:#1a1a2e;color:#a0e0a0;padding:12px;border-radius:8px;overflow-x:auto"></pre>
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="copyTgSql()">📋 複製 SQL</button>
-        </div>
+      <div id="menu-frame-wrap" style="display:none"><div class="iw"><iframe id="menu-frame" src="about:blank"></iframe></div></div>
+      <div id="menu-ph" style="text-align:center;padding:48px;color:var(--stone)">
+        <div style="font-size:2.5rem;margin-bottom:12px">🍽</div>
+        <div style="font-weight:700">請選擇店家</div>
       </div>
     </div>
   </div>
 </div>
 
 <!-- STORE MODAL -->
-<div class="modal-overlay" id="store-modal">
-  <div class="modal">
-    <div class="modal-title" id="store-modal-title">新增店家</div>
-    <input type="hidden" id="store-edit-id">
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">店名 *</label>
-        <input class="form-input" id="store-name" placeholder="例：文心店">
-      </div>
-      <div class="form-group">
-        <label class="form-label">簡稱（英文）</label>
-        <input class="form-input" id="store-slug" placeholder="例：wenxin">
-      </div>
+<div class="mo" id="store-modal">
+  <div class="mb">
+    <div class="mt" id="store-modal-title">新增店家</div>
+    <input type="hidden" id="s-id">
+    <div class="fr">
+      <div class="fg"><label class="fl">店名 *</label><input class="fi" id="s-name" placeholder="例：北屯店"></div>
+      <div class="fg"><label class="fl">英文代號</label><input class="fi" id="s-slug" placeholder="例：beitun"></div>
     </div>
-    <div class="form-group">
-      <label class="form-label">地址</label>
-      <input class="form-input" id="store-address" placeholder="台中市...">
+    <div class="fg"><label class="fl">地址</label><input class="fi" id="s-addr" placeholder="台中市..."></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">電話</label><input class="fi" id="s-phone" placeholder="04-XXXXXXXX"></div>
+      <div class="fg"><label class="fl">排序</label><input class="fi" id="s-sort" placeholder="0" type="number"></div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">電話</label>
-        <input class="form-input" id="store-phone" placeholder="04-XXXXXXXX">
-      </div>
-      <div class="form-group">
-        <label class="form-label">電子郵件</label>
-        <input class="form-input" id="store-email" placeholder="store@jinzhu.com.tw">
-      </div>
+    <div class="fg"><label class="fl">後台網址（admin.html）</label><input class="fi" id="s-admin-url" placeholder="https://xxx.vercel.app/admin.html"></div>
+    <div class="fg"><label class="fl">前台網址（index.html）</label><input class="fi" id="s-front-url" placeholder="https://xxx.vercel.app/index.html"></div>
+    <div class="fg"><label class="fl">狀態</label>
+      <select class="fi" id="s-active"><option value="true">✅ 營業中</option><option value="false">⏸ 暫停</option></select>
     </div>
-    <div class="form-group">
-      <label class="form-label">Supabase URL（各店 DB）</label>
-      <input class="form-input" id="store-db-url" placeholder="https://xxx.supabase.co">
-    </div>
-    <div class="form-group">
-      <label class="form-label">Supabase Anon Key</label>
-      <input class="form-input" id="store-db-key" placeholder="eyJ..." type="password">
-    </div>
-    <div class="form-group">
-      <label class="form-label">後台管理網址（admin.html）</label>
-      <input class="form-input" id="store-admin-url" placeholder="https://jinzhu-wenxin.vercel.app/admin.html">
-    </div>
-    <div class="form-group">
-      <label class="form-label">狀態</label>
-      <select class="form-input" id="store-active">
-        <option value="true">✅ 營業中</option>
-        <option value="false">⏸ 暫停</option>
-      </select>
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('store-modal')">取消</button>
-      <button class="btn btn-primary" style="flex:2" onclick="saveStore()">💾 儲存</button>
+    <div class="ma">
+      <button class="btn btn-g" style="flex:1" onclick="closeModal('store-modal')">取消</button>
+      <button class="btn btn-p" style="flex:2" onclick="saveStore()">💾 儲存</button>
     </div>
   </div>
 </div>
 
-<!-- ADMIN MODAL -->
-<div class="modal-overlay" id="admin-modal">
-  <div class="modal">
-    <div class="modal-title">新增管理員帳號</div>
-    <div class="form-group">
-      <label class="form-label">電子郵件 *</label>
-      <input class="form-input" id="admin-email" placeholder="manager@jinzhu.com.tw">
+<!-- USER MODAL -->
+<div class="mo" id="user-modal">
+  <div class="mb">
+    <div class="mt" id="user-modal-title">新增管理員帳號</div>
+    <input type="hidden" id="u-id">
+    <div class="fg"><label class="fl">電子郵件 *</label><input class="fi" id="u-email" placeholder="manager@store.com" type="email"></div>
+    <div class="fg">
+      <label class="fl">密碼 *（至少 8 字元）</label>
+      <div class="pw-wrap">
+        <input class="fi" id="u-pw" placeholder="設定密碼" type="password">
+        <button class="pw-toggle" onclick="togglePw('u-pw')">👁</button>
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">臨時密碼 *</label>
-      <input class="form-input" id="admin-password" placeholder="至少 8 字元" type="password">
+    <div class="fr">
+      <div class="fg"><label class="fl">所屬店家 *</label><select class="fi" id="u-store"></select></div>
+      <div class="fg"><label class="fl">角色</label>
+        <select class="fi" id="u-role">
+          <option value="manager">👑 店長（完整管理）</option>
+          <option value="staff">👤 店員（查看訂單）</option>
+        </select>
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">所屬店家 *</label>
-      <select class="form-input" id="admin-store-sel">
-        <option value="">-- 選擇店家 --</option>
-      </select>
+    <div style="background:#f0fdf4;border-radius:10px;padding:12px;font-size:11px;color:#16a34a;line-height:1.7;margin-top:4px">
+      ✅ 帳號建立後可直接用此 Email + 密碼登入各店後台，系統自動依店家過濾資料。<br>
+      ⚠️ 需先部署 <code>create-store-user</code> Edge Function 才能使用此功能。
     </div>
-    <div class="form-group">
-      <label class="form-label">角色</label>
-      <select class="form-input" id="admin-role">
-        <option value="staff">👤 店員（基本管理）</option>
-        <option value="manager">👑 店長（完整管理）</option>
-      </select>
+    <div class="ma">
+      <button class="btn btn-g" style="flex:1" onclick="closeModal('user-modal')">取消</button>
+      <button class="btn btn-p" style="flex:2" id="user-save-btn" onclick="saveUser()">建立帳號</button>
     </div>
-    <div style="background:#f0fdf4;border-radius:10px;padding:12px;font-size:11px;color:#16a34a;margin-top:4px">
-      ⚠️ 帳號建立後，請通知該店管理員登入並修改密碼。帳號透過 Supabase Auth 管理，系統不儲存明碼密碼。
+  </div>
+</div>
+
+<!-- RESET PW MODAL -->
+<div class="mo" id="resetpw-modal">
+  <div class="mb" style="max-width:380px">
+    <div class="mt">重設密碼</div>
+    <div style="font-size:13px;color:var(--stone);margin-bottom:16px" id="resetpw-email-label"></div>
+    <input type="hidden" id="rp-uid">
+    <div class="fg">
+      <label class="fl">新密碼 *（至少 8 字元）</label>
+      <div class="pw-wrap">
+        <input class="fi" id="rp-pw" placeholder="輸入新密碼" type="password">
+        <button class="pw-toggle" onclick="togglePw('rp-pw')">👁</button>
+      </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('admin-modal')">取消</button>
-      <button class="btn btn-primary" style="flex:2" onclick="saveAdmin()">建立帳號</button>
+    <div class="ma">
+      <button class="btn btn-g" style="flex:1" onclick="closeModal('resetpw-modal')">取消</button>
+      <button class="btn btn-p" style="flex:2" onclick="doResetPw()">更新密碼</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── SUPABASE（總管理後台用的 Supabase，存 stores 等元資料）──
-const SUPER_URL='https://pydlnqriztpzgxbjuohm.supabase.co';
-const SUPER_KEY='sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
-const _s=window.supabase.createClient(SUPER_URL,SUPER_KEY);
-
-// TG 設定
-const TG_TOKEN='8685808662:AAFqm_ApVxnfUSHeYKyknRHqEsW2GDaXsXc';
-const TG_CHAT='-5163908895';
-
-// ── STATE ──
+const SUPA_URL='https://pydlnqriztpzgxbjuohm.supabase.co';
+const SUPA_KEY='sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
+const _s=window.supabase.createClient(SUPA_URL,SUPA_KEY);
 let storesData=[];
-let curPage='overview';
 
-// ── TOAST ──
-function toast(msg,type='success',dur=2500){
+function toast(msg,type='ok',dur=2800){
   const el=document.createElement('div');
-  el.className=`toast ${type==='error'?'error':type==='warn'?'warn':''}`;
-  el.innerHTML=`<span>${type==='error'?'❌':type==='warn'?'⚠️':'✅'}</span><span>${msg}</span>`;
-  document.getElementById('toast-wrap').appendChild(el);
+  el.className='toast'+(type==='err'?' err':type==='warn'?' warn':'');
+  el.innerHTML=`<span>${type==='err'?'❌':type==='warn'?'⚠️':'✅'}</span><span>${msg}</span>`;
+  document.getElementById('tw').appendChild(el);
   setTimeout(()=>el.remove(),dur);
 }
+function togglePw(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ── AUTH ──
 async function doLogin(){
   const email=document.getElementById('sa-email').value.trim();
-  const pwd=document.getElementById('sa-password').value;
-  const errEl=document.getElementById('sa-error');
-  errEl.style.display='none';
-  const{error}=await _s.auth.signInWithPassword({email,password:pwd});
-  if(error){errEl.style.display='block';return;}
+  const pw=document.getElementById('sa-pw').value;
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  const{error}=await _s.auth.signInWithPassword({email,password:pw});
+  if(error){err.style.display='block';return;}
+  boot();
+}
+async function doLogout(){await _s.auth.signOut();location.reload();}
+async function boot(){
+  const{data:{session}}=await _s.auth.getSession();
+  if(!session)return;
+  // 確認是 super role
+  const{data:su}=await _s.from('store_users').select('role').eq('user_id',session.user.id).single();
+  if(su?.role!=='Andy'){toast('此帳號沒有超級管理員權限','err');await _s.auth.signOut();return;}
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
-  document.getElementById('sa-user-email').textContent=email;
-  initApp();
-}
-async function doLogout(){
-  await _s.auth.signOut();
-  location.reload();
-}
-
-// ── INIT ──
-async function initApp(){
+  document.getElementById('cur-email').textContent=session.user.email;
   await loadStores();
   loadOverview();
-  // 今日日期預設
-  document.getElementById('order-filter-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('of-date').value=new Date().toISOString().split('T')[0];
 }
 
-// ── PAGE SWITCH ──
-function switchPage(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  document.getElementById('nav-'+page).classList.add('active');
-  curPage=page;
-  if(page==='overview') loadOverview();
-  else if(page==='stores') renderStores();
-  else if(page==='admins') loadAdmins();
-  else if(page==='orders') loadAllOrders();
-  else if(page==='tg') loadTgPage();
+// ── PAGES ──
+function go(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
+  document.getElementById('page-'+p).classList.add('on');
+  document.getElementById('ni-'+p).classList.add('on');
+  if(p==='overview')loadOverview();
+  else if(p==='stores')renderStores();
+  else if(p==='users')loadUsers();
+  else if(p==='orders')loadOrders();
 }
 
 // ── STORES ──
 async function loadStores(){
-  const{data}=await _s.from('stores').select('*').order('created_at');
+  const{data}=await _s.from('stores').select('*').order('sort_order').order('id');
   storesData=data||[];
-  // 填充所有 select
   const opts=storesData.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
-  document.getElementById('admin-store-sel').innerHTML='<option value="">-- 選擇店家 --</option>'+opts;
-  document.getElementById('order-filter-store').innerHTML='<option value="all">全部店家</option>'+opts;
-  document.getElementById('menu-store-sel').innerHTML='<option value="">-- 選擇店家 --</option>'+opts;
+  document.getElementById('of-store').innerHTML='<option value="0">全部店家</option>'+opts;
+  document.getElementById('menu-sel').innerHTML='<option value="">— 選擇店家 —</option>'+opts;
+  document.getElementById('u-store').innerHTML=opts;
 }
-
 function renderStores(){
   const el=document.getElementById('stores-grid');
   if(!storesData.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--stone)">尚無店家，請新增</div>';return;}
   el.innerHTML=storesData.map(s=>`
     <div class="store-card">
-      <div class="store-name">🏪 ${s.name}</div>
-      <div class="store-meta">
-        ${s.address?`📍 ${s.address}<br>`:''}
-        ${s.phone?`📞 ${s.phone}<br>`:''}
-        ${s.email?`✉️ ${s.email}`:''}
-      </div>
-      <span class="store-badge ${s.is_active?'badge-active':'badge-inactive'}">
-        ${s.is_active?'✅ 營業中':'⏸ 暫停'}
-      </span>
-      <div class="store-actions">
-        <button class="btn btn-ghost btn-sm" onclick="openStoreModal('${s.id}')">✏️ 編輯</button>
+      <div class="sid-badge">ID: ${s.id}</div>
+      <div class="sn">🏪 ${s.name}</div>
+      <div class="sm">${s.address?`📍 ${s.address}<br>`:''}${s.phone?`📞 ${s.phone}<br>`:''}${s.slug?`🔑 ${s.slug}`:''}</div>
+      <span class="s-badge ${s.is_active?'ba':'bi'}">${s.is_active?'✅ 營業中':'⏸ 暫停'}</span>
+      <div class="sa">
+        <button class="btn btn-g btn-sm" onclick="openStoreModal('${s.id}')">✏️ 編輯</button>
         ${s.admin_url?`<button class="btn btn-gold btn-sm" onclick="window.open('${s.admin_url}','_blank')">🔗 後台</button>`:''}
-        <button class="btn btn-danger btn-sm" onclick="deleteStore('${s.id}')">🗑</button>
+        ${s.id>1?`<button class="btn btn-d btn-sm" onclick="delStore(${s.id})">🗑</button>`:'<span style="font-size:10px;color:var(--stone);padding:4px">（主店）</span>'}
       </div>
     </div>`).join('');
 }
-
 function openStoreModal(id=''){
-  const modal=document.getElementById('store-modal');
+  const s=storesData.find(x=>x.id==id)||{};
   document.getElementById('store-modal-title').textContent=id?'編輯店家':'新增店家';
-  document.getElementById('store-edit-id').value=id;
-  if(id){
-    const s=storesData.find(x=>x.id===id)||{};
-    document.getElementById('store-name').value=s.name||'';
-    document.getElementById('store-slug').value=s.slug||'';
-    document.getElementById('store-address').value=s.address||'';
-    document.getElementById('store-phone').value=s.phone||'';
-    document.getElementById('store-email').value=s.email||'';
-    document.getElementById('store-db-url').value=s.db_url||'';
-    document.getElementById('store-db-key').value=s.db_key||'';
-    document.getElementById('store-admin-url').value=s.admin_url||'';
-    document.getElementById('store-active').value=s.is_active?'true':'false';
-  } else {
-    ['store-name','store-slug','store-address','store-phone','store-email','store-db-url','store-db-key','store-admin-url'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('store-active').value='true';
-  }
-  modal.classList.add('open');
+  document.getElementById('s-id').value=id;
+  ['s-name','s-slug','s-addr','s-phone','s-admin-url','s-front-url'].forEach(k=>{
+    const field=k.replace('s-','').replace('-','_');
+    const val=k==='s-name'?s.name:k==='s-slug'?s.slug:k==='s-addr'?s.address:k==='s-phone'?s.phone:k==='s-admin-url'?s.admin_url:s.front_url;
+    document.getElementById(k).value=val||'';
+  });
+  document.getElementById('s-sort').value=s.sort_order??0;
+  document.getElementById('s-active').value=s.is_active?'true':'false';
+  document.getElementById('store-modal').classList.add('open');
 }
-
 async function saveStore(){
-  const id=document.getElementById('store-edit-id').value;
-  const name=document.getElementById('store-name').value.trim();
+  const id=document.getElementById('s-id').value;
+  const name=document.getElementById('s-name').value.trim();
   if(!name){toast('請填寫店名','warn');return;}
   const payload={
-    name,
-    slug:document.getElementById('store-slug').value.trim()||null,
-    address:document.getElementById('store-address').value.trim()||null,
-    phone:document.getElementById('store-phone').value.trim()||null,
-    email:document.getElementById('store-email').value.trim()||null,
-    db_url:document.getElementById('store-db-url').value.trim()||null,
-    db_key:document.getElementById('store-db-key').value.trim()||null,
-    admin_url:document.getElementById('store-admin-url').value.trim()||null,
-    is_active:document.getElementById('store-active').value==='true',
+    name,slug:document.getElementById('s-slug').value.trim()||null,
+    address:document.getElementById('s-addr').value.trim()||null,
+    phone:document.getElementById('s-phone').value.trim()||null,
+    sort_order:parseInt(document.getElementById('s-sort').value)||0,
+    admin_url:document.getElementById('s-admin-url').value.trim()||null,
+    front_url:document.getElementById('s-front-url').value.trim()||null,
+    is_active:document.getElementById('s-active').value==='true',
   };
-  if(id){
-    await _s.from('stores').update(payload).eq('id',id);
-    toast('店家資料已更新');
-  } else {
-    await _s.from('stores').insert([payload]);
-    toast('新店家已建立 ✓');
-  }
-  closeModal('store-modal');
-  await loadStores();
-  renderStores();
+  const{error}=id?await _s.from('stores').update(payload).eq('id',id):await _s.from('stores').insert([payload]);
+  if(error){toast('儲存失敗：'+error.message,'err');return;}
+  toast(id?'店家已更新':'新店家建立成功 ✓');
+  closeModal('store-modal');await loadStores();renderStores();
 }
-
-async function deleteStore(id){
-  if(!confirm('確定刪除此店家？此操作無法復原。'))return;
+async function delStore(id){
+  if(!confirm('確定刪除此店家？'))return;
   await _s.from('stores').delete().eq('id',id);
-  toast('已刪除','warn');
-  await loadStores();
-  renderStores();
+  toast('已刪除','warn');await loadStores();renderStores();
 }
 
-// ── ADMINS ──
-async function loadAdmins(){
-  const{data}=await _s.from('store_admins').select('*,stores(name)').order('created_at',{ascending:false});
-  const tbody=document.getElementById('admins-tbody');
+// ── USERS ──
+async function loadUsers(){
+  const{data}=await _s.from('store_users').select('*,stores(name)').order('created_at',{ascending:false});
+  const tbody=document.getElementById('users-tbody');
   if(!data?.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--stone);padding:24px">尚無帳號</td></tr>';return;}
-  tbody.innerHTML=data.map(a=>`
+  tbody.innerHTML=data.map(u=>`
     <tr>
-      <td><strong>${a.email}</strong></td>
-      <td>${a.stores?.name||'—'}</td>
-      <td><span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700">${a.role==='manager'?'👑 店長':'👤 店員'}</span></td>
-      <td style="color:var(--stone);font-size:12px">${new Date(a.created_at).toLocaleDateString('zh-TW')}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteAdmin('${a.id}')">刪除</button></td>
+      <td><strong>${u.email||'—'}</strong></td>
+      <td><span style="background:#f0fdf4;color:var(--pine);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">🏪 ${u.stores?.name||'ID:'+u.store_id}</span></td>
+      <td><span style="background:${u.role==='manager'?'#fef3c7':'#f1f5f9'};color:${u.role==='manager'?'#92400e':'#64748b'};padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700">${u.role==='manager'?'👑 店長':u.role==='Andy'?'⭐ Andy':'👤 店員'}</span></td>
+      <td style="color:var(--stone);font-size:12px">${new Date(u.created_at).toLocaleDateString('zh-TW')}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-g btn-sm" onclick="openResetPw('${u.user_id}','${u.email||''}')">🔑 改密碼</button>
+        <button class="btn btn-d btn-sm" onclick="delUser('${u.user_id}','${u.id}')">刪除</button>
+      </td>
     </tr>`).join('');
 }
-
-function openAdminModal(){
-  document.getElementById('admin-email').value='';
-  document.getElementById('admin-password').value='';
-  document.getElementById('admin-role').value='staff';
-  document.getElementById('admin-modal').classList.add('open');
+function openUserModal(){
+  document.getElementById('user-modal-title').textContent='新增管理員帳號';
+  ['u-email','u-pw'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('user-modal').classList.add('open');
 }
-
-async function saveAdmin(){
-  const email=document.getElementById('admin-email').value.trim();
-  const pwd=document.getElementById('admin-password').value;
-  const storeId=document.getElementById('admin-store-sel').value;
-  const role=document.getElementById('admin-role').value;
-  if(!email||!pwd){toast('請填寫帳號與密碼','warn');return;}
+async function saveUser(){
+  const email=document.getElementById('u-email').value.trim();
+  const pw=document.getElementById('u-pw').value;
+  const storeId=parseInt(document.getElementById('u-store').value);
+  const role=document.getElementById('u-role').value;
+  if(!email||!pw){toast('請填寫帳號與密碼','warn');return;}
+  if(pw.length<8){toast('密碼至少 8 字元','warn');return;}
   if(!storeId){toast('請選擇所屬店家','warn');return;}
-  // 透過 Supabase Admin API 建立用戶（需 service_role key）
-  // 目前先在 store_admins 記錄，實際帳號請在 Supabase Dashboard 建立
-  const{error}=await _s.from('store_admins').insert([{email,store_id:storeId,role}]);
-  if(error){toast('建立失敗：'+error.message,'error');return;}
-  toast('帳號記錄已建立。請到 Supabase Dashboard → Auth 建立實際帳號，Email: '+email);
-  closeModal('admin-modal');
-  loadAdmins();
+  const btn=document.getElementById('user-save-btn');
+  btn.disabled=true;btn.textContent='建立中...';
+  // 呼叫 Edge Function
+  const{data:{session}}=await _s.auth.getSession();
+  try{
+    const res=await fetch(`${SUPA_URL}/functions/v1/create-store-user`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({action:'create',email,password:pw,store_id:storeId,role})
+    });
+    const json=await res.json();
+    if(!res.ok||json.error)throw new Error(json.error||'建立失敗');
+    toast('帳號建立成功 ✓ （'+email+'）');
+    closeModal('user-modal');loadUsers();
+  }catch(e){
+    toast('建立失敗：'+e.message,'err');
+  }finally{btn.disabled=false;btn.textContent='建立帳號';}
 }
-
-async function deleteAdmin(id){
-  if(!confirm('確定刪除此帳號記錄？'))return;
-  await _s.from('store_admins').delete().eq('id',id);
-  toast('已刪除','warn');
-  loadAdmins();
+function openResetPw(uid,email){
+  document.getElementById('rp-uid').value=uid;
+  document.getElementById('rp-pw').value='';
+  document.getElementById('resetpw-email-label').textContent='帳號：'+email;
+  document.getElementById('resetpw-modal').classList.add('open');
+}
+async function doResetPw(){
+  const uid=document.getElementById('rp-uid').value;
+  const pw=document.getElementById('rp-pw').value;
+  if(pw.length<8){toast('密碼至少 8 字元','warn');return;}
+  const{data:{session}}=await _s.auth.getSession();
+  try{
+    const res=await fetch(`${SUPA_URL}/functions/v1/create-store-user`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({action:'reset_password',user_id:uid,password:pw})
+    });
+    const json=await res.json();
+    if(!res.ok||json.error)throw new Error(json.error);
+    toast('密碼已更新 ✓');closeModal('resetpw-modal');
+  }catch(e){toast('更新失敗：'+e.message,'err');}
+}
+async function delUser(userId,recordId){
+  if(!confirm('確定刪除此帳號？此操作會同時刪除 Auth 帳號，無法復原。'))return;
+  const{data:{session}}=await _s.auth.getSession();
+  try{
+    const res=await fetch(`${SUPA_URL}/functions/v1/create-store-user`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
+      body:JSON.stringify({action:'delete',user_id:userId})
+    });
+    const json=await res.json();
+    if(!res.ok||json.error)throw new Error(json.error);
+    toast('帳號已刪除','warn');loadUsers();
+  }catch(e){toast('刪除失敗：'+e.message,'err');}
 }
 
 // ── OVERVIEW ──
 async function loadOverview(){
-  document.getElementById('stat-stores').textContent=storesData.length;
   const twNow=new Date(Date.now()+8*3600000);
   const today=twNow.toISOString().split('T')[0];
-  let totalOrders=0,totalPending=0,totalRevenue=0;
-  const rows=[];
-  for(const store of storesData){
-    if(!store.db_url||!store.db_key)continue;
-    try{
-      const sc=window.supabase.createClient(store.db_url,store.db_key);
-      const{data:todayO}=await sc.from('orders').select('*')
-        .gte('booking_date',`${today}T00:00:00+08:00`)
-        .lte('booking_date',`${today}T23:59:59+08:00`);
-      const{count:pending}=await sc.from('orders').select('*',{count:'exact',head:true})
-        .in('status',['confirming','pending'])
-        .or(`booking_date.gte.${today}T00:00:00+08:00,booking_date.is.null`);
-      const cnt=todayO?.length||0;
-      const rev=(todayO||[]).reduce((s,o)=>s+(o.total_price||0),0);
-      totalOrders+=cnt; totalPending+=(pending||0); totalRevenue+=rev;
-      rows.push({store,cnt,pending:pending||0,rev});
-    }catch(e){}
-  }
-  document.getElementById('stat-today-orders').textContent=totalOrders;
-  document.getElementById('stat-pending').textContent=totalPending;
-  document.getElementById('stat-today-revenue').textContent='$'+totalRevenue.toLocaleString();
-  document.getElementById('overview-stores-list').innerHTML=rows.length
+  document.getElementById('kpi-stores').textContent=storesData.length;
+  const{data:todayOrders}=await _s.from('orders').select('*')
+    .gte('booking_date',`${today}T00:00:00+08:00`).lte('booking_date',`${today}T23:59:59+08:00`);
+  const{count:pending}=await _s.from('orders').select('*',{count:'exact',head:true})
+    .in('status',['confirming','pending'])
+    .or(`booking_date.gte.${today}T00:00:00+08:00,booking_date.is.null`);
+  const orders=todayOrders||[];
+  const rev=orders.reduce((s,o)=>s+(o.total_price||0),0);
+  document.getElementById('kpi-orders').textContent=orders.length;
+  document.getElementById('kpi-pending').textContent=pending||0;
+  document.getElementById('kpi-rev').textContent='$'+rev.toLocaleString();
+  const byStore={};
+  orders.forEach(o=>{const sid=o.store_id||1;if(!byStore[sid])byStore[sid]={cnt:0,rev:0};byStore[sid].cnt++;byStore[sid].rev+=(o.total_price||0);});
+  document.getElementById('overview-body').innerHTML=storesData.length
     ?`<table width="100%" style="font-size:13px;border-collapse:collapse">
         <thead><tr>
-          <th style="text-align:left;padding:8px 12px;border-bottom:2px solid var(--border);color:var(--stone);font-size:10px;text-transform:uppercase">店家</th>
-          <th style="text-align:center;padding:8px 12px;border-bottom:2px solid var(--border);color:var(--stone);font-size:10px;text-transform:uppercase">今日訂單</th>
-          <th style="text-align:center;padding:8px 12px;border-bottom:2px solid var(--border);color:var(--stone);font-size:10px;text-transform:uppercase">待確認</th>
-          <th style="text-align:right;padding:8px 12px;border-bottom:2px solid var(--border);color:var(--stone);font-size:10px;text-transform:uppercase">今日預估</th>
-          <th style="padding:8px 12px;border-bottom:2px solid var(--border)"></th>
+          <th style="text-align:left;padding:8px 14px;border-bottom:2px solid var(--border);color:var(--stone);font-size:10px;text-transform:uppercase">店家</th>
+          <th style="text-align:center;padding:8px 14px;border-bottom:2px solid var(--border);color:var(--stone);font-size:10px">今日訂單</th>
+          <th style="text-align:right;padding:8px 14px;border-bottom:2px solid var(--border);color:var(--stone);font-size:10px">今日預估</th>
+          <th style="padding:8px 14px;border-bottom:2px solid var(--border)"></th>
         </tr></thead>
-        <tbody>${rows.map(r=>`<tr>
-          <td style="padding:12px;font-weight:700">🏪 ${r.store.name}</td>
-          <td style="text-align:center;padding:12px;font-weight:900;color:var(--pine)">${r.cnt} 筆</td>
-          <td style="text-align:center;padding:12px">${r.pending>0?`<span style="background:#fde8e8;color:#dc2626;padding:2px 10px;border-radius:999px;font-weight:700;font-size:12px">⚠️ ${r.pending} 筆</span>`:'<span style="color:#94a3b8">—</span>'}</td>
-          <td style="text-align:right;padding:12px;font-weight:900;color:var(--gold)">$${r.rev.toLocaleString()}</td>
-          <td style="padding:12px">${r.store.admin_url?`<button class="btn btn-ghost btn-sm" onclick="window.open('${r.store.admin_url}','_blank')">🔗 後台</button>`:''}</td>
-        </tr>`).join('')}</tbody>
+        <tbody>${storesData.map(s=>{const d=byStore[s.id]||{cnt:0,rev:0};return`<tr>
+          <td style="padding:12px 14px;font-weight:700">🏪 ${s.name}</td>
+          <td style="text-align:center;padding:12px 14px;font-weight:900;color:var(--pine)">${d.cnt} 筆</td>
+          <td style="text-align:right;padding:12px 14px;font-weight:900;color:var(--gold)">$${d.rev.toLocaleString()}</td>
+          <td style="padding:12px 14px;display:flex;gap:6px;justify-content:flex-end">
+            ${s.admin_url?`<button class="btn btn-g btn-sm" onclick="window.open('${s.admin_url}','_blank')">🔗 後台</button>`:''}
+            ${s.front_url?`<button class="btn btn-gold btn-sm" onclick="window.open('${s.front_url}','_blank')">🛒 前台</button>`:''}
+          </td></tr>`;}).join('')}</tbody>
       </table>`
-    :'<div style="text-align:center;padding:24px;color:var(--stone)">請先設定各店的 Supabase 連線資訊</div>';
+    :'<div style="text-align:center;padding:24px;color:var(--stone)">請先新增店家</div>';
 }
 
-// ── ALL ORDERS ──
-async function loadAllOrders(){
-  const storeFilter=document.getElementById('order-filter-store').value;
-  const dateFilter=document.getElementById('order-filter-date').value;
-  const statusFilter=document.getElementById('order-filter-status').value;
+// ── ORDERS ──
+async function loadOrders(){
+  const storeId=parseInt(document.getElementById('of-store').value)||0;
+  const date=document.getElementById('of-date').value;
+  const status=document.getElementById('of-status').value;
   const tbody=document.getElementById('orders-tbody');
   tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--stone);padding:24px">載入中...</td></tr>';
-  const allRows=[];
-  const targetStores=storeFilter==='all'?storesData:storesData.filter(s=>s.id===storeFilter);
-  for(const store of targetStores){
-    if(!store.db_url||!store.db_key)continue;
-    try{
-      const sc=window.supabase.createClient(store.db_url,store.db_key);
-      let q=sc.from('orders').select('*').order('booking_date',{ascending:true});
-      if(dateFilter) q=q.gte('booking_date',`${dateFilter}T00:00:00+08:00`).lte('booking_date',`${dateFilter}T23:59:59+08:00`);
-      if(statusFilter!=='all') q=q.eq('status',statusFilter);
-      const{data}=await q;
-      (data||[]).forEach(o=>allRows.push({store,order:o}));
-    }catch(e){}
-  }
-  if(!allRows.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--stone);padding:24px">無訂單</td></tr>';return;}
-  tbody.innerHTML=allRows.map(({store,order:o})=>{
+  let q=_s.from('orders').select('*').order('booking_date',{ascending:true});
+  if(storeId>0)q=q.eq('store_id',storeId);
+  if(date)q=q.gte('booking_date',`${date}T00:00:00+08:00`).lte('booking_date',`${date}T23:59:59+08:00`);
+  if(status!=='all')q=q.eq('status',status);
+  const{data}=await q;
+  const orders=data||[];
+  document.getElementById('orders-count').textContent=`共 ${orders.length} 筆`;
+  if(!orders.length){tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--stone);padding:24px">無訂單</td></tr>';return;}
+  tbody.innerHTML=orders.map(o=>{
+    const store=storesData.find(s=>s.id===(o.store_id||1));
     const bTime=o.booking_date?new Date(new Date(o.booking_date).getTime()+8*3600000):null;
     const bStr=bTime?`${bTime.getUTCMonth()+1}/${bTime.getUTCDate()} ${String(bTime.getUTCHours()).padStart(2,'0')}:${String(bTime.getUTCMinutes()).padStart(2,'0')}`:'—';
     const pax=[o.adult_count>0?`大${o.adult_count}`:'',o.kid_count>0?`小${o.kid_count}`:''].filter(Boolean).join(' ')||'—';
-    const statusClass=o.status==='confirming'||o.status==='pending'?'s-confirming':o.status==='confirmed'||o.status==='synced'?'s-confirmed':'s-ended';
-    const statusLabel=o.status==='confirming'||o.status==='pending'?'確認中':o.status==='confirmed'||o.status==='synced'?'確認完成':'已結束';
+    const sc=o.status==='confirming'||o.status==='pending'?'os-c':o.status==='confirmed'||o.status==='synced'?'os-ok':'os-e';
+    const sl=o.status==='confirming'||o.status==='pending'?'確認中':o.status==='confirmed'||o.status==='synced'?'確認完成':'已結束';
     return`<tr>
-      <td><span style="background:#f0fdf4;color:var(--pine);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">${store.name}</span></td>
+      <td><span style="background:#f0fdf4;color:var(--pine);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">${store?.name||'ID:'+o.store_id}</span></td>
       <td style="font-weight:700">${bStr}</td>
-      <td>${o.customer_name}${o.is_takeout?'<span style="font-size:10px;color:#2563eb;margin-left:4px">🥡</span>':''}</td>
+      <td>${o.customer_name||'—'}${o.is_takeout?'<span style="color:#2563eb;font-size:10px;margin-left:4px">🥡</span>':''}</td>
       <td style="color:var(--stone)">${o.phone||'—'}</td>
       <td>${pax}</td>
       <td style="font-weight:700;color:var(--gold)">$${o.total_price}</td>
-      <td><span class="order-status ${statusClass}">${statusLabel}</span></td>
+      <td><span class="os ${sc}">${sl}</span></td>
     </tr>`;
   }).join('');
 }
 
-// ── MENU ADMIN ──
-function loadMenuAdmin(){
-  const storeId=document.getElementById('menu-store-sel').value;
-  const store=storesData.find(s=>s.id===storeId);
-  const wrap=document.getElementById('menu-admin-wrap');
-  const noStore=document.getElementById('menu-no-store');
-  if(!store||!store.admin_url){wrap.style.display='none';noStore.style.display='block';return;}
-  wrap.style.display='block';
-  noStore.style.display='none';
-  document.getElementById('menu-admin-iframe').src=store.admin_url;
+// ── MENU ──
+function openMenuAdmin(){
+  const sid=document.getElementById('menu-sel').value;
+  const store=storesData.find(s=>s.id==sid);
+  const fw=document.getElementById('menu-frame-wrap');
+  const ph=document.getElementById('menu-ph');
+  if(!store){fw.style.display='none';ph.style.display='block';return;}
+  const url=store.admin_url||'';
+  if(!url){toast('此店家尚未設定後台網址','warn');return;}
+  fw.style.display='block';ph.style.display='none';
+  document.getElementById('menu-frame').src=url;
 }
-
-// ── TG ──
-function loadTgPage(){
-  const sql=`-- 在 Supabase SQL Editor 執行
-
--- 1. 建立 stores 表
-CREATE TABLE IF NOT EXISTS stores (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  name text NOT NULL,
-  slug text,
-  address text,
-  phone text,
-  email text,
-  db_url text,
-  db_key text,
-  admin_url text,
-  is_active boolean DEFAULT true,
-  tg_chat_ids text[] DEFAULT '{}',
-  created_at timestamptz DEFAULT now()
-);
-
--- 2. 建立 store_admins 表
-CREATE TABLE IF NOT EXISTS store_admins (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  store_id uuid REFERENCES stores(id) ON DELETE CASCADE,
-  email text NOT NULL,
-  role text DEFAULT 'staff' CHECK (role IN ('staff','manager')),
-  created_at timestamptz DEFAULT now()
-);
-
--- 3. 開啟 RLS
-ALTER TABLE stores ENABLE ROW LEVEL SECURITY;
-ALTER TABLE store_admins ENABLE ROW LEVEL SECURITY;
-
--- 4. 政策：總管理員可讀寫（用 service_role key 操作）
-CREATE POLICY "Allow all for service role" ON stores TO service_role USING (true);
-CREATE POLICY "Allow all for service role" ON store_admins TO service_role USING (true);
-CREATE POLICY "Allow read for anon" ON stores FOR SELECT TO anon USING (true);`;
-  document.getElementById('tg-sql').textContent=sql;
-  loadTgSubscribers();
-}
-
-function copyTgSql(){
-  navigator.clipboard.writeText(document.getElementById('tg-sql').textContent)
-    .then(()=>toast('SQL 已複製 ✓'));
-}
-
-async function loadTgSubscribers(){
-  const el=document.getElementById('tg-subscribers-list');
-  const stores=storesData.filter(s=>s.tg_chat_ids?.length>0);
-  if(!stores.length){
-    el.innerHTML='<div style="color:var(--stone);padding:16px">尚無 TG 訂閱設定。各店在自己的後台設定 TG 通知後，訂閱者 ID 會存在各店的資料庫裡。</div>';
-    return;
-  }
-  el.innerHTML=stores.map(s=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:10px;background:#f8fafc;margin-bottom:8px">
-      <div>
-        <div style="font-weight:700">🏪 ${s.name}</div>
-        <div style="font-size:11px;color:var(--stone);margin-top:2px">${s.tg_chat_ids.length} 個訂閱者</div>
-      </div>
-      <span style="background:#dcfce7;color:#16a34a;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700">已設定</span>
-    </div>`).join('');
-}
-
-function closeModal(id){document.getElementById(id).classList.remove('open');}
 
 // ── BOOT ──
 (async()=>{
   const{data:{session}}=await _s.auth.getSession();
-  if(session){
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app').style.display='flex';
-    document.getElementById('sa-user-email').textContent=session.user.email;
-    initApp();
-  }
+  if(session)boot();
 })();
 </script>
 </body>
