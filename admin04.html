@@ -116,6 +116,12 @@
         #sidebar.collapsed .logo-full { display: none; }
         #sidebar.collapsed .logo-icon { display: flex !important; }
         #sidebar.collapsed .nav-btn   { justify-content: center; padding-left: 0; padding-right: 0; }
+        .nav-btn-locked{opacity:0.45;position:relative;}
+        .nav-btn-locked .nav-label::after{content:' 🔒';font-size:10px;}
+        .tab-readonly .readonly-banner{display:flex!important;}
+        .tab-readonly input:not([type=checkbox]),.tab-readonly textarea,.tab-readonly select{pointer-events:none;background:#f8fafc;color:var(--stone);}
+        .tab-readonly button:not(.readonly-allow),.tab-readonly .btn:not(.readonly-allow){pointer-events:none;opacity:0.5;cursor:not-allowed;}
+        .readonly-banner{display:none;background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:10px 16px;font-size:12px;font-weight:700;color:#92400e;margin-bottom:16px;align-items:center;gap:8px;}
         #sidebar.collapsed .sidebar-active { border-left: none; border-bottom: 3px solid var(--gold); }
         .logo-icon { display: none; }
 
@@ -3824,9 +3830,10 @@ async function testTgSummaryNotify(){
             .lte('booking_date',`${twToday}T23:59:59+08:00`)
             .order('booking_date',{ascending:true});
 
-        // 2. 待處理（confirming/pending，不限日期）
+        // 2. 待處理（confirming/pending，與主列表邏輯一致：今天以後或無日期）
         const{count:pendingCount}=await _s.from('orders').select('*',{count:'exact',head:true})
-            .in('status',['confirming','pending']);
+            .in('status',['confirming','pending'])
+            .or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null`);
 
         // 3. 計算統計
         const todayOrders=orders||[];
@@ -3875,7 +3882,8 @@ async function testTgSummaryNotify(){
         if(pendingCount>0){
             const{data:pendingOrders}=await _s.from('orders').select('*')
                 .in('status',['confirming','pending'])
-                .order('created_at',{ascending:false});
+                .or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null`)
+                .order('booking_date',{ascending:true});
             if(pendingOrders?.length>0){
                 msg+=`🔔 待確認訂單
 `;
@@ -4867,13 +4875,51 @@ function toggleReportFilter() {
     chevron.style.transform = open ? '' : 'rotate(180deg)';
 }
 
+// ── PERMISSIONS ──
+let tabPermissions={}; // { orders: true, menu: false, ... }
+
+const ALL_TABS=['orders','campaigns','categories','menu','flavors','settings','report','photos'];
+
+async function loadPermissions(storeId){
+    try{
+        const{data}=await _s.from('stores').select('tab_permissions').eq('id',storeId).single();
+        tabPermissions=data?.tab_permissions||{};
+    }catch(e){ tabPermissions={}; }
+    applyPermissions();
+}
+
+function applyPermissions(){
+    ALL_TABS.forEach(tab=>{
+        const btn=document.getElementById('btn-'+tab);
+        const sec=document.getElementById('sec-'+tab);
+        if(!btn||!sec) return;
+        const allowed=tabPermissions[tab]!==false; // 預設 true（允許）
+        if(allowed){
+            btn.classList.remove('nav-btn-locked');
+            btn.onclick=()=>switchTab(tab);
+            sec.classList.remove('tab-readonly');
+        } else {
+            btn.classList.add('nav-btn-locked');
+            btn.onclick=()=>switchTab(tab); // 可以進入但唯讀
+            sec.classList.add('tab-readonly');
+        }
+    });
+}
+
 // ── INIT ──
 loadSidebarLogo();
 (async()=>{
     const{data:{session}}=await _s.auth.getSession();
     if(session){
         document.getElementById('login-screen').classList.add('hidden');
-        await autoEndPastOrders(); // 自動把過期訂單標為已結束
+        // 查詢此帳號的 store_id
+        const{data:su}=await _s.from('store_users').select('store_id,role').eq('user_id',session.user.id).maybeSingle();
+        const storeId=su?.store_id||1;
+        window._currentStoreId=storeId;
+        window._currentRole=su?.role||'staff';
+        // Andy（超管）不受權限限制
+        if(su?.role!=='Andy') await loadPermissions(storeId);
+        await autoEndPastOrders();
         switchTab('orders');
     }
 })();
@@ -4905,10 +4951,11 @@ async function updateOrdersKpi(){
         .select('*',{count:'exact',head:true})
         .gte('booking_date',`${twToday}T00:00:00+08:00`)
         .lte('booking_date',`${twToday}T23:59:59+08:00`);
-    // 尚未處理（status = pending）
+    // 尚未處理（與主列表一致：confirming/pending 且今天以後或無日期）
     const {count:pendingCount} = await _s.from('orders')
         .select('*',{count:'exact',head:true})
-        .in('status',['confirming','pending']);
+        .in('status',['confirming','pending'])
+        .or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null`);
     const todayEl=document.getElementById('kpi-today-bookings');
     const pendingEl=document.getElementById('kpi-pending-orders');
     if(todayEl) todayEl.textContent=todayCount??0;
