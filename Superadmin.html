@@ -116,6 +116,7 @@ tbody tr:hover td{background:#fafcff;}
       <div class="ni" onclick="go('stores')" id="ni-stores"><span class="ni-icon">🏪</span>店家管理</div>
       <div class="ni" onclick="go('users')" id="ni-users"><span class="ni-icon">👤</span>帳號管理</div>
       <div class="ni" onclick="go('orders')" id="ni-orders"><span class="ni-icon">📋</span>訂單總覽</div>
+      <div class="ni" onclick="go('perms')" id="ni-perms"><span class="ni-icon">🔐</span>權限管理</div>
       <div class="ni" onclick="go('menu')" id="ni-menu"><span class="ni-icon">🍽</span>菜單管理</div>
 
     </nav>
@@ -270,6 +271,32 @@ tbody tr:hover td{background:#fafcff;}
       <button class="btn btn-p" style="flex:2" onclick="doResetPw()">更新密碼</button>
     </div>
 
+    <!-- ④b 權限管理 -->
+    <div class="page" id="page-perms">
+      <div class="ph"><div class="pt">權限管理</div><div class="ps">設定各店可存取的後台功能，關閉後仍可查看但無法編輯</div></div>
+      <div class="card">
+        <div class="ch">
+          <div class="ct">選擇店家</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="fi" id="perm-store-sel" style="width:auto;min-width:200px" onchange="loadPerms()">
+            <option value="">— 選擇店家 —</option>
+          </select>
+          <button class="btn btn-p btn-sm" onclick="savePerms()">💾 儲存權限設定</button>
+        </div>
+      </div>
+      <div id="perms-body" style="display:none">
+        <div class="card">
+          <div class="ct" style="margin-bottom:16px">功能開關</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px" id="perms-grid"></div>
+        </div>
+        <div class="info-box">
+          ✅ <strong>開啟</strong>：可正常使用此功能<br>
+          🔒 <strong>關閉</strong>：可進入頁面查看，但所有編輯按鈕和輸入框會鎖定，無法修改
+        </div>
+      </div>
+    </div>
+
     <!-- ⑤ 菜單管理 -->
     <div class="page" id="page-menu">
       <div class="ph"><div class="pt">菜單管理</div><div class="ps">所有店家共用同一套菜單，在此直接管理</div></div>
@@ -342,6 +369,7 @@ function go(p){
   else if(p==='stores')renderStores();
   else if(p==='users')loadUsers();
   else if(p==='orders')loadOrders();
+  else if(p==='perms'){document.getElementById('perms-body').style.display='none';}
 }
 
 // ── STORES ──
@@ -351,6 +379,7 @@ async function loadStores(){
   const opts=storesData.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
   document.getElementById('of-store').innerHTML='<option value="0">全部店家</option>'+opts;
   document.getElementById('u-store').innerHTML=opts;
+  document.getElementById('perm-store-sel').innerHTML='<option value="">— 選擇店家 —</option>'+opts;
 }
 function renderStores(){
   const el=document.getElementById('stores-grid');
@@ -556,6 +585,70 @@ async function loadOrders(){
       <td><span class="os ${sc}">${sl}</span></td>
     </tr>`;
   }).join('');
+}
+
+// ── PERMISSIONS ──
+const PERM_TABS=[
+  {id:'orders',    name:'訂單監控', icon:'📋', desc:'查看與管理各店訂單'},
+  {id:'campaigns', name:'活動代號', icon:'🎗️', desc:'優惠活動代碼設定'},
+  {id:'categories',name:'分類管理', icon:'🗂️', desc:'菜單分類新增與排序'},
+  {id:'menu',      name:'菜單編輯', icon:'🍱', desc:'菜單品項新增與修改'},
+  {id:'flavors',   name:'口味定義', icon:'🌶️', desc:'口味與配料設定'},
+  {id:'settings',  name:'系統設定', icon:'⚙️', desc:'店家基本設定與 Logo'},
+  {id:'report',    name:'統計報表', icon:'📊', desc:'訂單統計與匯出'},
+  {id:'photos',    name:'照片管理', icon:'📸', desc:'顧客照片管理'},
+];
+let currentPerms={};
+
+async function loadPerms(){
+  const storeId=document.getElementById('perm-store-sel').value;
+  if(!storeId){document.getElementById('perms-body').style.display='none';return;}
+  const{data}=await _s.from('stores').select('tab_permissions').eq('id',storeId).single();
+  currentPerms=data?.tab_permissions||{};
+  renderPerms();
+  document.getElementById('perms-body').style.display='block';
+}
+
+function renderPerms(){
+  document.getElementById('perms-grid').innerHTML=PERM_TABS.map(t=>{
+    const allowed=currentPerms[t.id]!==false;
+    return`<div style="background:white;border:1.5px solid ${allowed?'#bbf7d0':'#fecaca'};border-radius:16px;padding:16px;transition:border-color .2s">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.3rem">${t.icon}</span>
+          <div>
+            <div style="font-weight:900;font-size:13px;color:var(--ink)">${t.name}</div>
+            <div style="font-size:11px;color:var(--stone);margin-top:1px">${t.desc}</div>
+          </div>
+        </div>
+        <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;margin-left:8px">
+          <input type="checkbox" ${allowed?'checked':''} data-tab="${t.id}"
+            onchange="togglePerm(this)"
+            style="opacity:0;width:0;height:0;position:absolute">
+          <span style="position:absolute;inset:0;border-radius:999px;cursor:pointer;transition:.2s;background:${allowed?'var(--pine)':'#cbd5e1'}">
+            <span style="position:absolute;top:2px;left:${allowed?'22':'2'}px;width:20px;height:20px;border-radius:50%;background:white;transition:.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2)"></span>
+          </span>
+        </label>
+      </div>
+      <div style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;display:inline-block;background:${allowed?'#dcfce7':'#fee2e2'};color:${allowed?'#16a34a':'#dc2626'}">
+        ${allowed?'✅ 開啟':'🔒 關閉（唯讀）'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePerm(el){
+  const tab=el.dataset.tab;
+  currentPerms[tab]=el.checked;
+  renderPerms(); // 重新渲染更新顏色
+}
+
+async function savePerms(){
+  const storeId=document.getElementById('perm-store-sel').value;
+  if(!storeId){toast('請先選擇店家','warn');return;}
+  const{error}=await _s.from('stores').update({tab_permissions:currentPerms}).eq('id',storeId);
+  if(error){toast('儲存失敗：'+error.message,'err');return;}
+  toast('權限設定已儲存 ✓');
 }
 
 // ── MENU ──
