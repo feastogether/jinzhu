@@ -309,10 +309,21 @@ async function boot(){
   const{data:{session}}=await _s.auth.getSession();
   if(!session)return;
   // 確認是 Andy role
-  const{data:su,error:suErr}=await _s.from('store_users').select('role').eq('user_id',session.user.id).single();
-  console.log('store_users query:', su, suErr);
-  if(suErr||!su){toast('查不到帳號設定，請確認 store_users 表有此帳號（'+session.user.email+'）','err',5000);await _s.auth.signOut();return;}
-  if(su.role!=='Andy'){toast('此帳號角色為「'+su.role+'」，需要 Andy 角色才能登入','err',5000);await _s.auth.signOut();return;}
+  const{data:su,error:suErr}=await _s.from('store_users').select('role').eq('user_id',session.user.id).maybeSingle();
+  console.log('store_users query:', su, suErr, session.user.email);
+  if(suErr){
+    // RLS 或網路錯誤：顯示錯誤但不登出，讓用戶知道問題
+    toast('讀取帳號資料失敗：'+suErr.message,'err',6000);
+    await _s.auth.signOut();return;
+  }
+  if(!su){
+    toast('此帳號（'+session.user.email+'）尚未綁定店家，請到 Supabase SQL Editor 執行綁定 SQL','err',8000);
+    await _s.auth.signOut();return;
+  }
+  if(su.role!=='Andy'){
+    toast('此帳號角色為「'+su.role+'」，超級後台需要 Andy 角色','err',5000);
+    await _s.auth.signOut();return;
+  }
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('cur-email').textContent=session.user.email;
