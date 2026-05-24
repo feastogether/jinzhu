@@ -102,6 +102,10 @@
         /* STEP 1 */
         #step-1{padding-top:80px;min-height:100svh;display:flex;align-items:center;justify-content:center;}
         #step-1.hidden{display:none;}
+        #mode-section{overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .3s ease;}
+        #date-card,#info-card{animation:cardIn .3s ease;}
+        @keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        #store-dropdown:focus{border-color:var(--pine);box-shadow:0 0 0 3px rgba(0,77,64,0.1);}
         .entry-card{background:white;border-radius:24px;padding:48px 32px;width:calc(100% - 48px);max-width:420px;box-shadow:0 32px 80px rgba(0,77,64,0.1),0 0 0 1px var(--border);position:relative;overflow:hidden;}
         .entry-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--pine),var(--gold),var(--pine),transparent);}
         .entry-title{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;color:var(--pine);text-align:center;letter-spacing:0.3em;margin-bottom:8px;}
@@ -327,28 +331,27 @@
 </div>
 
 <main>
-<section id="step-0" style="min-height:100svh;display:flex;align-items:center;justify-content:center;padding:80px 24px 40px">
-    <div style="width:100%;max-width:440px">
-        <div style="text-align:center;margin-bottom:28px">
-            <img id="main-logo-s0" src="" alt="真珠" style="height:52px;object-fit:contain;display:none;margin:0 auto 12px">
-            <h1 style="font-family:'Noto Serif TC',serif;font-size:1.6rem;font-weight:900;color:var(--pine);letter-spacing:.04em">請選擇餐廳</h1>
-            <p style="font-size:13px;color:var(--stone);margin-top:6px">Choose a Restaurant</p>
-        </div>
-        <div id="store-list" style="display:flex;flex-direction:column;gap:10px">
-            <div style="text-align:center;padding:32px;color:var(--stone)">
-                <div style="font-size:1.5rem;margin-bottom:8px;opacity:.4">🏪</div>
-                載入中...
-            </div>
-        </div>
-    </div>
-</section>
 
-<section id="step-1" class="hidden">
-    <!-- Step 1a：選擇內用/外帶 -->
+
+<section id="step-1">
+    <!-- Step 1a：選擇內用/外帶（整合選餐廳） -->
     <div class="entry-card" id="mode-card">
         <h2 class="entry-title" data-i18n="s1Title">線上預點餐</h2>
-        <p class="entry-sub" data-i18n="s1Sub">文心店 · Pre-order Service</p>
-        <p id="mode-select-hint" style="font-size:13px;font-weight:700;color:var(--stone);margin-bottom:18px;text-align:center" data-i18n="modeSelectTitle">請選擇用餐方式</p>
+        <p class="entry-sub" data-i18n="s1Sub">真珠台灣佳味 · Pre-order Service</p>
+
+        <!-- 選餐廳下拉（整合進來） -->
+        <div id="store-select-wrap" style="margin-bottom:20px">
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--stone);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">🏪 選擇餐廳</label>
+            <select id="store-dropdown"
+                onchange="onStoreChange(this)"
+                style="width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:14px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;color:var(--ink);background:white;outline:none;cursor:pointer;appearance:auto;transition:border-color .2s">
+                <option value="">— 請選擇餐廳 —</option>
+            </select>
+        </div>
+
+        <!-- 內用/外帶（選完餐廳後展開） -->
+        <div id="mode-section" style="overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .25s ease">
+          <p id="mode-select-hint" style="font-size:13px;font-weight:700;color:var(--stone);margin-bottom:18px;text-align:center" data-i18n="modeSelectTitle">請選擇用餐方式</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px">
             <button id="mode-dine-btn" onclick="selectOrderMode('dine-in')" style="padding:22px 10px;border-radius:18px;border:2.5px solid var(--pine);background:rgba(0,77,64,0.06);cursor:pointer;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif;box-shadow:0 4px 16px rgba(0,77,64,0.12)">
                 <div style="font-size:2.2rem;margin-bottom:8px">🍽</div>
@@ -361,6 +364,7 @@
                 <div style="font-size:11px;color:var(--stone);margin-top:3px">Takeout</div>
             </button>
         </div>
+        </div><!-- /mode-section -->
     </div>
 
     <!-- Step 1b：選擇日期（依模式不同） -->
@@ -793,46 +797,46 @@ async function loadStoreList(){
             list.innerHTML='<div style="text-align:center;padding:24px;color:var(--stone)">目前無可訂位的餐廳</div>';
             return;
         }
-        list.innerHTML=storesCache.map(s=>`
-            <button data-sid="${s.id}"
-                style="background:white;border:1.5px solid var(--border);border-radius:18px;padding:16px 20px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s;font-family:'Noto Sans TC',sans-serif;display:flex;align-items:center;gap:14px;width:100%">
-                <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#f0fdf4,#dcfce7);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0">🏪</div>
-                <div style="flex:1;min-width:0">
-                    <div style="font-weight:900;font-size:16px;color:var(--pine);margin-bottom:3px">${s.name}</div>
-                    ${s.address?`<div style="font-size:12px;color:var(--stone);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📍 ${s.address}</div>`:''}
-                    ${s.phone?`<div style="font-size:12px;color:var(--stone)">📞 ${s.phone}</div>`:''}
-                </div>
-                <div style="color:var(--pine);font-size:20px;flex-shrink:0">›</div>
-            </button>`).join('');
-        // 用事件委派，避免 onclick 引號問題
-        list.addEventListener('click',e=>{
-            const btn=e.target.closest('[data-sid]');
-            if(btn) selectStore(parseInt(btn.dataset.sid));
-        });
+        // 填充 select dropdown
+        const sel=document.getElementById('store-dropdown');
+        sel.innerHTML='<option value="">— 請選擇餐廳 —</option>'+
+            storesCache.map(s=>`<option value="${s.id}">${s.name}${s.address?' · '+s.address:''}</option>`).join('');
     }catch(e){
         list.innerHTML='<div style="color:var(--stone);text-align:center;padding:24px">載入失敗，請重試<br><button onclick="loadStoreList()" style="margin-top:10px;padding:8px 16px;background:var(--pine);color:white;border:none;border-radius:8px;cursor:pointer">重新載入</button></div>';
     }
 }
 
-// 選擇餐廳 — 立即切換畫面，背景載入設定
+// 下拉選餐廳觸發
+function onStoreChange(sel){
+    const storeId=parseInt(sel.value);
+    if(!storeId){
+        // 收起 mode-section
+        const ms=document.getElementById('mode-section');
+        ms.style.maxHeight='0';ms.style.opacity='0';
+        return;
+    }
+    selectStore(storeId);
+}
+
+// 選擇餐廳後展開內用/外帶選項
 function selectStore(storeId){
     const s=storesCache.find(x=>x.id===storeId);
     if(!s) return;
     selectedStoreId=storeId;
     selectedStoreName=s.name;
-    // ① 立即隱藏選餐廳、顯示 step-1（不等待 DB）
-    document.getElementById('step-0').classList.add('hidden');
-    document.getElementById('step-1').classList.remove('hidden');
-    // ② 更新店名標題
-    const titleEl=document.querySelector('.entry-title[data-i18n="s1Title"]');
-    if(titleEl) titleEl.textContent=s.name;
-    // ③ 背景載入外帶時段
+    // 平滑展開 mode-section
+    const ms=document.getElementById('mode-section');
+    ms.style.maxHeight='300px';
+    ms.style.opacity='1';
+    // 更新副標題
+    const subEl=document.querySelector('.entry-sub[data-i18n="s1Sub"]');
+    if(subEl) subEl.textContent=s.name+' · Pre-order Service';
+    // 背景載入外帶時段
     loadTakeoutSlots();
-    // ④ 背景更新 logo（不阻塞）
+    // 背景更新 logo
     _s.from('store_settings').select('logo_url').eq('id',1).single()
         .then(({data})=>{
-            const logo=data?.logo_url||s.logo_url||'';
-            if(logo) document.getElementById('main-logo').src=logo+'?t='+Date.now();
+            if(data?.logo_url) document.getElementById('main-logo').src=data.logo_url+'?t='+Date.now();
         }).catch(()=>{});
 }
 initLiff().then(()=>init());
