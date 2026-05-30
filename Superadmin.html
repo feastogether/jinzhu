@@ -218,16 +218,9 @@ tbody tr:hover td{background:#fafcff;}
 
     <!-- ⑥ 菜單管理 -->
     <div class="page" id="page-menu">
-      <div class="ph"><div class="pt">菜單管理</div><div class="ps">選擇店家後，可用該店範圍編輯菜單與公告</div></div>
-      <div class="card" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-        <div>
-          <label class="fl">店家</label>
-          <select class="fi" id="menu-sel" style="width:auto;min-width:220px" onchange="openMenuAdmin()"></select>
-        </div>
-        <button class="btn btn-p btn-sm" onclick="openMenuAdmin()">開啟管理</button>
-      </div>
-      <div id="menu-ph" class="info-box">請先選擇要編輯的店家。</div>
-      <div class="iw" id="menu-frame-wrap" style="display:none"><iframe src="about:blank" id="menu-frame"></iframe></div>
+      <div class="ph"><div class="pt">菜單管理</div><div class="ps">所有店家共用同一套餐點、分類、口味與套餐設定</div></div>
+      <div class="info-box">🍱 菜單為全店共用；各店不同的公告、Logo、外帶時段請到店家管理中的「時段 / 店家設定」入口調整。</div>
+      <div class="iw"><iframe src="admin04.html?super_menu=1" id="menu-frame"></iframe></div>
     </div>
 
   </div>
@@ -375,7 +368,6 @@ function go(p){
   else if(p==='users')loadUsers();
   else if(p==='orders')loadOrders();
   else if(p==='perms'){document.getElementById('perms-body').style.display='none';}
-  else if(p==='menu')openMenuAdmin();
 }
 
 // ── STORES ──
@@ -386,8 +378,6 @@ async function loadStores(){
   document.getElementById('of-store').innerHTML='<option value="0">全部店家</option>'+opts;
   document.getElementById('u-store').innerHTML=opts;
   document.getElementById('perm-store-sel').innerHTML='<option value="">— 選擇店家 —</option>'+opts;
-  const menuSel=document.getElementById('menu-sel');
-  if(menuSel) menuSel.innerHTML='<option value="">— 選擇店家 —</option>'+opts;
 }
 function renderStores(){
   const el=document.getElementById('stores-grid');
@@ -401,6 +391,7 @@ function renderStores(){
       <div class="sa">
         <button class="btn btn-g btn-sm" onclick="openStoreModal('${s.id}')">✏️ 編輯</button>
         <button class="btn btn-gold btn-sm" onclick="go('perms');document.getElementById('perm-store-sel').value='${s.id}';loadPerms();">🔒 選單</button>
+        <button class="btn btn-p btn-sm" onclick="openStoreSettings(${s.id})">🥡 時段</button>
         ${s.id>1?`<button class="btn btn-d btn-sm" onclick="delStore(${s.id})">🗑</button>`:'<span style="font-size:10px;color:var(--stone);padding:4px">（主店）</span>'}
       </div>
     </div>`).join('');
@@ -660,16 +651,10 @@ async function savePerms(){
   toast('權限設定已儲存 ✓');
 }
 
-// ── MENU ──
-function openMenuAdmin(){
-  const sid=document.getElementById('menu-sel').value;
-  const store=storesData.find(s=>s.id==sid);
-  const fw=document.getElementById('menu-frame-wrap');
-  const ph=document.getElementById('menu-ph');
-  if(!store){fw.style.display='none';ph.style.display='block';return;}
-  const url='admin04.html?store_id='+encodeURIComponent(sid);
-  fw.style.display='block';ph.style.display='none';
-  document.getElementById('menu-frame').src=url;
+// ── STORE SETTINGS ──
+function openStoreSettings(storeId){
+  const url='admin04.html?store_id='+encodeURIComponent(storeId)+'&tab=settings&settings=takeout';
+  window.open(url,'_blank');
 }
 
 // ── BOOT ──
