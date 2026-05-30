@@ -461,8 +461,16 @@
         <a href="monitor.html" target="_blank" class="nav-btn"><span class="nav-emoji">🖥️</span><span class="nav-label">看板模式</span></a>
     </nav>
 
-    <div class="px-4 py-3 border-t border-white/10">
-        <div class="text-[9px] text-white/20 uppercase tracking-widest text-center">Jin Zhu · Admin</div>
+    <div class="px-4 py-3 border-t border-white/10 space-y-2">
+        <div id="admin-current-store-label" class="text-[9px] text-white/20 uppercase tracking-widest text-center">Jin Zhu · Admin</div>
+        <select id="admin-store-switch"
+            onchange="switchAdminStore(this.value)"
+            class="hidden w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs font-bold text-white/70 outline-none">
+        </select>
+        <button onclick="doLogout()"
+            class="w-full rounded-lg bg-white/5 px-3 py-2 text-xs font-bold text-white/45 hover:bg-white/10 hover:text-white transition">
+            登出
+        </button>
     </div>
 </aside>
 
@@ -1571,8 +1579,9 @@ async function loadCurrentUserContext(){
     currentRole=su?.role||'staff';
     window._currentStoreId=currentStoreId;
     window._currentRole=currentRole;
-    const label=document.querySelector('.text-[9px].text-white\\/20');
+    const label=document.getElementById('admin-current-store-label');
     if(label) label.textContent=(su?.stores?.name||'Jin Zhu')+' · Admin';
+    await loadAdminStoreSwitcher();
     return su;
 }
 
@@ -1582,6 +1591,32 @@ async function bootAdmin(){
     await autoEndPastOrders();
     switchTab('orders');
     return su;
+}
+
+async function loadAdminStoreSwitcher(){
+    const sel=document.getElementById('admin-store-switch');
+    if(!sel) return;
+    if(currentRole!=='Andy'){
+        sel.classList.add('hidden');
+        return;
+    }
+    const{data}=await _s.from('stores').select('id,name,is_active').order('sort_order').order('id');
+    const stores=data||[];
+    sel.innerHTML=stores.map(s=>`<option value="${s.id}">${s.name}${s.is_active===false?'（停用）':''}</option>`).join('');
+    sel.value=String(currentStoreId);
+    sel.classList.remove('hidden');
+}
+
+function switchAdminStore(storeId){
+    if(!storeId) return;
+    const url=new URL(location.href);
+    url.searchParams.set('store_id',storeId);
+    location.href=url.toString();
+}
+
+async function doLogout(){
+    await _s.auth.signOut();
+    location.href=location.pathname;
 }
 
 // ── TOAST ──
