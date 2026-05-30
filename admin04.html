@@ -1592,6 +1592,7 @@ async function bootAdmin(){
     const params=new URLSearchParams(location.search);
     const initialTab=params.get('tab')||'orders';
     switchTab(initialTab);
+    if(params.get('super_menu')) applySuperMenuMode();
     if(initialTab==='settings'&&params.get('settings')){
         setTimeout(()=>{
             switchSettings(params.get('settings'));
@@ -1599,6 +1600,25 @@ async function bootAdmin(){
         },150);
     }
     return su;
+}
+
+function applySuperMenuMode(){
+    const sidebar=document.getElementById('sidebar');
+    if(sidebar) sidebar.style.display='none';
+    const main=document.querySelector('main');
+    if(main){
+        main.style.width='100%';
+        main.style.maxWidth='none';
+        main.style.padding='24px';
+        main.style.background='var(--paper)';
+    }
+    document.body.style.display='block';
+    document.body.style.background='var(--paper)';
+    const menu=document.getElementById('sec-menu');
+    if(menu){
+        menu.classList.remove('hidden');
+        menu.style.maxWidth='none';
+    }
 }
 
 function applySettingsOnlyMode(tab){
