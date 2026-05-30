@@ -1087,9 +1087,10 @@ function updateSlotsForDate(dateStr){
 
 async function loadContent(){
     const [{data:cats},{data:items}]=await Promise.all([
-        selectStoreScoped('categories','*',q=>q.eq('is_visible',true).order('sort_order')),
-        selectStoreScoped('menu_items','*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))',
-            q=>q.eq('is_hidden',false).order('sort_order',{ascending:true}))
+        _s.from('categories').select('*').eq('is_visible',true).order('sort_order'),
+        _s.from('menu_items')
+            .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))')
+            .eq('is_hidden',false).order('sort_order',{ascending:true})
     ]);
     menuData=items||[];allCats=cats||[];
     reRenderMenu();curCatIndex=0;initSwipe();
@@ -1555,7 +1556,7 @@ async function openUpsellModal(){
     }
     // 確保 ids 都是字串
     const ids=(upsellSettings.item_ids||[]).map(String);
-    const{data:items}=await selectStoreScoped('menu_items','*',q=>q.in('id',ids).eq('is_hidden',false));
+    const{data:items}=await _s.from('menu_items').select('*').in('id',ids).eq('is_hidden',false);
     if(!items||!items.length){await doFinalSubmit();return;}
 
     upsellSelectedIds=new Set();
@@ -1610,7 +1611,7 @@ async function confirmUpsell(){
     // 把選到的加購品項加入 cart
     if(upsellSelectedIds.size>0){
         const ids=upsellSettings.item_ids;
-        const{data:items}=await selectStoreScoped('menu_items','*',q=>q.in('id',[...upsellSelectedIds]));
+        const{data:items}=await _s.from('menu_items').select('*').in('id',[...upsellSelectedIds]);
         (items||[]).forEach(i=>{
             const displayName=getLangName(i,'name');
             cart.push({name:displayName,nameCN:i.name,price:i.price});
