@@ -1593,9 +1593,21 @@ async function bootAdmin(){
     const initialTab=params.get('tab')||'orders';
     switchTab(initialTab);
     if(initialTab==='settings'&&params.get('settings')){
-        setTimeout(()=>switchSettings(params.get('settings')),150);
+        setTimeout(()=>{
+            switchSettings(params.get('settings'));
+            if(params.get('settings_only')) applySettingsOnlyMode(params.get('settings_only'));
+        },150);
     }
     return su;
+}
+
+function applySettingsOnlyMode(tab){
+    document.querySelectorAll('.ss-btn').forEach(btn=>{
+        const id=(btn.id||'').replace('ss-btn-','');
+        btn.style.display=id===tab?'flex':'none';
+    });
+    const title=document.querySelector('#sec-settings .section-title');
+    if(title&&tab==='takeout') title.textContent='🥡 外帶時段管理';
 }
 
 async function loadAdminStoreSwitcher(){
