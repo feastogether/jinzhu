@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>真珠 · 文心店 預點餐</title>
+    <title>真珠 · 線上預點餐</title>
     <link rel="icon" type="image/x-icon" href="https://www.jinzhu.com.tw/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -310,14 +310,14 @@
             <a id="photo-download-btn" href="" download="紀念照.jpg" class="dl-btn" data-i18n="photoDownload">⬇ 點此下載照片</a>
         </div>
     </div>
-    <div class="menu-footer">Jin Zhu Taichung · 文心店</div>
+    <div class="menu-footer">Jin Zhu Taiwan · 盛宴款待</div>
 </nav>
 
 <div id="kv-area">
     <img id="kv-bg" class="kv-bg" src="https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg" alt="">
     <div class="kv-overlay"></div>
     <div class="kv-content">
-        <div class="kv-tag">Wenxin Branch · 文心店</div>
+        <div class="kv-tag">Jin Zhu · Banquet Pre-Order</div>
         <h1 class="kv-title">真珠</h1>
         <div class="kv-gold-line"></div>
         <p class="kv-subtitle" data-i18n="subtitle">傳承心意 · 玩味新意</p>
@@ -337,7 +337,7 @@
     <!-- Step 1a：選擇內用/外帶（整合選餐廳） -->
     <div class="entry-card" id="mode-card">
         <h2 class="entry-title" data-i18n="s1Title">線上預點餐</h2>
-        <p class="entry-sub" data-i18n="s1Sub">真珠台灣佳味 · Pre-order Service</p>
+        <p class="entry-sub" data-i18n="s1Sub">真珠盛宴 · 預點款待</p>
 
         <!-- 選餐廳下拉（整合進來） -->
         <div id="store-select-wrap" style="margin-bottom:20px">
@@ -530,7 +530,7 @@ const I18N={
         photoLabel:'📷 珍藏回憶 · 下載紀念照',photoPh:'輸入姓名 或 電話號碼',
         photoBtn:'立即搜尋 ✦',photoSearching:'搜尋中⋯',photoNoResult:'找不到相關的紀念照',
         photoDownload:'⬇ 點此下載照片',
-        s1Title:'線上預點餐',s1Sub:'文心店 · Pre-order Service',
+        s1Title:'線上預點餐',s1Sub:'真珠盛宴 · 預點款待',
         nameLabel:'姓名 Name',namePh:'請輸入訂位姓名',
         phoneLabel:'電話 Phone',phonePh:'請輸入聯絡電話',
         enterBtn:'進入菜單',
@@ -561,7 +561,7 @@ const I18N={
         photoLabel:'📷 Memories · Download Photos',photoPh:'Enter your name or phone number',
         photoBtn:'Search ✦',photoSearching:'Searching...',photoNoResult:'No photos found',
         photoDownload:'⬇ Download Photo',
-        s1Title:'Pre-Order',s1Sub:'Wenxin Branch',
+        s1Title:'Pre-Order',s1Sub:'Jin Zhu Banquet Pre-Order',
         nameLabel:'Name',namePh:'Your name for reservation',
         phoneLabel:'Phone',phonePh:'Enter 0 is fine',
         enterBtn:'Browse Menu',
@@ -595,7 +595,7 @@ const I18N={
         photoLabel:'📷 思い出 · 記念写真ダウンロード',photoPh:'お名前または電話番号を入力',
         photoBtn:'検索 ✦',photoSearching:'検索中...',photoNoResult:'写真が見つかりませんでした',
         photoDownload:'⬇ 写真をダウンロード',
-        s1Title:'事前注文',s1Sub:'文心店',
+        s1Title:'事前注文',s1Sub:'真珠のおもてなし',
         nameLabel:'お名前',namePh:'予約のお名前をご入力ください',
         phoneLabel:'電話番号',phonePh:'0と入力してもOKです',
         enterBtn:'メニューを見る',
@@ -629,7 +629,7 @@ const I18N={
         photoLabel:'📷 추억 · 기념사진 다운로드',photoPh:'이름 또는 전화번호를 입력하세요',
         photoBtn:'검색 ✦',photoSearching:'검색 중...',photoNoResult:'사진을 찾을 수 없습니다',
         photoDownload:'⬇ 사진 다운로드',
-        s1Title:'사전 주문',s1Sub:'원신점',
+        s1Title:'사전 주문',s1Sub:'진주 연회 예약 주문',
         nameLabel:'이름',namePh:'예약 이름을 입력해 주세요',
         phoneLabel:'전화번호',phonePh:'0을 입력해도 됩니다',
         enterBtn:'메뉴 보기',
@@ -861,7 +861,7 @@ function selectStore(storeId){
     ms.style.opacity='1';
     // 更新副標題
     const subEl=document.querySelector('.entry-sub[data-i18n="s1Sub"]');
-    if(subEl) subEl.textContent=s.name+' · Pre-order Service';
+    if(subEl) subEl.textContent='真珠款待 · '+s.name;
     // 背景載入外帶時段
     loadTakeoutSlots();
     // 背景更新 logo
