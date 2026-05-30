@@ -1589,7 +1589,12 @@ async function bootAdmin(){
     const su=await loadCurrentUserContext();
     if(currentRole!=='Andy') await loadPermissions(currentStoreId);
     await autoEndPastOrders();
-    switchTab('orders');
+    const params=new URLSearchParams(location.search);
+    const initialTab=params.get('tab')||'orders';
+    switchTab(initialTab);
+    if(initialTab==='settings'&&params.get('settings')){
+        setTimeout(()=>switchSettings(params.get('settings')),150);
+    }
     return su;
 }
 
@@ -2189,9 +2194,9 @@ async function openEditOrder(id){
     curEditOrder=window.ordersRef.find(o=>o.id===id);
     editCart=JSON.parse(JSON.stringify(curEditOrder.order_content));
     document.getElementById('order-edit-modal').classList.remove('hidden');
-    const{data:items}=await applyStoreScope(_s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))')).eq('is_hidden',false).order('sort_order',{ascending:true});
+    const{data:items}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
     allMenuItems=items||[];
-    const{data:cats}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
+    const{data:cats}=await _s.from('categories').select('*').order('sort_order');
     allCategories=cats||[];
     document.getElementById('edit-cat-nav').innerHTML=(cats||[]).map(c=>`<button onclick="renderEditMenu('${c.id}')" class="px-5 py-2 bg-white border border-slate-200 rounded-full text-xs font-bold mr-2 hover:border-green-700 transition">${c.name}</button>`).join('');
     if(cats.length)renderEditMenu(cats[0].id);
@@ -2569,7 +2574,7 @@ async function delCampaign(id){const ok=await confirm2({icon:'🗑',title:'刪�
 
 // ── CATEGORIES ──
 async function loadCats(){
-    const{data}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
+    const{data}=await _s.from('categories').select('*').order('sort_order');
     allCategories=data||[];
     document.getElementById('cat-list-table').innerHTML=data.map(c=>`
         <tr class="border-b hover:bg-slate-50 transition text-sm text-left cat-drag-row"
@@ -2619,14 +2624,14 @@ async function catDrop(e){
     else tbody.insertBefore(rows[si],rows[ti]);
     // 儲存新順序
     const newOrder=Array.from(tbody.querySelectorAll('tr')).map((r,i)=>({id:r.dataset.catId,sort_order:i}));
-    for(const o of newOrder) await applyStoreScope(_s.from('categories').update({sort_order:o.sort_order})).eq('id',o.id);
+    for(const o of newOrder) await _s.from('categories').update({sort_order:o.sort_order}).eq('id',o.id);
     toast('分類順序已儲存 ✓');
     await loadCats();
 }
-async function updateCatVis(id,b){await applyStoreScope(_s.from('categories').update({is_visible:b})).eq('id',id);toast(b?'分類已顯示':'分類已隱藏');}
-async function updateCatLang(id,field,val){await applyStoreScope(_s.from('categories').update({[field]:val||null})).eq('id',id);toast('已更新');}
-async function addCat(){const n=document.getElementById('new-cat').value.trim();if(!n)return;await _s.from('categories').insert([storePayload({name:n,sort_order:99,is_visible:true})]);loadCats();toast(`分類「${n}」已新增`);}
-async function delCat(id){const ok=await confirm2({icon:'🗑',title:'刪除分類',msg:'確定刪除此分類？',okText:'刪除',danger:true});if(ok){await applyStoreScope(_s.from('categories').delete()).eq('id',id);loadCats();toast('已刪除');}}
+async function updateCatVis(id,b){await _s.from('categories').update({is_visible:b}).eq('id',id);toast(b?'分類已顯示':'分類已隱藏');}
+async function updateCatLang(id,field,val){await _s.from('categories').update({[field]:val||null}).eq('id',id);toast('已更新');}
+async function addCat(){const n=document.getElementById('new-cat').value.trim();if(!n)return;await _s.from('categories').insert([{name:n,sort_order:99,is_visible:true}]);loadCats();toast(`分類「${n}」已新增`);}
+async function delCat(id){const ok=await confirm2({icon:'🗑',title:'刪除分類',msg:'確定刪除此分類？',okText:'刪除',danger:true});if(ok){await _s.from('categories').delete().eq('id',id);loadCats();toast('已刪除');}}
 
 // ── FLAVORS ──
 let flvEditId=null; // 編輯中的 group id（null = 新增）
@@ -2897,7 +2902,7 @@ function switchLangTab(lang){
 async function loadMenu(){
     const search=document.getElementById('menu-search').value.toLowerCase();
     const catF=document.getElementById('menu-cat-filter').value;
-    const{data}=await applyStoreScope(_s.from('menu_items').select('*,categories(name)')).order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+    const{data}=await _s.from('menu_items').select('*,categories(name)').order('sort_order',{ascending:true}).order('created_at',{ascending:true});
     const filtered=(data||[]).filter(i=>i.name.toLowerCase().includes(search)&&(catF==='all'||i.category_id===catF));
     document.getElementById('menu-grid').innerHTML=filtered.map(i=>`
         <div class="bg-white rounded-2xl border p-4 shadow-sm flex flex-col select-none" draggable="true" data-id="${i.id}" ondragstart="menuDragStart(event)" ondragover="menuDragOver(event)" ondrop="menuDrop(event)" ondragend="menuDragEnd(event)">
@@ -2925,7 +2930,7 @@ async function menuDrop(e){
     const si=cards.findIndex(c=>c.dataset.id===menuDragSrcId),ti=cards.findIndex(c=>c.dataset.id===targetId);
     if(si<ti)grid.insertBefore(cards[si],cards[ti].nextSibling);else grid.insertBefore(cards[si],cards[ti]);
     const newOrder=Array.from(grid.children).map((c,i)=>({id:c.dataset.id,sort_order:i}));
-    for(const o of newOrder)await applyStoreScope(_s.from('menu_items').update({sort_order:o.sort_order})).eq('id',o.id);
+    for(const o of newOrder)await _s.from('menu_items').update({sort_order:o.sort_order}).eq('id',o.id);
     toast('排序已儲存');
 }
 async function openMenuModal(isEdit){
@@ -2944,7 +2949,7 @@ async function openMenuModal(isEdit){
         });
     }
     if(!document.getElementById('m-cat').options.length){
-        const{data:cats}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
+        const{data:cats}=await _s.from('categories').select('*').order('sort_order');
         document.getElementById('m-cat').innerHTML=(cats||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
     } else if(!isEdit) {
         document.getElementById('m-cat').selectedIndex=0;
@@ -2953,7 +2958,7 @@ async function openMenuModal(isEdit){
     document.getElementById('flv-checks').innerHTML=(flvs||[]).map(f=>`<label class="flex items-center gap-1 text-[11px]"><input type="checkbox" class="flv-chk accent-green-700" value="${f.id}"> ${f.name}</label>`).join('');
 }
 async function editItem(id){
-    const{data:i}=await applyStoreScope(_s.from('menu_items').select('*,item_flavor_relation(*)')).eq('id',id).single();
+    const{data:i}=await _s.from('menu_items').select('*,item_flavor_relation(*)').eq('id',id).single();
     document.getElementById('m-id').value=i.id;
     document.getElementById('m-name').value=i.name;
     document.getElementById('m-price').value=i.price;
@@ -2988,16 +2993,16 @@ async function saveItem(){
         description_ko:document.getElementById('m-desc-ko').value||null,
     };
     if(url)payload.image_url=url;
-    const{data:saved}=id?await applyStoreScope(_s.from('menu_items').update(payload)).eq('id',id).select():await _s.from('menu_items').insert([storePayload(payload)]).select();
+    const{data:saved}=id?await _s.from('menu_items').update(payload).eq('id',id).select():await _s.from('menu_items').insert([payload]).select();
     if(saved){await _s.from('item_flavor_relation').delete().eq('item_id',saved[0].id);const rels=Array.from(document.querySelectorAll('.flv-chk:checked')).map(c=>({item_id:saved[0].id,flavor_group_id:c.value}));if(rels.length)await _s.from('item_flavor_relation').insert(rels);closeMenuModal();loadMenu();toast('餐點已儲存');}
     else toast('儲存失敗','error');
 }
-async function delItem(id){const ok=await confirm2({icon:'🍱',title:'刪除餐點',msg:'確定刪除此餐點？',okText:'刪除',danger:true});if(ok){await applyStoreScope(_s.from('menu_items').delete()).eq('id',id);loadMenu();toast('已刪除');}}
+async function delItem(id){const ok=await confirm2({icon:'🍱',title:'刪除餐點',msg:'確定刪除此餐點？',okText:'刪除',danger:true});if(ok){await _s.from('menu_items').delete().eq('id',id);loadMenu();toast('已刪除');}}
 function closeMenuModal(){document.getElementById('menu-modal').classList.add('hidden');}
 
 // ── SET MENU ──
 let curItem=null,curPicks=[],pickerSelectedItems=[],currentEditingGroupId=null;
-async function openSetModal(id){curItem=id;resetSetForm();document.getElementById('set-modal').classList.remove('hidden');const{data}=await applyStoreScope(_s.from('menu_items').select('*,categories(name)')).eq('is_set_menu',false).order('name');window.allPickerItems=data||[];renderPickerList(data);loadSavedSets();}
+async function openSetModal(id){curItem=id;resetSetForm();document.getElementById('set-modal').classList.remove('hidden');const{data}=await _s.from('menu_items').select('*,categories(name)').eq('is_set_menu',false).order('name');window.allPickerItems=data||[];renderPickerList(data);loadSavedSets();}
 function closeSetModal(){document.getElementById('set-modal').classList.add('hidden');}
 function renderPickerList(items){
     const container=document.getElementById('item-picker-list');
@@ -3239,7 +3244,7 @@ async function fetchData(){
     const camLabel=cam==='all'?'全部':cam==='none'?'一般訂單':cam;
     document.getElementById('report-period-display').textContent=`${typeLabel} ${sd} ～ ${ed} ｜ ${camLabel}`;
     // 查詢哪些品項是套餐（is_set_menu=true），讓備料統計正確拆解
-    const{data:setItems}=await applyStoreScope(_s.from('menu_items').select('name')).eq('is_set_menu',true);
+    const{data:setItems}=await _s.from('menu_items').select('name').eq('is_set_menu',true);
     const setMenuNames=new Set((setItems||[]).map(i=>i.name));
     renderReports(orders||[], setMenuNames);
 }
@@ -4179,8 +4184,8 @@ async function loadUpsell(){
     upsellTitleTab('zh');
 
     // 載入菜單
-    const{data:cats}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
-    const{data:items}=await applyStoreScope(_s.from('menu_items').select('*,categories(name)')).eq('is_hidden',false).order('sort_order');
+    const{data:cats}=await _s.from('categories').select('*').order('sort_order');
+    const{data:items}=await _s.from('menu_items').select('*,categories(name)').eq('is_hidden',false).order('sort_order');
     upsellAllItems=items||[];
 
     document.getElementById('upsell-cat-filter').innerHTML=
