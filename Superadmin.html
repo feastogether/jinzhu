@@ -192,6 +192,44 @@ tbody tr:hover td{background:#fafcff;}
     </div>
 
 
+    <!-- ⑤ 權限管理 -->
+    <div class="page" id="page-perms">
+      <div class="ph"><div class="pt">權限管理</div><div class="ps">設定各店 admin 側邊選單可使用的功能</div></div>
+      <div class="card">
+        <div class="ch"><div class="ct">選擇店家</div></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="fi" id="perm-store-sel" style="width:auto;min-width:200px" onchange="loadPerms()">
+            <option value="">— 選擇店家 —</option>
+          </select>
+          <button class="btn btn-p btn-sm" onclick="savePerms()">💾 儲存權限設定</button>
+        </div>
+      </div>
+      <div id="perms-body" style="display:none">
+        <div class="card">
+          <div class="ct" style="margin-bottom:16px">功能開關</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px" id="perms-grid"></div>
+        </div>
+        <div class="info-box">
+          ✅ <strong>開啟</strong>：店家 admin 可正常使用此功能<br>
+          🔒 <strong>關閉</strong>：店家 admin 可進入查看，但無法編輯
+        </div>
+      </div>
+    </div>
+
+    <!-- ⑥ 菜單管理 -->
+    <div class="page" id="page-menu">
+      <div class="ph"><div class="pt">菜單管理</div><div class="ps">選擇店家後，可用該店範圍編輯菜單與公告</div></div>
+      <div class="card" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <div>
+          <label class="fl">店家</label>
+          <select class="fi" id="menu-sel" style="width:auto;min-width:220px" onchange="openMenuAdmin()"></select>
+        </div>
+        <button class="btn btn-p btn-sm" onclick="openMenuAdmin()">開啟管理</button>
+      </div>
+      <div id="menu-ph" class="info-box">請先選擇要編輯的店家。</div>
+      <div class="iw" id="menu-frame-wrap" style="display:none"><iframe src="about:blank" id="menu-frame"></iframe></div>
+    </div>
+
   </div>
 </div>
 
@@ -270,39 +308,6 @@ tbody tr:hover td{background:#fafcff;}
       <button class="btn btn-g" style="flex:1" onclick="closeModal('resetpw-modal')">取消</button>
       <button class="btn btn-p" style="flex:2" onclick="doResetPw()">更新密碼</button>
     </div>
-
-    <!-- ④b 權限管理 -->
-    <div class="page" id="page-perms">
-      <div class="ph"><div class="pt">權限管理</div><div class="ps">設定各店可存取的後台功能，關閉後仍可查看但無法編輯</div></div>
-      <div class="card">
-        <div class="ch">
-          <div class="ct">選擇店家</div>
-        </div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <select class="fi" id="perm-store-sel" style="width:auto;min-width:200px" onchange="loadPerms()">
-            <option value="">— 選擇店家 —</option>
-          </select>
-          <button class="btn btn-p btn-sm" onclick="savePerms()">💾 儲存權限設定</button>
-        </div>
-      </div>
-      <div id="perms-body" style="display:none">
-        <div class="card">
-          <div class="ct" style="margin-bottom:16px">功能開關</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px" id="perms-grid"></div>
-        </div>
-        <div class="info-box">
-          ✅ <strong>開啟</strong>：可正常使用此功能<br>
-          🔒 <strong>關閉</strong>：可進入頁面查看，但所有編輯按鈕和輸入框會鎖定，無法修改
-        </div>
-      </div>
-    </div>
-
-    <!-- ⑤ 菜單管理 -->
-    <div class="page" id="page-menu">
-      <div class="ph"><div class="pt">菜單管理</div><div class="ps">所有店家共用同一套菜單，在此直接管理</div></div>
-      <div class="iw"><iframe src="admin.html" id="menu-frame"></iframe></div>
-    </div>
-
   </div>
 </div>
 <script>
@@ -370,6 +375,7 @@ function go(p){
   else if(p==='users')loadUsers();
   else if(p==='orders')loadOrders();
   else if(p==='perms'){document.getElementById('perms-body').style.display='none';}
+  else if(p==='menu')openMenuAdmin();
 }
 
 // ── STORES ──
@@ -380,6 +386,8 @@ async function loadStores(){
   document.getElementById('of-store').innerHTML='<option value="0">全部店家</option>'+opts;
   document.getElementById('u-store').innerHTML=opts;
   document.getElementById('perm-store-sel').innerHTML='<option value="">— 選擇店家 —</option>'+opts;
+  const menuSel=document.getElementById('menu-sel');
+  if(menuSel) menuSel.innerHTML='<option value="">— 選擇店家 —</option>'+opts;
 }
 function renderStores(){
   const el=document.getElementById('stores-grid');
@@ -392,6 +400,7 @@ function renderStores(){
       <span class="s-badge ${s.is_active?'ba':'bi'}">${s.is_active?'✅ 營業中':'⏸ 暫停'}</span>
       <div class="sa">
         <button class="btn btn-g btn-sm" onclick="openStoreModal('${s.id}')">✏️ 編輯</button>
+        <button class="btn btn-gold btn-sm" onclick="go('perms');document.getElementById('perm-store-sel').value='${s.id}';loadPerms();">🔒 選單</button>
         ${s.id>1?`<button class="btn btn-d btn-sm" onclick="delStore(${s.id})">🗑</button>`:'<span style="font-size:10px;color:var(--stone);padding:4px">（主店）</span>'}
       </div>
     </div>`).join('');
@@ -658,8 +667,7 @@ function openMenuAdmin(){
   const fw=document.getElementById('menu-frame-wrap');
   const ph=document.getElementById('menu-ph');
   if(!store){fw.style.display='none';ph.style.display='block';return;}
-  const url=store.admin_url||'';
-  if(!url){toast('此店家尚未設定後台網址','warn');return;}
+  const url='admin04.html?store_id='+encodeURIComponent(sid);
   fw.style.display='block';ph.style.display='none';
   document.getElementById('menu-frame').src=url;
 }
