@@ -220,7 +220,7 @@ tbody tr:hover td{background:#fafcff;}
     <div class="page" id="page-menu">
       <div class="ph"><div class="pt">菜單管理</div><div class="ps">所有店家共用同一套餐點、分類、口味與套餐設定</div></div>
       <div class="info-box">🍱 菜單為全店共用；各店不同的公告、Logo、外帶時段請到店家管理中的「時段 / 店家設定」入口調整。</div>
-      <div class="iw"><iframe src="admin04.html?super_menu=1" id="menu-frame"></iframe></div>
+      <div class="iw"><iframe src="admin04.html?tab=menu&super_menu=1" id="menu-frame"></iframe></div>
     </div>
 
   </div>
@@ -653,7 +653,7 @@ async function savePerms(){
 
 // ── STORE SETTINGS ──
 function openStoreSettings(storeId){
-  const url='admin04.html?store_id='+encodeURIComponent(storeId)+'&tab=settings&settings=takeout';
+  const url='admin04.html?store_id='+encodeURIComponent(storeId)+'&tab=settings&settings=takeout&settings_only=takeout';
   window.open(url,'_blank');
 }
 
