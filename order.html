@@ -786,23 +786,53 @@ async function init(){
 
 // 儲存餐廳資料（供 selectStore 使用）
 let storesCache=[];
+const DEFAULT_STORE_ID=1;
+const STORE_CACHE_KEY='jz_stores_cache_v2';
+
+function activeStoreId(){
+    return selectedStoreId||DEFAULT_STORE_ID;
+}
+
+function renderStoreOptions(stores){
+    const sel=document.getElementById('store-dropdown');
+    if(!sel) return;
+    sel.innerHTML='<option value="">— 請選擇餐廳 —</option>'+
+        (stores||[]).map(s=>`<option value="${s.id}">${s.name}${s.address?' · '+s.address:''}</option>`).join('');
+}
+
+function warmStoreListFromCache(){
+    try{
+        const cached=JSON.parse(localStorage.getItem(STORE_CACHE_KEY)||'[]');
+        if(Array.isArray(cached)&&cached.length){
+            storesCache=cached;
+            renderStoreOptions(storesCache);
+            return true;
+        }
+    }catch(e){}
+    return false;
+}
 
 // 載入餐廳列表
 async function loadStoreList(){
     const list=document.getElementById('store-list');
+    warmStoreListFromCache();
     try{
-        const{data}=await _s.from('stores').select('*').eq('is_active',true).order('sort_order').order('id');
+        const{data}=await _s.from('stores')
+            .select('id,name,slug,address,phone,is_active,sort_order')
+            .eq('is_active',true)
+            .order('sort_order')
+            .order('id');
         storesCache=data||[];
         if(!storesCache.length){
-            list.innerHTML='<div style="text-align:center;padding:24px;color:var(--stone)">目前無可訂位的餐廳</div>';
+            if(list) list.innerHTML='<div style="text-align:center;padding:24px;color:var(--stone)">目前無可訂位的餐廳</div>';
             return;
         }
-        // 填充 select dropdown
-        const sel=document.getElementById('store-dropdown');
-        sel.innerHTML='<option value="">— 請選擇餐廳 —</option>'+
-            storesCache.map(s=>`<option value="${s.id}">${s.name}${s.address?' · '+s.address:''}</option>`).join('');
+        localStorage.setItem(STORE_CACHE_KEY,JSON.stringify(storesCache));
+        renderStoreOptions(storesCache);
     }catch(e){
-        list.innerHTML='<div style="color:var(--stone);text-align:center;padding:24px">載入失敗，請重試<br><button onclick="loadStoreList()" style="margin-top:10px;padding:8px 16px;background:var(--pine);color:white;border:none;border-radius:8px;cursor:pointer">重新載入</button></div>';
+        if(!storesCache.length){
+            if(list) list.innerHTML='<div style="color:var(--stone);text-align:center;padding:24px">載入失敗，請重試<br><button onclick="loadStoreList()" style="margin-top:10px;padding:8px 16px;background:var(--pine);color:white;border:none;border-radius:8px;cursor:pointer">重新載入</button></div>';
+        }
     }
 }
 
@@ -824,6 +854,7 @@ function selectStore(storeId){
     if(!s) return;
     selectedStoreId=storeId;
     selectedStoreName=s.name;
+    updateConfirmStoreInfo();
     // 平滑展開 mode-section
     const ms=document.getElementById('mode-section');
     ms.style.maxHeight='300px';
@@ -834,10 +865,24 @@ function selectStore(storeId){
     // 背景載入外帶時段
     loadTakeoutSlots();
     // 背景更新 logo
-    _s.from('store_settings').select('logo_url').eq('id',1).single()
+    getStoreSettings('logo_url')
         .then(({data})=>{
             if(data?.logo_url) document.getElementById('main-logo').src=data.logo_url+'?t='+Date.now();
         }).catch(()=>{});
+}
+
+function updateConfirmStoreInfo(){
+    const s=storesCache.find(x=>x.id===activeStoreId())||{};
+    const phone=s.phone||'04-3702-7538';
+    const tel=phone.replace(/[^\d+]/g,'');
+    document.querySelectorAll('.confirm-phone').forEach(a=>{
+        a.textContent=phone;
+        a.href='tel:'+tel;
+    });
+    const callBtn=document.querySelector('.confirm-btn.filled');
+    if(callBtn) callBtn.href='tel:'+tel;
+    const title=document.querySelector('.confirm-title');
+    if(title&&s.name) title.textContent=s.name+' 已收到您的預點';
 }
 initLiff().then(()=>init());
 
@@ -966,7 +1011,7 @@ let takeoutSlotsWeekday=[], takeoutSlotsWeekend=[], takeoutSlotsSpecial={};
 
 async function loadTakeoutSlots(){
     try{
-        const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend,takeout_slots_special').eq('id',1).single();
+        const{data}=await getStoreSettings('takeout_slots,takeout_slots_weekend,takeout_slots_special');
         if(data){
             takeoutSlotsWeekday=data.takeout_slots||[];
             takeoutSlotsWeekend=data.takeout_slots_weekend||[];
@@ -974,6 +1019,33 @@ async function loadTakeoutSlots(){
             try{ takeoutSlotsSpecial=JSON.parse(data.takeout_slots_special||'{}'); }catch(e){ takeoutSlotsSpecial={}; }
         }
     }catch(e){}
+}
+
+async function getStoreSettings(columns='*'){
+    const sid=activeStoreId();
+    let res=await _s.from('store_settings').select(columns).eq('store_id',sid).maybeSingle();
+    if(res.error&&/store_id/i.test(res.error.message||'')){
+        res=await _s.from('store_settings').select(columns).eq('id',DEFAULT_STORE_ID).maybeSingle();
+    }
+    if(!res.data&&sid!==DEFAULT_STORE_ID){
+        const fallback=await _s.from('store_settings').select(columns).eq('id',DEFAULT_STORE_ID).maybeSingle();
+        if(fallback.data) return fallback;
+    }
+    return res;
+}
+
+async function selectStoreScoped(table, columns, setup){
+    const sid=activeStoreId();
+    let q=_s.from(table).select(columns);
+    if(typeof setup==='function') q=setup(q);
+    let scoped=q.or(`store_id.eq.${sid},store_id.is.null`);
+    const res=await scoped;
+    if(res.error&&/store_id/i.test(res.error.message||'')){
+        let fallback=_s.from(table).select(columns);
+        if(typeof setup==='function') fallback=setup(fallback);
+        return await fallback;
+    }
+    return res;
 }
 
 // 依選取日期決定顯示哪組時段
@@ -1014,10 +1086,11 @@ function updateSlotsForDate(dateStr){
 }
 
 async function loadContent(){
-    const{data:cats}=await _s.from('categories').select('*').eq('is_visible',true).order('sort_order');
-    const{data:items}=await _s.from('menu_items')
-        .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))') 
-        .eq('is_hidden',false).order('sort_order',{ascending:true});
+    const [{data:cats},{data:items}]=await Promise.all([
+        selectStoreScoped('categories','*',q=>q.eq('is_visible',true).order('sort_order')),
+        selectStoreScoped('menu_items','*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))',
+            q=>q.eq('is_hidden',false).order('sort_order',{ascending:true}))
+    ]);
     menuData=items||[];allCats=cats||[];
     reRenderMenu();curCatIndex=0;initSwipe();
 }
@@ -1462,7 +1535,12 @@ let upsellSettings=null, upsellSelectedIds=new Set();
 
 async function loadUpsellSettings(){
     try{
-        const{data,error}=await _s.from('upsell_settings').select('*').eq('id',1).single();
+        let {data,error}=await _s.from('upsell_settings').select('*').eq('store_id',activeStoreId()).maybeSingle();
+        if(error&&/store_id/i.test(error.message||'')) ({data,error}=await _s.from('upsell_settings').select('*').eq('id',1).single());
+        if(!data&&activeStoreId()!==DEFAULT_STORE_ID){
+            const fallback=await _s.from('upsell_settings').select('*').eq('id',1).maybeSingle();
+            data=fallback.data; error=fallback.error;
+        }
         if(error) console.warn('upsell load err:',error);
         upsellSettings=data||null;
     }catch(e){
@@ -1477,7 +1555,7 @@ async function openUpsellModal(){
     }
     // 確保 ids 都是字串
     const ids=(upsellSettings.item_ids||[]).map(String);
-    const{data:items}=await _s.from('menu_items').select('*').in('id',ids).eq('is_hidden',false);
+    const{data:items}=await selectStoreScoped('menu_items','*',q=>q.in('id',ids).eq('is_hidden',false));
     if(!items||!items.length){await doFinalSubmit();return;}
 
     upsellSelectedIds=new Set();
@@ -1532,7 +1610,7 @@ async function confirmUpsell(){
     // 把選到的加購品項加入 cart
     if(upsellSelectedIds.size>0){
         const ids=upsellSettings.item_ids;
-        const{data:items}=await _s.from('menu_items').select('*').in('id',[...upsellSelectedIds]);
+        const{data:items}=await selectStoreScoped('menu_items','*',q=>q.in('id',[...upsellSelectedIds]));
         (items||[]).forEach(i=>{
             const displayName=getLangName(i,'name');
             cart.push({name:displayName,nameCN:i.name,price:i.price});
@@ -1623,7 +1701,7 @@ async function doPhotoSearch(){
 let cachedAnnouncement=null;
 
 async function loadAnnouncement(){
-    const{data}=await _s.from('announcements').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1);
+    const{data}=await selectStoreScoped('announcements','*',q=>q.eq('is_active',true).order('created_at',{ascending:false}).limit(1));
     if(data&&data.length>0){
         cachedAnnouncement=data[0];
     } else if(curLang!=='zh'){
