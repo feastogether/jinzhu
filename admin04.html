@@ -1533,6 +1533,56 @@ const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
 const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allMenuItems=[], allCategories=[], allCampaigns=[], curEditOrder=null, editCart=[];
+let currentStoreId=1, currentRole='staff', adminStoreOverride=false;
+
+function isSuperAdmin(){ return currentRole==='Andy'&&!adminStoreOverride; }
+function applyStoreScope(q){ return isSuperAdmin()?q:q.eq('store_id',currentStoreId); }
+function storePayload(payload){ return isSuperAdmin()?payload:{...payload,store_id:currentStoreId}; }
+
+async function getStoreSettings(columns='*'){
+    let res=await _s.from('store_settings').select(columns).eq('store_id',currentStoreId).maybeSingle();
+    if(res.error&&/store_id/i.test(res.error.message||'')){
+        return await _s.from('store_settings').select(columns).eq('id',1).maybeSingle();
+    }
+    if(!res.data&&currentStoreId!==1){
+        const fallback=await _s.from('store_settings').select(columns).eq('id',1).maybeSingle();
+        if(fallback.data) return fallback;
+    }
+    return res;
+}
+
+async function upsertStoreSettings(payload){
+    const scoped={...payload,store_id:currentStoreId};
+    let res=await _s.from('store_settings').upsert(scoped,{onConflict:'store_id'});
+    if(res.error&&/store_id|constraint|conflict/i.test(res.error.message||'')){
+        res=await _s.from('store_settings').update(payload).eq('id',1);
+    }
+    return res;
+}
+
+async function loadCurrentUserContext(){
+    const{data:{session}}=await _s.auth.getSession();
+    if(!session) return null;
+    const{data:su,error}=await _s.from('store_users').select('store_id,role,stores(name)').eq('user_id',session.user.id).maybeSingle();
+    if(error) throw error;
+    const forcedStoreId=parseInt(new URLSearchParams(location.search).get('store_id')||'');
+    adminStoreOverride=su?.role==='Andy'&&!!forcedStoreId;
+    currentStoreId=adminStoreOverride?forcedStoreId:(su?.store_id||1);
+    currentRole=su?.role||'staff';
+    window._currentStoreId=currentStoreId;
+    window._currentRole=currentRole;
+    const label=document.querySelector('.text-[9px].text-white\\/20');
+    if(label) label.textContent=(su?.stores?.name||'Jin Zhu')+' · Admin';
+    return su;
+}
+
+async function bootAdmin(){
+    const su=await loadCurrentUserContext();
+    if(currentRole!=='Andy') await loadPermissions(currentStoreId);
+    await autoEndPastOrders();
+    switchTab('orders');
+    return su;
+}
 
 // ── TOAST ──
 function toast(msg, type='success', duration=2800) {
@@ -1624,7 +1674,7 @@ async function loadOrders() {
     // 決定排序欄位與方向
     const sortField = sortVal.startsWith('booking') ? 'booking_date' : 'created_at';
     const sortAsc   = sortVal.endsWith('_asc');
-    let q=_s.from('orders').select('*').order(sortField,{ascending:sortAsc});
+    let q=applyStoreScope(_s.from('orders').select('*')).order(sortField,{ascending:sortAsc});
     // booking_asc/desc 時 null 的訂單（沒有訂位日期）排到最後
     if(sortField==='booking_date') q=q.order('created_at',{ascending:false});
     // 主列表預設排除訂位日期已過去的訂單（已過去的在「已完成」視圖）
@@ -1924,7 +1974,7 @@ async function updateOrderData(id,field,val,inputEl){
     if(field==='booking_date'&&val)obj[field]=new Date(val).toISOString();
     else if(typeof val==='boolean')obj[field]=val;
     else obj[field]=val||null;
-    const{error}=await _s.from('orders').update(obj).eq('id',id);
+    const{error}=await applyStoreScope(_s.from('orders').update(obj)).eq('id',id);
     if(inputEl){
         inputEl.classList.remove('field-saving');
         if(!error){
@@ -1959,7 +2009,7 @@ function showSaveIndicator(id){
     },400);
 }
 async function saveAdminNote(id, val){
-    const{error}=await _s.from('orders').update({admin_note:val||null}).eq('id',id);
+    const{error}=await applyStoreScope(_s.from('orders').update({admin_note:val||null})).eq('id',id);
     if(!error){
         const el=document.getElementById(`admin-note-${id}`);
         if(el){el.style.borderColor='#10b981';setTimeout(()=>el.style.borderColor='',1200);}
@@ -1976,7 +2026,7 @@ async function saveBookingDate(id, newDate){
     const timeEl = document.getElementById(`btime-${id}`) || document.getElementById(`som-btime-${id}`);
     const time = timeEl?.value || '00:00';
     const isoStr = `${newDate}T${time}:00+08:00`;
-    const{error}=await _s.from('orders').update({booking_date: isoStr}).eq('id',id);
+    const{error}=await applyStoreScope(_s.from('orders').update({booking_date: isoStr})).eq('id',id);
     const el = document.getElementById(`bdate-${id}`) || document.getElementById(`som-bdate-${id}`);
     if(!error){
         if(el){ el.style.borderColor='#10b981'; setTimeout(()=>el.style.borderColor='',1200); }
@@ -2008,7 +2058,7 @@ async function saveBookingTime(id, newTime){
     }
     if(!date){ toast('請先填寫訂位日期','warn'); return; }
     const isoStr = `${date}T${newTime}:00+08:00`;
-    const{error}=await _s.from('orders').update({booking_date: isoStr}).eq('id',id);
+    const{error}=await applyStoreScope(_s.from('orders').update({booking_date: isoStr})).eq('id',id);
     const el = document.getElementById(`btime-${id}`) || document.getElementById(`som-btime-${id}`);
     if(!error){
         if(el){ el.style.borderColor='#10b981'; setTimeout(()=>el.style.borderColor='',1200); }
@@ -2029,7 +2079,7 @@ async function saveBookingTime(id, newTime){
 async function toggleSync(id,cur){
     // 確認中 → 確認完成
     const next = (cur==='confirming'||cur==='pending'||!cur) ? 'confirmed' : 'confirming';
-    await _s.from('orders').update({status:next}).eq('id',id);
+    await applyStoreScope(_s.from('orders').update({status:next})).eq('id',id);
     toast(next==='confirmed'?'✓ 已確認完成':'↩ 已退回確認中');
     if(curOrderView==='calendar') renderCalendar();
     else loadOrders();
@@ -2065,14 +2115,14 @@ async function batchDeleteOrders(){
     if(!selectedOrderIds.size)return;
     const ok=await confirm2({icon:'🗑',title:'批次刪除訂單',msg:`確定永久刪除選取的 ${selectedOrderIds.size} 筆訂單？此操作無法復原。`,okText:'永久刪除',danger:true});
     if(!ok)return;
-    await _s.from('orders').delete().in('id',Array.from(selectedOrderIds));
+    await applyStoreScope(_s.from('orders').delete()).in('id',Array.from(selectedOrderIds));
     selectedOrderIds.clear(); updateOrderBatchUI(); loadOrders();
     toast(`已刪除 ${selectedOrderIds.size||'所選'} 筆訂單`);
 }
 async function delOrder(id){
     const ok=await confirm2({icon:'🗑',title:'刪除訂單',msg:'確定永久刪除此筆訂單？此操作無法復原。',okText:'刪除',danger:true});
     if(!ok)return;
-    await _s.from('orders').delete().eq('id',id);
+    await applyStoreScope(_s.from('orders').delete()).eq('id',id);
     selectedOrderIds.delete(id); updateOrderBatchUI(); loadOrders();
     toast('訂單已刪除');
 }
@@ -2104,9 +2154,9 @@ async function openEditOrder(id){
     curEditOrder=window.ordersRef.find(o=>o.id===id);
     editCart=JSON.parse(JSON.stringify(curEditOrder.order_content));
     document.getElementById('order-edit-modal').classList.remove('hidden');
-    const{data:items}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
+    const{data:items}=await applyStoreScope(_s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))')).eq('is_hidden',false).order('sort_order',{ascending:true});
     allMenuItems=items||[];
-    const{data:cats}=await _s.from('categories').select('*').order('sort_order');
+    const{data:cats}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
     allCategories=cats||[];
     document.getElementById('edit-cat-nav').innerHTML=(cats||[]).map(c=>`<button onclick="renderEditMenu('${c.id}')" class="px-5 py-2 bg-white border border-slate-200 rounded-full text-xs font-bold mr-2 hover:border-green-700 transition">${c.name}</button>`).join('');
     if(cats.length)renderEditMenu(cats[0].id);
@@ -2450,7 +2500,7 @@ function confirmEditPop(){
 
 async function saveOrderChange(){
     const total=editCart.reduce((s,i)=>s+Number(i.price),0);
-    const{error}=await _s.from('orders').update({order_content:editCart,total_price:total}).eq('id',curEditOrder.id);
+    const{error}=await applyStoreScope(_s.from('orders').update({order_content:editCart,total_price:total})).eq('id',curEditOrder.id);
     if(!error){toast('訂單已更新');closeEditModal();loadOrders();}
     else toast('更新失敗','error');
 }
@@ -2484,7 +2534,7 @@ async function delCampaign(id){const ok=await confirm2({icon:'🗑',title:'刪�
 
 // ── CATEGORIES ──
 async function loadCats(){
-    const{data}=await _s.from('categories').select('*').order('sort_order');
+    const{data}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
     allCategories=data||[];
     document.getElementById('cat-list-table').innerHTML=data.map(c=>`
         <tr class="border-b hover:bg-slate-50 transition text-sm text-left cat-drag-row"
@@ -2534,14 +2584,14 @@ async function catDrop(e){
     else tbody.insertBefore(rows[si],rows[ti]);
     // 儲存新順序
     const newOrder=Array.from(tbody.querySelectorAll('tr')).map((r,i)=>({id:r.dataset.catId,sort_order:i}));
-    for(const o of newOrder) await _s.from('categories').update({sort_order:o.sort_order}).eq('id',o.id);
+    for(const o of newOrder) await applyStoreScope(_s.from('categories').update({sort_order:o.sort_order})).eq('id',o.id);
     toast('分類順序已儲存 ✓');
     await loadCats();
 }
-async function updateCatVis(id,b){await _s.from('categories').update({is_visible:b}).eq('id',id);toast(b?'分類已顯示':'分類已隱藏');}
-async function updateCatLang(id,field,val){await _s.from('categories').update({[field]:val||null}).eq('id',id);toast('已更新');}
-async function addCat(){const n=document.getElementById('new-cat').value.trim();if(!n)return;await _s.from('categories').insert([{name:n,sort_order:99,is_visible:true}]);loadCats();toast(`分類「${n}」已新增`);}
-async function delCat(id){const ok=await confirm2({icon:'🗑',title:'刪除分類',msg:'確定刪除此分類？',okText:'刪除',danger:true});if(ok){await _s.from('categories').delete().eq('id',id);loadCats();toast('已刪除');}}
+async function updateCatVis(id,b){await applyStoreScope(_s.from('categories').update({is_visible:b})).eq('id',id);toast(b?'分類已顯示':'分類已隱藏');}
+async function updateCatLang(id,field,val){await applyStoreScope(_s.from('categories').update({[field]:val||null})).eq('id',id);toast('已更新');}
+async function addCat(){const n=document.getElementById('new-cat').value.trim();if(!n)return;await _s.from('categories').insert([storePayload({name:n,sort_order:99,is_visible:true})]);loadCats();toast(`分類「${n}」已新增`);}
+async function delCat(id){const ok=await confirm2({icon:'🗑',title:'刪除分類',msg:'確定刪除此分類？',okText:'刪除',danger:true});if(ok){await applyStoreScope(_s.from('categories').delete()).eq('id',id);loadCats();toast('已刪除');}}
 
 // ── FLAVORS ──
 let flvEditId=null; // 編輯中的 group id（null = 新增）
@@ -2778,7 +2828,7 @@ async function initSettings(){
 }
 
 async function loadSettingsLogo(){
-    const{data}=await _s.from('store_settings').select('*').eq('id',1).single();
+    const{data}=await getStoreSettings('*');
     if(data?.logo_url){
         document.getElementById('current-logo-preview').classList.remove('hidden');
         document.getElementById('admin-logo-img').src=`${data.logo_url}?t=${Date.now()}`;
@@ -2789,12 +2839,12 @@ async function uploadLogo(){
     if(!f){toast('請先選擇檔案','warn');return;}
     const ext=f.name.split('.').pop().toLowerCase(),path=`logo_${Date.now()}.${ext}`,type=ext==='svg'?'image/svg+xml':f.type;
     const{error}=await _s.storage.from('assets').upload(path,f,{contentType:type,cacheControl:'3600',upsert:true});
-    if(!error){const{data}=_s.storage.from('assets').getPublicUrl(path);await _s.from('store_settings').update({logo_url:data.publicUrl}).eq('id',1);toast('Logo 已更新');loadSettingsLogo();loadSidebarLogo();}
+    if(!error){const{data}=_s.storage.from('assets').getPublicUrl(path);await upsertStoreSettings({logo_url:data.publicUrl});toast('Logo 已更新');loadSettingsLogo();loadSidebarLogo();}
     else toast('上傳失敗','error');
 }
 function setSidebarLogoMode(mode){const img=document.getElementById('sidebar-logo');img.style.filter=mode==='white'?'brightness(0) invert(1)':'none';localStorage.setItem('logoMode',mode);}
 async function loadSidebarLogo(){
-    const{data}=await _s.from('store_settings').select('logo_url').eq('id',1).single();
+    const{data}=await getStoreSettings('logo_url');
     const img=document.getElementById('sidebar-logo'),fallback=document.getElementById('sidebar-logo-fallback');
     if(data?.logo_url){img.src=`${data.logo_url}?t=${Date.now()}`;img.style.display='block';fallback.style.display='none';const mode=localStorage.getItem('logoMode')||'white';img.style.filter=mode==='white'?'brightness(0) invert(1)':'none';}
     else{img.style.display='none';fallback.style.display='flex';}
@@ -2812,7 +2862,7 @@ function switchLangTab(lang){
 async function loadMenu(){
     const search=document.getElementById('menu-search').value.toLowerCase();
     const catF=document.getElementById('menu-cat-filter').value;
-    const{data}=await _s.from('menu_items').select('*,categories(name)').order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+    const{data}=await applyStoreScope(_s.from('menu_items').select('*,categories(name)')).order('sort_order',{ascending:true}).order('created_at',{ascending:true});
     const filtered=(data||[]).filter(i=>i.name.toLowerCase().includes(search)&&(catF==='all'||i.category_id===catF));
     document.getElementById('menu-grid').innerHTML=filtered.map(i=>`
         <div class="bg-white rounded-2xl border p-4 shadow-sm flex flex-col select-none" draggable="true" data-id="${i.id}" ondragstart="menuDragStart(event)" ondragover="menuDragOver(event)" ondrop="menuDrop(event)" ondragend="menuDragEnd(event)">
@@ -2840,7 +2890,7 @@ async function menuDrop(e){
     const si=cards.findIndex(c=>c.dataset.id===menuDragSrcId),ti=cards.findIndex(c=>c.dataset.id===targetId);
     if(si<ti)grid.insertBefore(cards[si],cards[ti].nextSibling);else grid.insertBefore(cards[si],cards[ti]);
     const newOrder=Array.from(grid.children).map((c,i)=>({id:c.dataset.id,sort_order:i}));
-    for(const o of newOrder)await _s.from('menu_items').update({sort_order:o.sort_order}).eq('id',o.id);
+    for(const o of newOrder)await applyStoreScope(_s.from('menu_items').update({sort_order:o.sort_order})).eq('id',o.id);
     toast('排序已儲存');
 }
 async function openMenuModal(isEdit){
@@ -2859,7 +2909,7 @@ async function openMenuModal(isEdit){
         });
     }
     if(!document.getElementById('m-cat').options.length){
-        const{data:cats}=await _s.from('categories').select('*').order('sort_order');
+        const{data:cats}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
         document.getElementById('m-cat').innerHTML=(cats||[]).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
     } else if(!isEdit) {
         document.getElementById('m-cat').selectedIndex=0;
@@ -2868,7 +2918,7 @@ async function openMenuModal(isEdit){
     document.getElementById('flv-checks').innerHTML=(flvs||[]).map(f=>`<label class="flex items-center gap-1 text-[11px]"><input type="checkbox" class="flv-chk accent-green-700" value="${f.id}"> ${f.name}</label>`).join('');
 }
 async function editItem(id){
-    const{data:i}=await _s.from('menu_items').select('*,item_flavor_relation(*)').eq('id',id).single();
+    const{data:i}=await applyStoreScope(_s.from('menu_items').select('*,item_flavor_relation(*)')).eq('id',id).single();
     document.getElementById('m-id').value=i.id;
     document.getElementById('m-name').value=i.name;
     document.getElementById('m-price').value=i.price;
@@ -2903,16 +2953,16 @@ async function saveItem(){
         description_ko:document.getElementById('m-desc-ko').value||null,
     };
     if(url)payload.image_url=url;
-    const{data:saved}=id?await _s.from('menu_items').update(payload).eq('id',id).select():await _s.from('menu_items').insert([payload]).select();
+    const{data:saved}=id?await applyStoreScope(_s.from('menu_items').update(payload)).eq('id',id).select():await _s.from('menu_items').insert([storePayload(payload)]).select();
     if(saved){await _s.from('item_flavor_relation').delete().eq('item_id',saved[0].id);const rels=Array.from(document.querySelectorAll('.flv-chk:checked')).map(c=>({item_id:saved[0].id,flavor_group_id:c.value}));if(rels.length)await _s.from('item_flavor_relation').insert(rels);closeMenuModal();loadMenu();toast('餐點已儲存');}
     else toast('儲存失敗','error');
 }
-async function delItem(id){const ok=await confirm2({icon:'🍱',title:'刪除餐點',msg:'確定刪除此餐點？',okText:'刪除',danger:true});if(ok){await _s.from('menu_items').delete().eq('id',id);loadMenu();toast('已刪除');}}
+async function delItem(id){const ok=await confirm2({icon:'🍱',title:'刪除餐點',msg:'確定刪除此餐點？',okText:'刪除',danger:true});if(ok){await applyStoreScope(_s.from('menu_items').delete()).eq('id',id);loadMenu();toast('已刪除');}}
 function closeMenuModal(){document.getElementById('menu-modal').classList.add('hidden');}
 
 // ── SET MENU ──
 let curItem=null,curPicks=[],pickerSelectedItems=[],currentEditingGroupId=null;
-async function openSetModal(id){curItem=id;resetSetForm();document.getElementById('set-modal').classList.remove('hidden');const{data}=await _s.from('menu_items').select('*,categories(name)').eq('is_set_menu',false).order('name');window.allPickerItems=data||[];renderPickerList(data);loadSavedSets();}
+async function openSetModal(id){curItem=id;resetSetForm();document.getElementById('set-modal').classList.remove('hidden');const{data}=await applyStoreScope(_s.from('menu_items').select('*,categories(name)')).eq('is_set_menu',false).order('name');window.allPickerItems=data||[];renderPickerList(data);loadSavedSets();}
 function closeSetModal(){document.getElementById('set-modal').classList.add('hidden');}
 function renderPickerList(items){
     const container=document.getElementById('item-picker-list');
@@ -3139,7 +3189,7 @@ async function fetchData(){
     if(lbl) lbl.innerHTML='<span class="rpt-spin"></span>';
     const sortField=sortVal.startsWith('booking')?'booking_date':'created_at';
     const sortAsc=sortVal.endsWith('_asc');
-    let q=_s.from('orders').select('*').order(sortField,{ascending:sortAsc});
+    let q=applyStoreScope(_s.from('orders').select('*')).order(sortField,{ascending:sortAsc});
     if(sortField==='booking_date') q=q.order('created_at',{ascending:false});
     if(cam==='none')q=q.is('campaign_code',null);else if(cam!=='all')q=q.eq('campaign_code',cam);
     if(dateType==='booking'){
@@ -3154,7 +3204,7 @@ async function fetchData(){
     const camLabel=cam==='all'?'全部':cam==='none'?'一般訂單':cam;
     document.getElementById('report-period-display').textContent=`${typeLabel} ${sd} ～ ${ed} ｜ ${camLabel}`;
     // 查詢哪些品項是套餐（is_set_menu=true），讓備料統計正確拆解
-    const{data:setItems}=await _s.from('menu_items').select('name').eq('is_set_menu',true);
+    const{data:setItems}=await applyStoreScope(_s.from('menu_items').select('name')).eq('is_set_menu',true);
     const setMenuNames=new Set((setItems||[]).map(i=>i.name));
     renderReports(orders||[], setMenuNames);
 }
@@ -3825,13 +3875,13 @@ async function testTgSummaryNotify(){
         const twToday=twNow.toISOString().split('T')[0];
 
         // 1. 今日訂位訂單
-        const{data:orders}=await _s.from('orders').select('*')
+        const{data:orders}=await applyStoreScope(_s.from('orders').select('*'))
             .gte('booking_date',`${twToday}T00:00:00+08:00`)
             .lte('booking_date',`${twToday}T23:59:59+08:00`)
             .order('booking_date',{ascending:true});
 
         // 2. 待處理（confirming/pending，與主列表邏輯一致：今天以後或無日期）
-        const{count:pendingCount}=await _s.from('orders').select('*',{count:'exact',head:true})
+        const{count:pendingCount}=await applyStoreScope(_s.from('orders').select('*',{count:'exact',head:true}))
             .in('status',['confirming','pending'])
             .or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null`);
 
@@ -3880,7 +3930,7 @@ async function testTgSummaryNotify(){
 
         // 待處理訂單列表
         if(pendingCount>0){
-            const{data:pendingOrders}=await _s.from('orders').select('*')
+            const{data:pendingOrders}=await applyStoreScope(_s.from('orders').select('*'))
                 .in('status',['confirming','pending'])
                 .or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null`)
                 .order('booking_date',{ascending:true});
@@ -4009,7 +4059,7 @@ let upsellAllItems=[];
 let specialSlotsMap={};
 
 async function loadTakeoutSlots(){
-    const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend,takeout_slots_special').eq('id',1).single();
+    const{data}=await getStoreSettings('takeout_slots,takeout_slots_weekend,takeout_slots_special');
     const slots=(data?.takeout_slots||[]);
     const slotsWe=(data?.takeout_slots_weekend||[]);
     const el=document.getElementById('takeout-slots-weekday');
@@ -4024,7 +4074,7 @@ async function saveTakeoutSlots(){
     const parse=(id)=>(document.getElementById(id)?.value||'').split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
     const weekday=parse('takeout-slots-weekday');
     const weekend=parse('takeout-slots-weekend');
-    const{error}=await _s.from('store_settings').update({takeout_slots:weekday,takeout_slots_weekend:weekend}).eq('id',1);
+    const{error}=await upsertStoreSettings({takeout_slots:weekday,takeout_slots_weekend:weekend});
     if(!error) toast('外帶時段已儲存 ✓（平日 '+weekday.length+' 個 / 週末 '+weekend.length+' 個）');
     else toast('儲存失敗：'+error.message,'error');
 }
@@ -4072,7 +4122,7 @@ function updateSpecialSlots(date, val){
     specialSlotsMap[date]=val.split('\n').map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
 }
 async function saveSpecialSlots(){
-    const{error}=await _s.from('store_settings').update({takeout_slots_special:JSON.stringify(specialSlotsMap)}).eq('id',1);
+    const{error}=await upsertStoreSettings({takeout_slots_special:JSON.stringify(specialSlotsMap)});
     if(!error) toast('特殊日期時段已儲存 ✓（共 '+Object.keys(specialSlotsMap).length+' 個日期）');
     else toast('儲存失敗：'+error.message,'error');
 }
@@ -4094,8 +4144,8 @@ async function loadUpsell(){
     upsellTitleTab('zh');
 
     // 載入菜單
-    const{data:cats}=await _s.from('categories').select('*').order('sort_order');
-    const{data:items}=await _s.from('menu_items').select('*,categories(name)').eq('is_hidden',false).order('sort_order');
+    const{data:cats}=await applyStoreScope(_s.from('categories').select('*')).order('sort_order');
+    const{data:items}=await applyStoreScope(_s.from('menu_items').select('*,categories(name)')).eq('is_hidden',false).order('sort_order');
     upsellAllItems=items||[];
 
     document.getElementById('upsell-cat-filter').innerHTML=
@@ -4206,7 +4256,7 @@ function upsellTitleTab(lang){
 
 // ── ANNOUNCEMENTS ──
 async function loadAnnouncements(){
-    const{data,error}=await _s.from('announcements').select('*').order('created_at',{ascending:false});
+    const{data,error}=await applyStoreScope(_s.from('announcements').select('*')).order('created_at',{ascending:false});
     const container=document.getElementById('announce-list');
     if(error){container.innerHTML=`<p class="text-red-400 text-sm font-bold">${error.message}</p>`;return;}
     if(!data?.length){container.innerHTML='<div class="empty-state"><div class="empty-state-icon">📢</div><div class="empty-state-title">尚無公告</div><div class="empty-state-sub">點右上角「新增公告」讓顧客在點餐時看到訊息</div></div>';return;}
@@ -4274,7 +4324,7 @@ function clearAnnImg(){
 }
 
 async function editAnnouncement(id){
-    const{data}=await _s.from('announcements').select('*').eq('id',id).single();
+    const{data}=await applyStoreScope(_s.from('announcements').select('*')).eq('id',id).single();
     if(!data)return;
     document.getElementById('ann-id').value=data.id;
     document.getElementById('ann-title').value=data.title;
@@ -4332,12 +4382,12 @@ async function saveAnnouncement(){
         image_url:imageUrl,
         is_active:document.getElementById('ann-active').checked
     };
-    if(id) await _s.from('announcements').update(payload).eq('id',id);
-    else await _s.from('announcements').insert([payload]);
+    if(id) await applyStoreScope(_s.from('announcements').update(payload)).eq('id',id);
+    else await _s.from('announcements').insert([storePayload(payload)]);
     closeAnnounceModal();loadAnnouncements();toast('公告已儲存');
 }
-async function toggleAnnouncement(id,current){await _s.from('announcements').update({is_active:!current}).eq('id',id);loadAnnouncements();}
-async function deleteAnnouncement(id){const ok=await confirm2({icon:'📢',title:'刪除公告',msg:'確定刪除此公告？',okText:'刪除',danger:true});if(ok){await _s.from('announcements').delete().eq('id',id);loadAnnouncements();toast('已刪除');}}
+async function toggleAnnouncement(id,current){await applyStoreScope(_s.from('announcements').update({is_active:!current})).eq('id',id);loadAnnouncements();}
+async function deleteAnnouncement(id){const ok=await confirm2({icon:'📢',title:'刪除公告',msg:'確定刪除此公告？',okText:'刪除',danger:true});if(ok){await applyStoreScope(_s.from('announcements').delete()).eq('id',id);loadAnnouncements();toast('已刪除');}}
 
 // ── LOGIN ──
 async function checkLogin(){const{data:{session}}=await _s.auth.getSession();document.getElementById('login-screen').classList.toggle('hidden',!!session);}
@@ -4348,7 +4398,10 @@ async function doLogin(){
     btn.disabled=true;btn.textContent='登入中…';errEl.classList.add('hidden');
     const{error}=await _s.auth.signInWithPassword({email,password});
     if(error){errEl.classList.remove('hidden');btn.disabled=false;btn.textContent='登入';}
-    else{document.getElementById('login-screen').classList.add('hidden');}
+    else{
+        document.getElementById('login-screen').classList.add('hidden');
+        try{await bootAdmin();}catch(e){toast('讀取店家權限失敗：'+e.message,'error',5000);}
+    }
 }
 
 // ── CALENDAR VIEW ──
@@ -4402,7 +4455,7 @@ async function loadEndedOrders(){
     // 已完成：訂位日期在今天之前的所有訂單
     const twNow_=new Date(Date.now()+8*3600000);
     const twToday_=twNow_.toISOString().split('T')[0];
-    const{data}=await _s.from('orders').select('*')
+    const{data}=await applyStoreScope(_s.from('orders').select('*'))
         .lt('booking_date',twToday_+'T00:00:00+08:00')
         .order('booking_date',{ascending:false});
     const el=document.getElementById('order-list');
@@ -4480,8 +4533,8 @@ async function autoEndPastOrders(){
     const twNow=new Date(Date.now()+8*3600000);
     const twToday=twNow.toISOString().split('T')[0];
     // 把訂位日期在今天之前且狀態為 confirmed 的訂單改為 ended
-    const{error}=await _s.from('orders')
-        .update({status:'ended'})
+    const{error}=await applyStoreScope(_s.from('orders')
+        .update({status:'ended'}))
         .in('status',['confirmed','synced'])
         .lt('booking_date',twToday+'T00:00:00+08:00');
     if(!error) console.log('autoEndPastOrders: done');
@@ -4530,7 +4583,7 @@ async function renderCalendar(){
     };
 
     // 抓全部訂單
-    const {data} = await _s.from('orders').select('*').order('booking_date',{ascending:true});
+    const {data} = await applyStoreScope(_s.from('orders').select('*')).order('booking_date',{ascending:true});
     const allOrders = data||[];
     window.ordersRef = allOrders; // 供 openEditOrder 使用
 
@@ -4618,7 +4671,7 @@ async function renderCalendar(){
 function openCalDayModal(dateStr, focusId=null){
     const modal=document.getElementById('cal-day-modal');
     if(dateStr){
-        _s.from('orders').select('*').then(({data})=>{
+        applyStoreScope(_s.from('orders').select('*')).then(({data})=>{
             // 更新 ordersRef，讓 openEditOrder 可以找到日曆裡的訂單
             if(data) window.ordersRef = (window.ordersRef||[]).concat(data.filter(o=>!window.ordersRef?.find(r=>r.id===o.id)));
             const orders=(data||[]).filter(o=>{
@@ -4640,7 +4693,7 @@ function openCalDayModal(dateStr, focusId=null){
 
 // 開啟單一訂單的完整編輯卡片（用於未安排訂位）
 async function openOrderCardModal(orderId){
-    const{data:o}=await _s.from('orders').select('*').eq('id',orderId).single();
+    const{data:o}=await applyStoreScope(_s.from('orders').select('*')).eq('id',orderId).single();
     if(!o)return;
     // 確保 ordersRef 有這筆資料
     if(!window.ordersRef) window.ordersRef=[];
@@ -4854,7 +4907,7 @@ function renderCalDayBody(orders){
                     <button data-oid="${o.id}" data-itakeout="${o.is_takeout?'1':''}" onclick="calToggleTakeout(this)" style="padding:5px 9px;border-radius:8px;border:1.5px solid ${o.is_takeout?'#f59e0b':'var(--border)'};background:${o.is_takeout?'#fff8e6':'#f8fafc'};font-size:11px;font-weight:700;color:${o.is_takeout?'#d97706':'var(--stone)'};cursor:pointer;display:flex;align-items:center;gap:3px;flex-shrink:0">${o.is_takeout?'🥡 外帶':'🍽 內用'}</button>
                     <button onclick="document.getElementById('cal-day-modal').classList.add('hidden');openEditOrder('${o.id}')" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">修改</button>
                     <button onclick="toggleSync('${o.id}','${o.status}');document.getElementById('cal-day-modal').classList.add('hidden');renderCalendar()" class="btn btn-sm ${o.status==='confirmed'||o.status==='synced'?'btn-ghost':'btn-primary'}" style="flex:1.5;justify-content:center">${o.status==='confirmed'||o.status==='synced'?'↩ 退回':'✓ 已確認'}</button>
-                    <button onclick="confirm2({icon:'🗑',title:'刪除訂單',msg:'確定永久刪除此筆訂單？此操作無法復原。',okText:'刪除',danger:true}).then(ok=>{if(ok){_s.from('orders').delete().eq('id','${o.id}').then(()=>{document.getElementById('cal-day-modal').classList.add('hidden');renderCalendar();toast('訂單已刪除');});}})" class="btn btn-danger btn-sm px-3">🗑</button>
+                    <button onclick="confirm2({icon:'🗑',title:'刪除訂單',msg:'確定永久刪除此筆訂單？此操作無法復原。',okText:'刪除',danger:true}).then(ok=>{if(ok){applyStoreScope(_s.from('orders').delete()).eq('id','${o.id}').then(()=>{document.getElementById('cal-day-modal').classList.add('hidden');renderCalendar();toast('訂單已刪除');});}})" class="btn btn-danger btn-sm px-3">🗑</button>
                 </div>
             </div>
         </div>`;
@@ -4912,15 +4965,7 @@ loadSidebarLogo();
     const{data:{session}}=await _s.auth.getSession();
     if(session){
         document.getElementById('login-screen').classList.add('hidden');
-        // 查詢此帳號的 store_id
-        const{data:su}=await _s.from('store_users').select('store_id,role').eq('user_id',session.user.id).maybeSingle();
-        const storeId=su?.store_id||1;
-        window._currentStoreId=storeId;
-        window._currentRole=su?.role||'staff';
-        // Andy（超管）不受權限限制
-        if(su?.role!=='Andy') await loadPermissions(storeId);
-        await autoEndPastOrders();
-        switchTab('orders');
+        try{await bootAdmin();}catch(e){toast('讀取店家權限失敗：'+e.message,'error',5000);}
     }
 })();
 
@@ -4928,6 +4973,7 @@ loadSidebarLogo();
 _s.channel('orders-realtime')
     .on('postgres_changes', {event:'INSERT', schema:'public', table:'orders'}, (payload)=>{
         const o = payload.new;
+        if(!isSuperAdmin()&&(o.store_id||1)!==currentStoreId) return;
         toast(`🔔 新訂單：${o.customer_name} $${o.total_price}`, 'info', 5000);
         updateOrdersKpi();
         // 只有沒有卡片展開中才自動刷新
@@ -4947,12 +4993,12 @@ async function updateOrdersKpi(){
     const twNow=new Date(Date.now()+8*60*60*1000);
     const twToday=twNow.toISOString().split('T')[0];
     // 今日訂位筆數（booking_date 在今天台灣時間）
-    const {count:todayCount} = await _s.from('orders')
+    const {count:todayCount} = await applyStoreScope(_s.from('orders'))
         .select('*',{count:'exact',head:true})
         .gte('booking_date',`${twToday}T00:00:00+08:00`)
         .lte('booking_date',`${twToday}T23:59:59+08:00`);
     // 尚未處理（與主列表一致：confirming/pending 且今天以後或無日期）
-    const {count:pendingCount} = await _s.from('orders')
+    const {count:pendingCount} = await applyStoreScope(_s.from('orders'))
         .select('*',{count:'exact',head:true})
         .in('status',['confirming','pending'])
         .or(`booking_date.gte.${twToday}T00:00:00+08:00,booking_date.is.null`);
