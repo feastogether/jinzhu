@@ -449,6 +449,7 @@
     </div>
 
     <nav class="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
+        <button id="btn-home"       onclick="switchTab('home')"       class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🌾</span><span class="nav-label">文化首頁</span></button>
         <button id="btn-orders"     onclick="switchTab('orders')"     class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">📋</span><span class="nav-label">訂單監控</span></button>
         <button id="btn-campaigns"  onclick="switchTab('campaigns')"  class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🎗️</span><span class="nav-label">活動代號</span></button>
         <button id="btn-categories" onclick="switchTab('categories')" class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🗂️</span><span class="nav-label">分類管理</span></button>
@@ -477,8 +478,39 @@
 <!-- ── MAIN ── -->
 <main class="flex-1 overflow-y-auto">
 
+<!-- 文化首頁 -->
+<section id="sec-home" class="space-y-6">
+    <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div style="background:linear-gradient(135deg,#004d40,#0f3a2c);padding:34px 36px;color:white;position:relative">
+            <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" style="height:42px;filter:brightness(0) invert(1);margin-bottom:24px">
+            <div style="font-size:10px;letter-spacing:.35em;color:rgba(232,213,160,.78);font-weight:900;text-transform:uppercase">Feastogether Culture</div>
+            <h1 class="font-serif font-black" style="font-size:2rem;letter-spacing:.08em;margin-top:10px">讓生活因饗賓更美好</h1>
+            <p style="max-width:720px;margin-top:14px;line-height:1.9;color:rgba(255,255,255,.72);font-size:14px">
+                從料理、服務到氛圍，每一次接待都從顧客需求出發。真珠承接饗賓集團對品質與溫度的堅持，讓團隊在日常工作裡把款待做得更細、更穩、更有心。
+            </p>
+        </div>
+        <div style="padding:28px 32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px">
+            <div style="border:1px solid var(--border);border-radius:16px;padding:20px;background:#f8fafc">
+                <div style="font-size:1.6rem;margin-bottom:10px">🍽️</div>
+                <div style="font-weight:900;color:var(--pine);margin-bottom:6px">顧客為先</div>
+                <p style="font-size:12px;line-height:1.8;color:var(--stone)">以顧客需求為起點，讓每一次用餐都成為值得期待的體驗。</p>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:16px;padding:20px;background:#f8fafc">
+                <div style="font-size:1.6rem;margin-bottom:10px">🤝</div>
+                <div style="font-weight:900;color:var(--pine);margin-bottom:6px">人人都是經營者</div>
+                <p style="font-size:12px;line-height:1.8;color:var(--stone)">不論職位，每位夥伴都能用專業創造價值，和團隊一起追求卓越。</p>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:16px;padding:20px;background:#f8fafc">
+                <div style="font-size:1.6rem;margin-bottom:10px">🌱</div>
+                <div style="font-weight:900;color:var(--pine);margin-bottom:6px">五好團隊</div>
+                <p style="font-size:12px;line-height:1.8;color:var(--stone)">以好文化、好教育、好待遇、好發展、好人才，陪伴夥伴成長。</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- 訂單監控 -->
-<section id="sec-orders" class="space-y-4">
+<section id="sec-orders" class="hidden space-y-4">
     <!-- 即時 KPI 橫條 -->
     <div class="bg-white rounded-2xl border shadow-sm px-4 py-2.5 flex items-center gap-5">
         <div class="flex items-center gap-2">
@@ -1590,7 +1622,7 @@ async function bootAdmin(){
     if(currentRole!=='Andy') await loadPermissions(currentStoreId);
     await autoEndPastOrders();
     const params=new URLSearchParams(location.search);
-    const initialTab=params.get('tab')||'orders';
+    const initialTab=params.get('tab')||'home';
     switchTab(initialTab);
     if(params.get('super_menu')) applySuperMenuMode();
     if(initialTab==='settings'&&params.get('settings')){
