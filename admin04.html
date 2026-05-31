@@ -90,10 +90,11 @@
         #login-screen {
             position: fixed; inset: 0; z-index: 9999;
             background:
-                linear-gradient(115deg, rgba(0,46,39,0.94) 0%, rgba(0,77,64,0.9) 42%, rgba(247,243,236,0.96) 42.1%, #fbfaf6 100%);
+                linear-gradient(115deg, #002e27 0%, #004d40 42%, #fbfaf6 42.1%, #fbfaf6 100%);
             display: flex; align-items: stretch; justify-content: center;
             padding: 38px;
             overflow: hidden;
+            isolation: isolate;
         }
         #login-screen::before {
             content: 'JIN-ZHU';
@@ -122,15 +123,12 @@
         .login-story {
             color: white;
             padding: clamp(38px, 6vw, 76px) clamp(30px, 5vw, 64px);
-            display: flex; flex-direction: column; justify-content: space-between;
+            display: flex; flex-direction: column; justify-content: center;
             min-height: 560px;
         }
         .login-story-logo { width: 160px; filter: brightness(0) invert(1); display: block; margin-bottom: 54px; }
         .login-kicker { font-size: 11px; font-weight: 900; letter-spacing: .42em; color: rgba(212,168,90,0.95); text-transform: uppercase; margin-bottom: 18px; }
         .login-headline { font-family: 'Noto Serif TC', serif; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.22; font-weight: 900; letter-spacing: .02em; max-width: 560px; }
-        .login-copy { margin-top: 22px; max-width: 460px; color: rgba(255,255,255,0.74); font-size: 14px; line-height: 2; font-weight: 500; }
-        .login-values { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; max-width: 520px; margin-top: 48px; }
-        .login-value { border-top: 1px solid rgba(212,168,90,0.45); padding-top: 14px; color: rgba(255,255,255,0.78); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
         .login-card {
             align-self: center;
             background: #fbfaf6;
@@ -153,7 +151,6 @@
             .login-shell { display: block; min-height: 0; }
             .login-story { min-height: auto; padding: 26px 6px 34px; }
             .login-story-logo { width: 120px; margin-bottom: 28px; }
-            .login-values { grid-template-columns: 1fr; margin-top: 28px; gap: 10px; }
             .login-card { padding: 34px 24px; }
         }
 
@@ -453,12 +450,6 @@
                 <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" class="login-story-logo">
                 <div class="login-kicker">Taiwanese Taste</div>
                 <div class="login-headline">傳承心意，<br>玩味新意。</div>
-                <div class="login-copy">從門店接待到每一份訂單，保持料理、服務與氛圍的穩定，讓台灣佳味被好好送到客人面前。</div>
-            </div>
-            <div class="login-values">
-                <div class="login-value">美味料理</div>
-                <div class="login-value">美好服務</div>
-                <div class="login-value">安心管理</div>
             </div>
         </div>
         <div class="login-card">
