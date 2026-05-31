@@ -19,15 +19,27 @@ body{font-family:'Noto Sans TC',sans-serif;background:#0c1a12;color:var(--ink);m
 .lb{width:100%;padding:14px;background:var(--pine);color:white;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:.2s;margin-top:6px;}
 .lb:hover{background:var(--pine2);}#login-err{color:#f87171;font-size:12px;margin-top:10px;display:none;}
 #app{display:flex;height:100vh;overflow:hidden;}
-.sb{width:230px;flex-shrink:0;background:#0f1f14;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,0.05);}
-.sb-logo{padding:26px 22px 22px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.sb{width:230px;flex-shrink:0;background:#0f1f14;display:flex;flex-direction:column;border-right:1px solid rgba(255,255,255,0.05);transition:width .25s ease;overflow:hidden;}
+.sb.collapsed{width:68px;}
+.sb-logo{padding:20px 14px 18px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:10px;}
+.sb-brand{flex:1;min-width:0;}
+.sb-logo-img{height:30px;max-width:110px;object-fit:contain;filter:brightness(0) invert(1);}
 .sb-logo-name{font-family:'Noto Serif TC',serif;color:var(--gold);font-size:1.15rem;font-weight:900;}
 .sb-badge{display:inline-block;background:rgba(184,145,80,0.15);color:var(--gold);font-size:9px;font-weight:700;letter-spacing:.15em;padding:2px 8px;border-radius:999px;margin-top:6px;}
+.sb-toggle{width:28px;height:28px;border-radius:9px;border:none;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.45);cursor:pointer;font-size:15px;transition:.15s;flex-shrink:0;}
+.sb-toggle:hover{background:rgba(255,255,255,0.1);color:white;}
+.sb.collapsed .sb-brand,.sb.collapsed .sb-badge,.sb.collapsed .user-lbl{display:none;}
+.sb.collapsed .sb-logo{justify-content:center;padding-left:0;padding-right:0;flex-direction:column;}
+.sb.collapsed .sb-toggle{transform:rotate(180deg);}
 nav{flex:1;padding:10px 0;overflow-y:auto;}
 .ni{display:flex;align-items:center;gap:10px;padding:11px 22px;color:rgba(255,255,255,0.4);font-size:13px;cursor:pointer;transition:.15s;border-left:3px solid transparent;}
 .ni:hover{color:rgba(255,255,255,0.75);background:rgba(255,255,255,0.03);}
 .ni.on{color:var(--gold);border-left-color:var(--gold);background:rgba(184,145,80,0.07);}
 .ni-icon{font-size:15px;width:18px;text-align:center;}
+.sb.collapsed .ni{justify-content:center;padding:12px 0;font-size:0;gap:0;border-left:none;}
+.sb.collapsed .ni-icon{font-size:17px;width:auto;}
+.sb.collapsed .lo-btn{font-size:0;padding:10px 0;}
+.sb.collapsed .lo-btn::before{content:'↪';font-size:15px;}
 .sb-foot{padding:14px 22px;border-top:1px solid rgba(255,255,255,0.05);}
 .user-lbl{font-size:11px;color:rgba(255,255,255,0.2);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .lo-btn{width:100%;padding:8px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.35);border:none;border-radius:10px;font-size:12px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:.15s;}
@@ -108,8 +120,12 @@ tbody tr:hover td{background:#fafcff;}
 <div id="app" style="display:none">
   <div class="sb">
     <div class="sb-logo">
-      <div class="sb-logo-name">真珠集團</div>
-      <div class="sb-badge">SUPER ADMIN</div>
+      <div class="sb-brand">
+        <img class="sb-logo-img" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="sb-logo-name" style="display:none">真珠</div>
+        <div class="sb-badge">SUPER ADMIN</div>
+      </div>
+      <button class="sb-toggle" onclick="toggleSidebar()" title="收合選單">‹</button>
     </div>
     <nav>
       <div class="ni on" onclick="go('overview')" id="ni-overview"><span class="ni-icon">📊</span>集團總覽</div>
@@ -318,6 +334,7 @@ function toast(msg,type='ok',dur=2800){
 }
 function togglePw(id){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
+function toggleSidebar(){document.querySelector('.sb')?.classList.toggle('collapsed');}
 
 // ── AUTH ──
 async function doLogin(){
