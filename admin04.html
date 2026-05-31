@@ -89,25 +89,75 @@
         /* ── LOGIN ── */
         #login-screen {
             position: fixed; inset: 0; z-index: 9999;
-            background: linear-gradient(135deg, var(--pine-dark) 0%, var(--pine) 50%, var(--pine-light) 100%);
-            display: flex; align-items: center; justify-content: center;
+            background:
+                linear-gradient(115deg, rgba(0,46,39,0.94) 0%, rgba(0,77,64,0.9) 42%, rgba(247,243,236,0.96) 42.1%, #fbfaf6 100%);
+            display: flex; align-items: stretch; justify-content: center;
+            padding: 38px;
+            overflow: hidden;
+        }
+        #login-screen::before {
+            content: 'JIN-ZHU';
+            position: absolute; left: 5vw; bottom: -4.2rem;
+            font-family: 'Noto Serif TC', serif;
+            font-size: clamp(4rem, 12vw, 10rem); font-weight: 900;
+            letter-spacing: .08em; color: rgba(255,255,255,0.045);
+            pointer-events: none;
+        }
+        #login-screen::after {
+            content: '';
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(circle at 16% 22%, rgba(184,145,80,0.22), transparent 27%),
+                linear-gradient(90deg, transparent 0 54%, rgba(184,145,80,0.08) 54% 54.4%, transparent 54.4%);
+            pointer-events: none;
         }
         #login-screen.hidden { display: none; }
-        .login-card {
-            background: rgba(255,255,255,0.07);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 24px; padding: 3rem 2.5rem;
-            width: 100%; max-width: 400px;
-            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+        .login-shell {
+            position: relative; z-index: 1;
+            width: min(1060px, 100%);
+            min-height: min(680px, calc(100vh - 76px));
+            display: grid; grid-template-columns: minmax(0,1.1fr) 420px;
+            align-items: stretch;
         }
-        .login-field-label { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
-        .login-input { width: 100%; padding: 13px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: white; font-size: 14px; outline: none; transition: border 0.2s; font-family: 'Noto Sans TC', sans-serif; }
-        .login-input::placeholder { color: rgba(255,255,255,0.3); }
-        .login-input:focus { border-color: var(--gold); }
-        .login-btn { width: 100%; padding: 15px; background: var(--gold); color: white; border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; font-family: 'Noto Sans TC', sans-serif; }
-        .login-btn:hover { opacity: 0.9; }
+        .login-story {
+            color: white;
+            padding: clamp(38px, 6vw, 76px) clamp(30px, 5vw, 64px);
+            display: flex; flex-direction: column; justify-content: space-between;
+            min-height: 560px;
+        }
+        .login-story-logo { width: 160px; filter: brightness(0) invert(1); display: block; margin-bottom: 54px; }
+        .login-kicker { font-size: 11px; font-weight: 900; letter-spacing: .42em; color: rgba(212,168,90,0.95); text-transform: uppercase; margin-bottom: 18px; }
+        .login-headline { font-family: 'Noto Serif TC', serif; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.22; font-weight: 900; letter-spacing: .02em; max-width: 560px; }
+        .login-copy { margin-top: 22px; max-width: 460px; color: rgba(255,255,255,0.74); font-size: 14px; line-height: 2; font-weight: 500; }
+        .login-values { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; max-width: 520px; margin-top: 48px; }
+        .login-value { border-top: 1px solid rgba(212,168,90,0.45); padding-top: 14px; color: rgba(255,255,255,0.78); font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+        .login-card {
+            align-self: center;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(184,145,80,0.24);
+            border-radius: 6px; padding: 44px 42px;
+            width: 100%;
+            box-shadow: 0 28px 70px rgba(0,46,39,0.18);
+            color: var(--ink);
+        }
+        .login-card-logo { width: 126px; display: block; margin: 0 auto 22px; }
+        .login-card-title { font-family: 'Noto Serif TC', serif; color: var(--pine); font-size: 1.35rem; font-weight: 900; text-align: center; margin-bottom: 6px; }
+        .login-card-sub { color: var(--stone); font-size: 12px; line-height: 1.8; text-align: center; margin-bottom: 30px; }
+        .login-field-label { display: block; font-size: 10px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+        .login-input { width: 100%; padding: 14px 15px; background: #fffaf1; border: 1.5px solid rgba(184,145,80,0.24); border-radius: 4px; color: var(--ink); font-size: 14px; outline: none; transition: all 0.2s; font-family: 'Noto Sans TC', sans-serif; }
+        .login-input::placeholder { color: #a8a29e; }
+        .login-input:focus { border-color: var(--pine); background: white; box-shadow: 0 0 0 4px rgba(0,77,64,0.08); }
+        .login-btn { width: 100%; padding: 15px; background: var(--pine); color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 800; letter-spacing: .14em; cursor: pointer; transition: all 0.2s; font-family: 'Noto Sans TC', sans-serif; }
+        .login-btn:hover { background: var(--pine-light); transform: translateY(-1px); box-shadow: 0 10px 24px rgba(0,77,64,0.18); }
         .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        @media (max-width: 840px) {
+            #login-screen { padding: 22px; background: linear-gradient(180deg, var(--pine-dark) 0%, var(--pine) 42%, #fbfaf6 42.1%, #fbfaf6 100%); overflow-y: auto; }
+            .login-shell { display: block; min-height: 0; }
+            .login-story { min-height: auto; padding: 26px 6px 34px; }
+            .login-story-logo { width: 120px; margin-bottom: 28px; }
+            .login-values { grid-template-columns: 1fr; margin-top: 28px; gap: 10px; }
+            .login-card { padding: 34px 24px; }
+        }
 
         /* ── SIDEBAR ── */
         #sidebar { width: 240px; transition: width 0.25s ease; overflow: hidden; background: var(--pine-dark); }
@@ -399,22 +449,38 @@
 
 <!-- ── LOGIN ── -->
 <div id="login-screen">
-    <div class="login-card">
-        <div class="text-center mb-8">
-            <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" class="h-12 mx-auto mb-4" style="filter:brightness(0) invert(1)">
-            <div class="font-serif font-bold text-sm text-white/60 tracking-widest">後台管理系統</div>
+    <div class="login-shell">
+        <div class="login-story">
+            <div>
+                <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" class="login-story-logo">
+                <div class="login-kicker">Taiwanese Taste</div>
+                <div class="login-headline">傳承心意，<br>玩味新意。</div>
+                <div class="login-copy">從門店接待到每一份訂單，保持料理、服務與氛圍的穩定，讓台灣佳味被好好送到客人面前。</div>
+            </div>
+            <div class="login-values">
+                <div class="login-value">美味料理</div>
+                <div class="login-value">美好服務</div>
+                <div class="login-value">安心管理</div>
+            </div>
         </div>
-        <div class="space-y-5">
+        <div class="login-card">
             <div>
-                <label class="login-field-label">Email</label>
-                <input type="email" id="login-email" class="login-input" placeholder="admin@example.com" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+                <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" class="login-card-logo">
+                <div class="login-card-title">門店後台登入</div>
+                <div class="login-card-sub">管理訂單、公告與營業時段，讓每一次接待都更順手。</div>
             </div>
-            <div>
-                <label class="login-field-label">密碼</label>
-                <input type="password" id="login-password" class="login-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+            <div class="space-y-5">
+                <div>
+                    <label class="login-field-label">Email</label>
+                    <input type="email" id="login-email" class="login-input" placeholder="admin@example.com" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
+                </div>
+                <div>
+                    <label class="login-field-label">密碼</label>
+                    <input type="password" id="login-password" class="login-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+                </div>
+                <div id="login-error" class="hidden text-red-700 text-xs font-bold text-center py-2 bg-red-50 rounded">帳號或密碼錯誤</div>
+                <button id="login-btn" class="login-btn mt-2" onclick="doLogin()">登入後台</button>
             </div>
-            <div id="login-error" class="hidden text-red-300 text-xs font-bold text-center py-2 bg-red-900/30 rounded-xl">帳號或密碼錯誤</div>
-            <button id="login-btn" class="login-btn mt-2" onclick="doLogin()">登入</button>
         </div>
     </div>
 </div>
