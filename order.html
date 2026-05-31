@@ -292,24 +292,7 @@
 <nav class="side-menu" id="side-menu">
     <div class="menu-gold-line"></div>
     <div class="menu-decor">真珠 · Jin Zhu</div>
-    <a href="index.html" class="menu-nav-item" data-i18n="menuHome">首頁 Home</a>
-    <a href="query.html" class="menu-nav-item" data-i18n="menuQuery">訂單查詢 Tracking</a>
-    <a href="photo-search.html" class="menu-nav-item" data-i18n="menuPhoto">紀念照下載 Photos</a>
-    <div class="photo-search-wrap">
-        <span class="photo-label" data-i18n="photoLabel">📷 珍藏回憶 · 下載紀念照</span>
-        <input id="photo-keyword" type="text" class="photo-input" data-i18n-ph="photoPh">
-        <button class="photo-search-btn" onclick="doPhotoSearch()" data-i18n="photoBtn">立即搜尋 ✦</button>
-        <div id="photo-searching" data-i18n="photoSearching">搜尋中⋯</div>
-        <div id="photo-no-result" data-i18n="photoNoResult">找不到相關的紀念照</div>
-        <div id="photo-result-card">
-            <img id="photo-result-img" src="" alt="">
-            <div class="result-info">
-                <div class="result-name" id="photo-result-name"></div>
-                <div class="result-note" id="photo-result-note"></div>
-            </div>
-            <a id="photo-download-btn" href="" download="紀念照.jpg" class="dl-btn" data-i18n="photoDownload">⬇ 點此下載照片</a>
-        </div>
-    </div>
+    <a href="newquery.html" class="menu-nav-item" data-i18n="menuQuery">訂單查詢 Tracking</a>
     <div class="menu-footer">Jin Zhu Taiwan · 盛宴款待</div>
 </nav>
 
@@ -412,7 +395,7 @@
             <a href="tel:0437027538" class="confirm-btn filled" data-i18n="s3call">📞 撥打電話</a>
             <a href="https://line.me/ti/p/@435trmtc" target="_blank" class="confirm-btn" style="border-color:#06c755;color:#06c755">💬 LINE</a>
         </div>
-        <a href="query.html" class="confirm-btn" style="margin-top:10px" data-i18n="s3query">📋 前往訂單查詢</a>
+        <a href="newquery.html" class="confirm-btn" style="margin-top:10px" data-i18n="s3query">📋 前往訂單查詢</a>
         <a href="jinzhu-fortune.html" class="confirm-btn" style="margin-top:10px;border-color:var(--gold);color:var(--gold)" data-i18n="s3fortune">🎋 抽真珠好運籤</a>
     </div>
 </section>
@@ -775,8 +758,8 @@ async function initLiff(){
 }
 
 async function init(){
-    // 載入餐廳列表
-    await loadStoreList();
+    // 先用內建/快取店家資料秒出選單，再背景刷新 Supabase
+    loadStoreList();
     const isMob=window.innerWidth<=768;
     document.getElementById('kv-bg').src=isMob
         ?'https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg'
@@ -788,6 +771,19 @@ async function init(){
 let storesCache=[];
 const DEFAULT_STORE_ID=1;
 const STORE_CACHE_KEY='jz_stores_cache_v2';
+const MENU_CACHE_KEY='jz_shared_menu_cache_v2';
+const DEFAULT_STORES=[
+    {id:1,name:'台中文心店',slug:'wenxin',phone:'04-3702-7538',sort_order:0,is_active:true},
+    {id:6,name:'京站店',slug:'qsquare',phone:'02-2552-6898',sort_order:10,is_active:true},
+    {id:7,name:'微風南山店',slug:'nanshan',phone:'02-2722-8288',sort_order:20,is_active:true},
+    {id:8,name:'永和店',slug:'yonghe',phone:'02-2231-6898',sort_order:30,is_active:true},
+    {id:9,name:'小碧潭店',slug:'xiaobitan',phone:'02-7728-9536',sort_order:40,is_active:true},
+    {id:10,name:'中茂店',slug:'taoyuan',phone:'03-326-1683',sort_order:50,is_active:true},
+    {id:11,name:'竹北店',slug:'zhubei',phone:'03-622-3077',sort_order:60,is_active:true},
+    {id:12,name:'LaLaport台中店',slug:'lalaport',phone:'04-3700-7743',sort_order:70,is_active:true},
+    {id:13,name:'小北門店',slug:'xiaobeimen',phone:'06-251-8258',sort_order:80,is_active:true},
+    {id:14,name:'義享店',slug:'esky',phone:'07-556-5808',sort_order:90,is_active:true},
+];
 
 function activeStoreId(){
     return selectedStoreId||DEFAULT_STORE_ID;
@@ -797,7 +793,7 @@ function renderStoreOptions(stores){
     const sel=document.getElementById('store-dropdown');
     if(!sel) return;
     sel.innerHTML='<option value="">— 請選擇餐廳 —</option>'+
-        (stores||[]).map(s=>`<option value="${s.id}">${s.name}${s.address?' · '+s.address:''}</option>`).join('');
+        (stores||[]).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 }
 
 function warmStoreListFromCache(){
@@ -809,6 +805,8 @@ function warmStoreListFromCache(){
             return true;
         }
     }catch(e){}
+    storesCache=DEFAULT_STORES;
+    renderStoreOptions(storesCache);
     return false;
 }
 
@@ -1086,6 +1084,13 @@ function updateSlotsForDate(dateStr){
 }
 
 async function loadContent(){
+    try{
+        const cached=JSON.parse(localStorage.getItem(MENU_CACHE_KEY)||'null');
+        if(cached?.cats?.length&&cached?.items?.length){
+            allCats=cached.cats;menuData=cached.items;
+            reRenderMenu();curCatIndex=0;initSwipe();
+        }
+    }catch(e){}
     const [{data:cats},{data:items}]=await Promise.all([
         _s.from('categories').select('*').eq('is_visible',true).order('sort_order'),
         _s.from('menu_items')
@@ -1093,6 +1098,7 @@ async function loadContent(){
             .eq('is_hidden',false).order('sort_order',{ascending:true})
     ]);
     menuData=items||[];allCats=cats||[];
+    try{localStorage.setItem(MENU_CACHE_KEY,JSON.stringify({cats:allCats,items:menuData,ts:Date.now()}));}catch(e){}
     reRenderMenu();curCatIndex=0;initSwipe();
 }
 
@@ -1661,6 +1667,9 @@ async function doFinalSubmit(){
         document.getElementById('cart-bar').classList.remove('visible');
         document.getElementById('step-3').classList.add('visible');
         applyLang();
+        updateConfirmStoreInfo();
+        const qLink=document.querySelector('a[data-i18n="s3query"]');
+        if(qLink) qLink.href='newquery.html?phone='+encodeURIComponent(guest.phone||'');
         window.scrollTo({top:0,behavior:'smooth'});
         // 在 LIFF 內：顯示完成頁後 3 秒自動關閉
         if(typeof liff!=='undefined'&&liff.isInClient()){
@@ -1674,7 +1683,9 @@ async function doFinalSubmit(){
 }
 
 function resetPhotoSearch(){
-    document.getElementById('photo-keyword').value='';
+    const keyword=document.getElementById('photo-keyword');
+    if(!keyword) return;
+    keyword.value='';
     document.getElementById('photo-result-card').style.display='none';
     document.getElementById('photo-no-result').style.display='none';
     document.getElementById('photo-searching').style.display='none';
