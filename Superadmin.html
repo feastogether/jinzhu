@@ -98,3 +98,153 @@ tbody tr:hover td{background:#fafcff;}
 .fi{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:.2s;}
 .fi:focus{border-color:var(--pine);}
 .fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ma{display:flex;gap:10px;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);}
+.info-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px 16px;font-size:12px;color:#166534;line-height:1.7;margin-bottom:16px;}
+.os{padding:3px 9px;border-radius:999px;font-size:10px;font-weight:700;}
+.os-c{background:#fde8e8;color:#dc2626;}.os-ok{background:#dcfce7;color:#16a34a;}.os-e{background:#f1f5f9;color:#64748b;}
+.iw{background:white;border-radius:20px;overflow:hidden;border:1px solid var(--border);height:calc(100vh - 130px);}
+.iw iframe{width:100%;height:100%;border:none;}
+#page-home{padding:0;max-width:none;min-height:100vh;background:#fbfaf6;}
+.culture-wrap{min-height:100vh;padding:48px 52px 42px;background:#fbfaf6;}
+.culture-head{display:grid;grid-template-columns:220px 1fr 220px;align-items:center;margin-bottom:32px;}
+.culture-logo{height:72px;max-width:190px;object-fit:contain;}
+.culture-kicker{font-size:11px;letter-spacing:.42em;color:var(--gold);font-weight:900;text-transform:uppercase;text-align:center;}
+.culture-title{font-family:'Noto Serif TC',serif;font-size:2rem;line-height:1.55;font-weight:900;color:var(--pine);text-align:center;margin-top:12px;}
+.culture-copy{max-width:760px;margin:0 auto 32px;text-align:center;font-size:14px;line-height:2;color:var(--stone);}
+.culture-image{width:100%;display:block;}
+#page-menu{padding:0;max-width:none;height:100vh;overflow:hidden;}
+#page-menu .ph,#page-menu .info-box{display:none;}
+#page-menu .iw{height:100vh;border:0;border-radius:0;}
+@media(max-width:800px){.culture-wrap{padding:28px 22px}.culture-head{display:block;text-align:center}.culture-logo{margin:0 auto 24px;height:58px}.culture-title{font-size:1.55rem}}
+#tw{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:white;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:700;box-shadow:0 8px 28px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;border-left:4px solid var(--pine);animation:tin .3s ease;}
+.toast.err{border-left-color:var(--red);}.toast.warn{border-left-color:var(--gold);}
+@keyframes tin{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.pw-wrap{position:relative;}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--stone);}
+</style>
+</head>
+<body>
+<div id="tw"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-shell">
+    <div class="login-story">
+      <div>
+        <img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" class="login-story-logo">
+        <div class="login-kicker">Taiwanese Taste</div>
+        <div class="login-headline">傳承心意，<br>玩味新意。</div>
+      </div>
+    </div>
+    <div class="lc">
+      <img class="lc-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠">
+      <label class="login-field-label">Email</label>
+      <input class="li" type="email" id="sa-email" placeholder="superadmin@example.com">
+      <label class="login-field-label">密碼</label>
+      <input class="li" type="password" id="sa-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="lb" onclick="doLogin()">登入後台</button>
+      <div id="login-err">帳號或密碼錯誤</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="sb">
+    <div class="sb-logo">
+      <div class="sb-brand">
+        <img class="sb-logo-img" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <div class="sb-logo-name" style="display:none">真珠</div>
+      </div>
+      <button class="sb-toggle" onclick="toggleSidebar()" title="收合選單">‹</button>
+    </div>
+    <nav>
+      <div class="ni on" onclick="go('home')" id="ni-home"><span class="ni-icon">🌾</span>文化首頁</div>
+      <div class="ni" onclick="go('overview')" id="ni-overview"><span class="ni-icon">📊</span>門市總覽</div>
+      <div class="ni" onclick="go('stores')" id="ni-stores"><span class="ni-icon">🏪</span>店家管理</div>
+      <div class="ni" onclick="go('users')" id="ni-users"><span class="ni-icon">👤</span>帳號管理</div>
+      <div class="ni" onclick="go('orders')" id="ni-orders"><span class="ni-icon">📋</span>訂單總覽</div>
+      <div class="ni" onclick="go('perms')" id="ni-perms"><span class="ni-icon">🔐</span>權限管理</div>
+      <div class="ni" onclick="go('menu')" id="ni-menu"><span class="ni-icon">🍽</span>菜單管理</div>
+
+    </nav>
+    <div class="sb-foot">
+      <div class="user-lbl" id="cur-email"></div>
+      <button class="lo-btn" onclick="doLogout()">登出</button>
+    </div>
+  </div>
+  <div class="main">
+
+    <!-- 文化首頁 -->
+    <div class="page on" id="page-home">
+      <div class="culture-wrap">
+        <div class="culture-head">
+          <img class="culture-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠">
+          <div>
+            <div class="culture-kicker">Feastogether Culture</div>
+            <div class="culture-title">饗以盛宴，賓至如歸，<br>讓生活因饗賓更美好。</div>
+          </div>
+          <div></div>
+        </div>
+        <div class="culture-copy">真珠承接饗賓餐旅對料理、服務與氛圍的堅持，讓每一次接待都回到款待本質，穩定傳遞有溫度的用餐體驗。</div>
+        <img class="culture-image" src="https://www.feastogether.com/images/photo/home/photo_MVP.jpg" alt="企業文化 Mission Vision Passion">
+      </div>
+    </div>
+
+    <!-- ① 總覽 -->
+    <div class="page" id="page-overview">
+      <div class="ph"><div class="pt">門市總覽</div><div class="ps">所有店家即時數據</div></div>
+      <div class="sg">
+        <div class="sc"><div class="sv" id="kpi-stores">—</div><div class="sl">🏪 店家數</div></div>
+        <div class="sc"><div class="sv" id="kpi-orders">—</div><div class="sl">📋 今日訂單</div></div>
+        <div class="sc"><div class="sv" id="kpi-pending">—</div><div class="sl">⏳ 待確認</div></div>
+        <div class="sc"><div class="sv" id="kpi-rev">—</div><div class="sl">💰 今日預估</div></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ct">各店今日狀況</div><button class="btn btn-g btn-sm" onclick="loadOverview()">🔄 更新</button></div>
+        <div id="overview-body"><div style="text-align:center;padding:32px;color:var(--stone)">載入中...</div></div>
+      </div>
+    </div>
+
+    <!-- ② 店家管理 -->
+    <div class="page" id="page-stores">
+      <div class="ph"><div class="pt">店家管理</div><div class="ps">新增、編輯各分店基本資訊</div></div>
+      <div class="info-box">🏪 <strong>台中文心店（ID=1）</strong>已是預設店家，所有現有訂單與資料均屬此店。新增店家會自動遞增 ID，前台後台系統共用，無需設定網址。</div>
+      <div style="margin-bottom:16px;display:flex;justify-content:flex-end">
+        <button class="btn btn-p" onclick="openStoreModal()">＋ 新增店家</button>
+      </div>
+      <div class="store-grid" id="stores-grid"></div>
+    </div>
+
+    <!-- ③ 帳號管理 -->
+    <div class="page" id="page-users">
+      <div class="ph"><div class="pt">帳號管理</div><div class="ps">各店登入帳號建立與管理（直接在後台建立）</div></div>
+      <div class="card">
+        <div class="ch"><div class="ct">管理員帳號列表</div><button class="btn btn-p" onclick="openUserModal()">＋ 新增帳號</button></div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>帳號</th><th>所屬店家</th><th>角色</th><th>建立時間</th><th>操作</th></tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="5" style="text-align:center;color:var(--stone);padding:24px">載入中...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ④ 訂單總覽 -->
+    <div class="page" id="page-orders">
+      <div class="ph"><div class="pt">訂單總覽</div><div class="ps">跨店訂單查詢</div></div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div><label class="fl">店家</label><select class="fi" id="of-store" style="width:auto" onchange="loadOrders()"><option value="0">全部店家</option></select></div>
+          <div><label class="fl">日期</label><input type="date" class="fi" id="of-date" style="width:auto" onchange="loadOrders()"></div>
+          <div><label class="fl">狀態</label><select class="fi" id="of-status" style="width:auto" onchange="loadOrders()">
+            <option value="all">全部</option><option value="confirming">確認中</option>
+            <option value="confirmed">確認完成</option><option value="ended">已結束</option>
+          </select></div>
+          <button class="btn btn-p btn-sm" onclick="loadOrders()">🔍 查詢</button>
+        </div>
+      </div>
+      <div class="card">
+        <div id="orders-count" style="font-size:12px;color:var(--stone);margin-bottom:12px"></div>
+        <div class="tw">
