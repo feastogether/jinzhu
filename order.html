@@ -916,7 +916,11 @@ function showDateCard(){
     document.getElementById('date-card').style.display='block';
     const inner=document.getElementById('date-card-inner');
     const days=[];const today=new Date();
-    for(let i=0;i<30;i++){const d=new Date(today);d.setDate(today.getDate()+i);days.push(d);}
+    const endDate=new Date(today);
+    endDate.setMonth(today.getMonth()+1);
+    for(let d=new Date(today);d<=endDate;d.setDate(d.getDate()+1)){
+        days.push(new Date(d));
+    }
     // 日期格式化（純字串，不用 template literal）
     function fmtVal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function fmtLabel(d){var wd=['日','一','二','三','四','五','六'][d.getDay()];return (d.getMonth()+1)+'/'+(d.getDate())+'（週'+wd+'）';}
@@ -1087,7 +1091,7 @@ async function loadContent(){
     try{
         const cached=JSON.parse(localStorage.getItem(MENU_CACHE_KEY)||'null');
         if(cached?.cats?.length&&cached?.items?.length){
-            allCats=cached.cats;menuData=cached.items;
+            allCats=cached.cats;menuData=normalizeMenuAvailability(cached.items);
             reRenderMenu();curCatIndex=0;initSwipe();
         }
     }catch(e){}
@@ -1097,9 +1101,27 @@ async function loadContent(){
             .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))')
             .eq('is_hidden',false).order('sort_order',{ascending:true})
     ]);
-    menuData=items||[];allCats=cats||[];
+    menuData=normalizeMenuAvailability(items||[]);allCats=cats||[];
     try{localStorage.setItem(MENU_CACHE_KEY,JSON.stringify({cats:allCats,items:menuData,ts:Date.now()}));}catch(e){}
     reRenderMenu();curCatIndex=0;initSwipe();
+}
+
+function isMenuItemHidden(item){
+    return item?.is_hidden===true || item?.is_hidden==='true' || item?.is_hidden===1;
+}
+
+function normalizeMenuAvailability(items){
+    return (items||[])
+        .filter(item=>!isMenuItemHidden(item))
+        .map(item=>{
+            if(!item.set_menu_groups) return item;
+            const groups=(item.set_menu_groups||[]).map(group=>({
+                ...group,
+                set_menu_contents:(group.set_menu_contents||[]).filter(content=>content.menu_items&&!isMenuItemHidden(content.menu_items))
+            })).filter(group=>(group.set_menu_contents||[]).length>0);
+            return {...item,set_menu_groups:groups};
+        })
+        .filter(item=>!item.is_set_menu || !item.set_menu_groups || item.set_menu_groups.length>0);
 }
 
 function reRenderMenu(){
