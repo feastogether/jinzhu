@@ -799,7 +799,9 @@ function showDateCard(){
     document.getElementById('date-card').style.display='block';
     const inner=document.getElementById('date-card-inner');
     const days=[];const today=new Date();
-    for(let i=0;i<30;i++){const d=new Date(today);d.setDate(today.getDate()+i);days.push(d);}
+    const endDate=new Date(today);
+    endDate.setMonth(today.getMonth()+1);
+    for(let d=new Date(today);d<=endDate;d.setDate(d.getDate()+1)){days.push(new Date(d));}
     // 日期格式化（純字串，不用 template literal）
     function fmtVal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function fmtLabel(d){var wd=['日','一','二','三','四','五','六'][d.getDay()];return (d.getMonth()+1)+'/'+(d.getDate())+'（週'+wd+'）';}
