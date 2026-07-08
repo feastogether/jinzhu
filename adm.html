@@ -560,12 +560,13 @@ function parseItem(raw){
   while(sp<wo.length){
     const pi=wo.indexOf(' (',sp);
     if(pi===-1) break;
+    if(!wo.slice(0,pi).trim()){sp=pi+1;continue;}
     let depth=1,j=pi+2;
     while(j<wo.length&&depth>0){if(wo[j]==='(')depth++;else if(wo[j]===')')depth--;j++;}
-    if(depth===0){const cand=wo.slice(pi+2,j-1);if(cand.includes('、')){inner=cand;break;}}
+    if(depth===0){const cand=wo.slice(pi+2,j-1);if(cand.includes('、')||j===wo.length){inner=cand;break;}}
     sp=pi+1;
   }
-  const isSet=!!(inner&&inner.includes('、'));
+  const isSet=!!(inner);
   const fM=raw.match(/\[([^\]]+)\]/);const flv=fM?fM[1]:'';
   const clean=raw.replace(/\s*\[.*?\]/g,'').replace(/ x\d+/g,'').trim();
   return{qty,flv,clean,inner,isSet,brand:isSet?clean.split(' (')[0].trim():null};
@@ -622,6 +623,20 @@ async function doLogin(){
 
 // ── INIT ──
 async function initApp(){
+  // 查詢此帳號的店家歸屬與角色（與桌面後台一致）
+  const{data:{session}}=await _s.auth.getSession();
+  if(session){
+    const{data:su}=await _s.from('store_users').select('store_id,role').eq('user_id',session.user.id).maybeSingle();
+    // 帳號查不到店家歸屬 → 拒絕進入
+    if(!su||!su.store_id){
+      await _s.auth.signOut();
+      alert('此帳號尚未設定店家歸屬，請聯絡管理員。');
+      document.getElementById('login-screen').classList.remove('hidden');
+      return;
+    }
+    window._storeId=su.store_id;
+    window._currentRole=su.role||'staff';
+  }
   const[{data:cats},{data:camps}]=await Promise.all([
     _s.from('categories').select('*').order('sort_order'),
     _s.from('campaign_settings').select('*')
@@ -635,6 +650,8 @@ async function initApp(){
   [11,12,13,14,15,17,18,19,20,21].forEach(h=>[0,15,30,45].forEach(m=>{const v=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;const o=document.createElement('option');o.value=v;o.textContent=v;ts.appendChild(o);}));
   loadOrders();updateKpi();
   _s.channel('orders-rt').on('postgres_changes',{event:'INSERT',schema:'public',table:'orders'},p=>{
+    // 只提示屬於本店的新訂單
+    if(window._storeId&&p.new.store_id&&p.new.store_id!==window._storeId)return;
     toast(`🔔 新訂單：${p.new.customer_name} $${p.new.total_price}`,'info',5000);
     updateKpi();loadOrders();
   }).subscribe();
@@ -733,7 +750,9 @@ async function jumpToOrderId(orderId){
 }
 
 async function updateKpi(){
-  const{count}=await _s.from('orders').select('*',{count:'exact',head:true}).eq('status','pending');
+  let kpiQ=_s.from('orders').select('*',{count:'exact',head:true}).in('status',['confirming','pending']);
+  if(window._storeId)kpiQ=kpiQ.eq('store_id',window._storeId);
+  const{count}=await kpiQ;
   document.getElementById('kpi-pending').textContent=count??0;
 }
 
@@ -782,6 +801,7 @@ async function loadOrders(){
   const today=twNow.toISOString().split('T')[0];
   const weekEnd=new Date(Date.now()+7*86400000+8*3600000).toISOString().split('T')[0];
   let qb=_s.from('orders').select('*');
+  if(window._storeId)qb=qb.eq('store_id',window._storeId);
   if(q)qb=qb.or(`customer_name.ilike.%${q}%,phone.ilike.%${q}%`);
   if(fStatus!=='all')qb=qb.eq('status',fStatus);
   if(fType==='takeout')qb=qb.eq('is_takeout',true);
@@ -873,9 +893,11 @@ async function loadEndedOrders(){
   document.getElementById('order-list').innerHTML='<div class="loading"><div class="spin"></div></div>';
   const twNow=new Date(Date.now()+8*3600000);
   const today=twNow.toISOString().split('T')[0];
-  const{data,error}=await _s.from('orders').select('*')
+  let endedQ=_s.from('orders').select('*')
     .lt('booking_date',`${today}T00:00:00+08:00`)
     .order('booking_date',{ascending:false});
+  if(window._storeId)endedQ=endedQ.eq('store_id',window._storeId);
+  const{data,error}=await endedQ;
   if(error||!data?.length){
     document.getElementById('order-list').innerHTML='<div class="empty-state"><div class="empty-icon">✅</div><p style="font-size:13px;font-weight:700">沒有已結束的訂單</p></div>';
     return;
@@ -948,7 +970,9 @@ async function openEditOrder(id){
 
   // 載入菜單
   if(!allMenuItems.length){
-    const{data}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
+    let menuQ=_s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
+    if(window._storeId)menuQ=menuQ.eq('store_id',window._storeId);
+    const{data}=await menuQ;
     allMenuItems=data||[];
   }
   renderMenuCats();
@@ -990,9 +1014,17 @@ function refreshEosCart(){
     let wo=item.name;
     if(mA) wo=item.name.replace(/ x\d+ \(/, ' (');
     else if(mC) wo=item.name.replace(/ x\d+$/, '');
-    const pI2=wo.lastIndexOf(' (');
-    const dispName=pI2>-1?wo.slice(0,pI2):wo;
-    const subStr=pI2>-1?wo.slice(pI2+2,-1):'';
+    // 用括號深度找正確的套餐分隔符
+    let dispName=wo,subStr='';
+    let _spp=0;
+    while(_spp<wo.length){
+      const _pii=wo.indexOf(' (',_spp);
+      if(_pii===-1)break;
+      let _dep=1,_jj=_pii+2;
+      while(_jj<wo.length&&_dep>0){if(wo[_jj]==='(')_dep++;else if(wo[_jj]===')')_dep--;_jj++;}
+      if(_dep===0){const _cand=wo.slice(_pii+2,_jj-1);if(_cand.includes('、')){dispName=wo.slice(0,_pii);subStr=_cand;break;}}
+      _spp=_pii+1;
+    }
     return`<div class="cart-item">
       <div style="flex:1;min-width:0">
         <div class="cart-item-name" onclick="openPop(null,${idx})">${dispName}${subStr?'<div style="font-size:10px;color:var(--stone);margin-top:2px;line-height:1.4">'+subStr+'</div>':''}</div>
@@ -1068,11 +1100,35 @@ function openPop(itemId,editIdx=-1){
   let prevNames=[],prevFlvs=[];
   if(editIdx>-1){
     const raw=eosCart[editIdx].name;
-    const base=raw.split(' [')[0].split(' (')[0].replace(/ x\d+/g,'').trim();
-    popItem=allMenuItems.find(i=>i.name===base);
-    const pStart=raw.lastIndexOf(' (');
-    if(pStart>-1){const inner=raw.slice(pStart+2,-1);prevNames=inner.split('、').map(n=>n.split(' [')[0].trim());}
-    const fM=raw.match(/\[(.*?)\]/);if(fM)prevFlvs=fM[1].split('/');
+    // 用 parseItem 正確解析（與前台相同邏輯）
+    const parsed=parseItem(raw);
+    popItem=allMenuItems.find(i=>i.name===parsed.brand||i.name===(parsed.clean.split(' (')[0].trim()));
+    if(parsed.inner){
+      // 用括號深度正確分割「、」
+      const subs=[];let depth=0,cur='';
+      for(const ch of parsed.inner){
+        if(ch==='('||ch==='['){depth++;cur+=ch;}
+        else if(ch===')'||ch===']'){depth--;cur+=ch;}
+        else if(ch==='、'&&depth===0){subs.push(cur.trim());cur='';}
+        else cur+=ch;
+      }
+      if(cur.trim())subs.push(cur.trim());
+      // prevNames：只取品名，不含口味，用於分組匹配
+      prevNames=subs.map(n=>n.replace(/\s*\[.*?\]/g,'').replace(/ x\d+$/,'').trim());
+      // _prevSubFlvs：記錄子品項口味
+      window._prevSubFlvs={};
+      subs.forEach(n=>{
+        const fM2=n.match(/\[([^\]]+)\]/);
+        const baseN=n.replace(/\s*\[.*?\]/g,'').replace(/ x\d+$/,'').trim();
+        if(fM2) window._prevSubFlvs[baseN]=fM2[1];
+      });
+    }
+    // 主品口味：從子品項括號前取 []
+    {
+      const nameOnly=parsed.inner?raw.slice(0,raw.indexOf(' ('+parsed.inner)):raw;
+      const fM=nameOnly.match(/\[([^\]]+)\]/);
+      if(fM)prevFlvs=fM[1].split('/');
+    }
   }else{popItem=allMenuItems.find(i=>i.id===itemId);}
   if(!popItem)return;
   const container=document.getElementById('pop-content');container.innerHTML='';
@@ -1101,7 +1157,9 @@ function openPop(itemId,editIdx=-1){
       // 解析 prevNames（支援帶 x數量的格式）
       const groupPrevQty={};
       let scan=0;
-      while(scan<prevNames.length){
+      const maxTake_=stype==='include'?sortedContents.length:(slimit>0?slimit:sortedContents.length);
+      let taken_=0;
+      while(scan<prevNames.length && taken_<maxTake_){
         const rawN=prevNames[scan];
         const qM_=rawN.match(/ x(\d+)$/);
         const baseName_=qM_?rawN.replace(/ x\d+$/,'').trim():rawN;
@@ -1109,6 +1167,7 @@ function openPop(itemId,editIdx=-1){
         if(groupItemNames.has(baseName_)){
           groupPrevQty[baseName_]=(groupPrevQty[baseName_]||0)+qty__;
           prevNames.splice(scan,1);
+          taken_++;
         }else{scan++;}
       }
       // 初始化選取狀態
@@ -1275,7 +1334,9 @@ function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCal();}
 async function renderCal(){
   const mn=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
   document.getElementById('cal-label').textContent=`${calY} 年 ${mn[calM]}`;
-  const{data}=await _s.from('orders').select('*');
+  let calQ=_s.from('orders').select('*');
+  if(window._storeId)calQ=calQ.eq('store_id',window._storeId);
+  const{data}=await calQ;
   const all=data||[];const map={};
   all.filter(o=>o.booking_date).forEach(o=>{const tw=twDate(o.booking_date);const k=`${tw.getUTCFullYear()}-${String(tw.getUTCMonth()+1).padStart(2,'0')}-${String(tw.getUTCDate()).padStart(2,'0')}`;if(!map[k])map[k]=[];map[k].push(o);});
   const noDate=all.filter(o=>!o.booking_date&&o.status==='pending');
@@ -1356,7 +1417,9 @@ function calItemHtml(o){
 }
 
 function openCalDay(ds){
-  _s.from('orders').select('*').then(({data})=>{
+  let dayQ=_s.from('orders').select('*');
+  if(window._storeId)dayQ=dayQ.eq('store_id',window._storeId);
+  dayQ.then(({data})=>{
     const orders=(data||[]).filter(o=>{
       if(!o.booking_date)return false;
       const tw=twDate(o.booking_date);
@@ -1405,12 +1468,16 @@ async function fetchReport(){
   const sd=document.getElementById('r-s').value,ed=document.getElementById('r-e').value;
   if(!sd||!ed){toast('請選擇日期','warn');return;}
   document.getElementById('rpt-prepare').innerHTML='<div class="loading"><div class="spin"></div></div>';
-  const{data:orders}=await _s.from('orders').select('*').gte('booking_date',`${sd}T00:00:00+08:00`).lte('booking_date',`${ed}T23:59:59+08:00`).order('booking_date',{ascending:true});
+  let rptQ=_s.from('orders').select('*').gte('booking_date',`${sd}T00:00:00+08:00`).lte('booking_date',`${ed}T23:59:59+08:00`).order('booking_date',{ascending:true});
+  if(window._storeId)rptQ=rptQ.eq('store_id',window._storeId);
+  const{data:orders}=await rptQ;
   const o=orders||[];
   const dishCount={},setCount={},setDetail={};
   let tA=0,tK=0,tC=0,tRev=0;
   // 查哪些是套餐品項（is_set_menu=true）
-  const{data:setItemsAdm}=await _s.from('menu_items').select('name').eq('is_set_menu',true);
+  let setQ=_s.from('menu_items').select('name').eq('is_set_menu',true);
+  if(window._storeId)setQ=setQ.eq('store_id',window._storeId);
+  const{data:setItemsAdm}=await setQ;
   const setMenuNamesAdm=new Set((setItemsAdm||[]).map(i=>i.name));
   o.forEach(ord=>{
     tA+=(ord.adult_count||0);tK+=(ord.kid_count||0);tC+=(ord.child_count||0);tRev+=(ord.total_price||0);
