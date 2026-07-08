@@ -799,9 +799,7 @@ function showDateCard(){
     document.getElementById('date-card').style.display='block';
     const inner=document.getElementById('date-card-inner');
     const days=[];const today=new Date();
-    const endDate=new Date(today);
-    endDate.setMonth(today.getMonth()+1);
-    for(let d=new Date(today);d<=endDate;d.setDate(d.getDate()+1)){days.push(new Date(d));}
+    for(let i=0;i<30;i++){const d=new Date(today);d.setDate(today.getDate()+i);days.push(d);}
     // 日期格式化（純字串，不用 template literal）
     function fmtVal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function fmtLabel(d){var wd=['日','一','二','三','四','五','六'][d.getDay()];return (d.getMonth()+1)+'/'+(d.getDate())+'（週'+wd+'）';}
@@ -1493,7 +1491,8 @@ async function doFinalSubmit(){
         order_content:cart.map(i=>({name:i.nameCN||i.name,price:i.price})),
         total_price:cart.reduce((s,i)=>s+i.price,0),
         note:document.getElementById('order-note').value,
-        booking_date:finalBookingDate
+        booking_date:finalBookingDate,
+        store_id:1
     };
     // 嘗試帶 is_takeout，若欄位不存在則 fallback
     let result=await _s.from('orders').insert([{...orderPayload,is_takeout:orderMode==='takeout'}]);
@@ -1530,21 +1529,10 @@ function resetPhotoSearch(){
 
 async function doPhotoSearch(){
     const keyword=document.getElementById('photo-keyword').value.trim();
-    if(!keyword){document.getElementById('photo-keyword').focus();return;}
-    document.getElementById('photo-searching').style.display='block';
-    document.getElementById('photo-result-card').style.display='none';
-    document.getElementById('photo-no-result').style.display='none';
-    const{data,error}=await _s.from('customer_photos').select('*')
-        .or(`customer_name.ilike.%${keyword}%,phone.ilike.%${keyword}%,note.ilike.%${keyword}%`)
-        .order('created_at',{ascending:false}).limit(1);
-    document.getElementById('photo-searching').style.display='none';
-    if(error||!data||data.length===0){document.getElementById('photo-no-result').style.display='block';return;}
-    const photo=data[0];
-    document.getElementById('photo-result-img').src=photo.photo_url;
-    document.getElementById('photo-result-name').textContent=photo.customer_name||'—';
-    document.getElementById('photo-result-note').textContent=photo.note?`✦ ${photo.note}`:(photo.created_at?new Date(photo.created_at).toLocaleDateString('zh-TW'):'');
-    document.getElementById('photo-download-btn').href=photo.photo_url;
-    document.getElementById('photo-result-card').style.display='block';
+    // 為保護顧客隱私，紀念照查詢改到專頁（需姓名+電話雙重驗證）
+    // 帶入已輸入的關鍵字方便顧客接續填寫
+    const q=keyword?('?kw='+encodeURIComponent(keyword)):'';
+    window.location.href='photo-search.html'+q;
 }
 
 let cachedAnnouncement=null;
