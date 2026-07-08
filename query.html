@@ -451,9 +451,16 @@
         const btn = document.getElementById('query-btn');
         btn.textContent = '查詢中⋯'; btn.disabled = true;
 
-        const { data, error } = await _s.from('orders').select('*')
-            .eq('customer_name', name).eq('phone', phone)
-            .order('created_at', { ascending: false });
+        // 透過安全 Edge Function 查詢(不再直接讀資料庫)
+        // 後端強制「姓名+電話完全吻合」才回傳，擋掉撈全庫的攻擊
+        let data = [], error = null;
+        try {
+            const res = await _s.functions.invoke('customer-lookup', {
+                body: { action: 'orders', name, phone }
+            });
+            if (res.error) error = res.error;
+            else data = res.data?.orders || [];
+        } catch (e) { error = e; }
 
         btn.textContent = '立即查詢'; btn.disabled = false;
 
