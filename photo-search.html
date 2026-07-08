@@ -341,13 +341,20 @@
     <div class="main-card animate-in">
         <div class="card-header">
             <h2 class="card-title">領取您的紀念照</h2>
-            <p class="card-sub">輸入姓名或電話即可搜尋</p>
+            <p class="card-sub">輸入姓名與電話即可搜尋</p>
         </div>
 
         <div class="field-wrap">
-            <label class="field-label">搜尋 Search</label>
-            <input id="input-keyword" type="text" class="field-input"
-                placeholder="姓名 ／ 電話"
+            <label class="field-label">姓名 Name</label>
+            <input id="input-name" type="text" class="field-input"
+                placeholder="您的姓名"
+                onkeydown="if(event.key==='Enter') doSearch()">
+        </div>
+
+        <div class="field-wrap">
+            <label class="field-label">電話 Phone</label>
+            <input id="input-phone" type="tel" class="field-input"
+                placeholder="您的電話"
                 onkeydown="if(event.key==='Enter') doSearch()">
         </div>
 
@@ -412,6 +419,12 @@
             ? "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg"
             : "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_PC-KV.jpeg";
         setTimeout(() => kv.style.transform = 'scale(1)', 100);
+        // 接收首頁帶來的關鍵字，預填到姓名欄方便顧客
+        const kw = new URLSearchParams(location.search).get('kw');
+        if (kw) {
+            const nameInput = document.getElementById('input-name');
+            if (nameInput) nameInput.value = kw;
+        }
     }
     init();
 
@@ -426,12 +439,25 @@
     }
 
     async function doSearch() {
-        const kw = document.getElementById('input-keyword').value.trim();
-        if (!kw) { document.getElementById('input-keyword').focus(); return; }
+        const name  = document.getElementById('input-name').value.trim();
+        const phone = document.getElementById('input-phone').value.trim();
+        if (!name || !phone) {
+            document.getElementById(name ? 'input-phone' : 'input-name').focus();
+            return;
+        }
         setStatus('searching');
-        const { data, error } = await _s.from('customer_photos').select('*')
-            .or(`customer_name.ilike.%${kw}%,phone.ilike.%${kw}%,order_no.ilike.%${kw}%`)
-            .order('created_at', { ascending: false });
+
+        // 透過安全 Edge Function 查詢(不再直接讀資料庫、不再模糊比對)
+        // 後端強制「姓名+電話完全吻合」才回傳
+        let data = [], error = null;
+        try {
+            const res = await _s.functions.invoke('customer-lookup', {
+                body: { action: 'photos', name, phone }
+            });
+            if (res.error) error = res.error;
+            else data = res.data?.photos || [];
+        } catch (e) { error = e; }
+
         if (error || !data || data.length === 0) { setStatus('empty'); return; }
         foundPhotos = data;
         setStatus('result');
