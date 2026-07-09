@@ -190,6 +190,7 @@
         }
         .field-input:focus { border-color: var(--pine); }
         .field-input::placeholder { color: rgba(0,0,0,0.2); font-size: 0.9rem; }
+        .field-hint { font-size: 10px; color: var(--stone); margin-top: 8px; line-height: 1.6; }
 
         .query-btn {
             width: 100%; background: var(--pine);
@@ -243,7 +244,6 @@
             overflow: hidden; margin-bottom: 16px;
             animation: fadeUp 0.4s ease both;
         }
-
         .order-card-header {
             padding: 16px 20px;
             background: var(--cream);
@@ -255,23 +255,22 @@
             color: var(--stone); text-transform: uppercase;
             font-weight: 700; margin-bottom: 8px;
         }
+        .order-name { font-size: 13px; font-weight: 700; color: var(--pine); }
         .status-badge {
             display: inline-flex; align-items: center; gap: 5px;
             font-size: 10px; font-weight: 700;
             padding: 5px 12px; border-radius: 999px;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.05em; margin-top: 8px;
         }
         .status-badge::before { content: '●'; font-size: 7px; }
         .status-pending { background: #fff4e5; color: var(--gold); }
         .status-synced  { background: #e6f4f1; color: var(--pine); }
-
+        .status-ended   { background: #f1f5f9; color: #64748b; }
         .order-total {
             font-family: 'Noto Serif TC', serif;
             font-size: 1.4rem; font-weight: 900; color: var(--gold);
         }
-
         .order-card-body { padding: 16px 20px; }
-
         .order-item {
             display: flex; align-items: flex-start; gap: 10px;
             padding: 12px 0;
@@ -279,9 +278,9 @@
         }
         .order-item:last-of-type { border-bottom: none; }
         .order-item-bar {
-            width: 3px; height: 100%; min-height: 32px;
+            width: 3px; align-self: stretch; min-height: 20px;
             background: linear-gradient(to bottom, var(--gold), rgba(184,145,80,0.3));
-            border-radius: 2px; flex-shrink: 0; margin-top: 2px;
+            border-radius: 2px; flex-shrink: 0;
         }
         .order-item-name {
             font-size: 13px; font-weight: 700; color: var(--pine);
@@ -292,7 +291,6 @@
             font-size: 12px; font-weight: 700; color: var(--stone);
             flex-shrink: 0;
         }
-
         .order-note-wrap {
             margin-top: 12px; padding-top: 12px;
             border-top: 1px dashed rgba(0,0,0,0.08);
@@ -313,20 +311,19 @@
 
         /* ── TOAST ── */
         .toast {
-            position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+            position: fixed; bottom: 32px; left: 50%;
             background: var(--ink); color: white;
             padding: 12px 24px; border-radius: 999px;
             font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
             z-index: 9000; white-space: nowrap;
-            animation: fadeUp 0.3s ease both; pointer-events: none;
+            pointer-events: none; --tx: -50%;
+            animation: fadeUp 0.3s ease both;
         }
 
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px) translateX(var(--tx, 0)); }
             to   { opacity: 1; transform: translateY(0)  translateX(var(--tx, 0)); }
         }
-        .toast { --tx: -50%; }
-        .animate-in { animation: fadeUp 0.4s ease both; }
     </style>
 </head>
 <body>
@@ -338,15 +335,13 @@
         返回
     </a>
     <a href="od.html"><img id="main-logo" class="nav-logo" src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠"></a>
-    <button class="menu-btn" id="menu-btn" onclick="toggleMenu()">
+    <button class="menu-btn" id="menu-btn" onclick="toggleMenu()" aria-label="選單">
         <span></span><span></span><span></span>
     </button>
 </header>
 
-<!-- OVERLAY -->
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 
-<!-- SIDE MENU -->
 <nav class="side-menu" id="side-menu">
     <div class="menu-gold-line"></div>
     <div class="menu-decor">真珠 · Jin Zhu</div>
@@ -370,32 +365,30 @@
 
 <!-- MAIN -->
 <main class="main-wrap">
-
-    <!-- 搜尋卡片 -->
-    <div class="search-card animate-in" id="search-card">
+    <div class="search-card" id="search-card">
         <div class="card-inner">
             <h2 class="card-title">訂單查詢</h2>
             <p class="card-sub">Order Tracking System</p>
             <div class="field-wrap">
-                <label class="field-label">姓名 Name</label>
-                <input type="text" id="queryName" class="field-input" placeholder="請輸入訂位姓名">
+                <label class="field-label" for="queryName">姓名 Name</label>
+                <input type="text" id="queryName" class="field-input" placeholder="請輸入完整訂位姓名" autocomplete="name">
             </div>
             <div class="field-wrap">
-                <label class="field-label">電話 Phone</label>
-                <input type="tel" id="queryPhone" class="field-input" placeholder="請輸入聯絡電話">
+                <label class="field-label" for="queryPhone">電話 Phone</label>
+                <input type="tel" id="queryPhone" class="field-input" placeholder="請輸入完整聯絡電話" autocomplete="tel"
+                       onkeydown="if(event.key==='Enter')fetchOrders()">
+                <p class="field-hint">為保護個資，需同時輸入「完整姓名」與「完整電話」，且兩者需與下單時一致才可查詢。</p>
             </div>
             <button class="query-btn" id="query-btn" onclick="fetchOrders()">立即查詢</button>
         </div>
     </div>
 
-    <!-- 無結果 -->
     <div class="empty-card" id="empty-card">
         <div class="empty-icon">🔍</div>
         <p class="empty-title">找不到相關訂單</p>
-        <p class="empty-sub">請確認輸入的姓名與電話是否正確</p>
+        <p class="empty-sub">請確認姓名與電話是否與下單時完全一致</p>
     </div>
 
-    <!-- 結果 -->
     <div class="results-wrap" id="results-wrap">
         <div class="results-header">
             <span class="results-title">查詢結果</span>
@@ -411,13 +404,30 @@
 
 <script>
     const SUPABASE_URL = 'https://pydlnqriztpzgxbjuohm.supabase.co';
+    // 說明：publishable(anon) 金鑰本來就是公開的，寫在這裡沒關係。
+    // 真正的防護在資料庫 RLS + Edge Function，前端此金鑰已無法直接讀 orders。
     const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
     const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // ── 防 XSS：所有要塞進 innerHTML 的資料一律先跳脫 ──
+    function esc(v) {
+        return String(v ?? '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function statusMeta(s) {
+        if (s === 'confirmed' || s === 'synced') return ['已處理', 'status-synced'];
+        if (s === 'ended') return ['已結束', 'status-ended'];
+        return ['準備中', 'status-pending'];
+    }
+
     async function init() {
         const isMob = window.innerWidth <= 768;
-        const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
-        if (data?.logo_url) document.getElementById('main-logo').src = `${data.logo_url}?t=${Date.now()}`;
+        try {
+            const { data } = await _s.from('store_settings').select('logo_url').eq('id', 1).single();
+            if (data?.logo_url) document.getElementById('main-logo').src = `${data.logo_url}?t=${Date.now()}`;
+        } catch (_) {}
         const kv = document.getElementById('kv-bg');
         kv.src = isMob
             ? "https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg"
@@ -440,31 +450,34 @@
         const t = document.createElement('div');
         t.className = 'toast'; t.textContent = msg;
         document.body.appendChild(t);
-        setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.4s'; setTimeout(() => t.remove(), 400); }, 2000);
+        setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 2000);
     }
 
     async function fetchOrders() {
         const name  = document.getElementById('queryName').value.trim();
         const phone = document.getElementById('queryPhone').value.trim();
-        if (!name || !phone) { showToast('請輸入姓名與電話'); return; }
+        const phoneDigits = phone.replace(/\D/g, '');
+
+        if (!name) { showToast('請輸入完整姓名'); return; }
+        if (phoneDigits.length < 8) { showToast('請輸入完整電話號碼'); return; }
 
         const btn = document.getElementById('query-btn');
         btn.textContent = '查詢中⋯'; btn.disabled = true;
 
-        // 透過安全 Edge Function 查詢(不再直接讀資料庫)
-        // 後端強制「姓名+電話完全吻合」才回傳，擋掉撈全庫的攻擊
-        let data = [], error = null;
+        // 只走 Edge Function，前端不再直接讀 orders 資料表。
+        // 後端強制「姓名完全吻合 AND 電話完全吻合」，並回傳遮罩後個資。
+        let data = [], failed = false;
         try {
             const res = await _s.functions.invoke('customer-lookup', {
                 body: { action: 'orders', name, phone }
             });
-            if (res.error) error = res.error;
+            if (res.error) failed = true;
             else data = res.data?.orders || [];
-        } catch (e) { error = e; }
+        } catch (_) { failed = true; }
 
         btn.textContent = '立即查詢'; btn.disabled = false;
 
-        if (error) { showToast('查詢出錯，請稍後再試'); return; }
+        if (failed) { showToast('查詢出錯，請稍後再試'); return; }
 
         document.getElementById('empty-card').style.display   = data.length === 0 ? 'block' : 'none';
         document.getElementById('results-wrap').style.display = data.length  >  0 ? 'block' : 'none';
@@ -474,29 +487,29 @@
                 const time = new Date(order.created_at).toLocaleString('zh-TW', {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                 });
-                const synced = order.status === 'synced';
+                const [label, cls] = statusMeta(order.status);
+                const items = (order.order_content || []).map(item => `
+                    <div class="order-item">
+                        <div class="order-item-bar"></div>
+                        <div class="order-item-name">${esc(item.name || '餐點')}</div>
+                        <div class="order-item-price">$${esc(item.price || 0)}</div>
+                    </div>`).join('');
                 return `
                 <div class="order-card" style="animation-delay:${i * 0.08}s">
                     <div class="order-card-header">
                         <div>
-                            <div class="order-time">${time}</div>
-                            <span class="status-badge ${synced ? 'status-synced' : 'status-pending'}">
-                                ${synced ? '已處理' : '準備中'}
-                            </span>
+                            <div class="order-time">${esc(time)}</div>
+                            <div class="order-name">${esc(order.customer_name || '')}${order.is_takeout ? '（外帶）' : ''}</div>
+                            <span class="status-badge ${cls}">${label}</span>
                         </div>
-                        <div class="order-total">$${order.total_price}</div>
+                        <div class="order-total">$${esc(order.total_price || 0)}</div>
                     </div>
                     <div class="order-card-body">
-                        ${order.order_content.map(item => `
-                            <div class="order-item">
-                                <div class="order-item-bar"></div>
-                                <div class="order-item-name">${item.name}</div>
-                                <div class="order-item-price">$${item.price}</div>
-                            </div>`).join('')}
+                        ${items || '<div class="order-item"><div class="order-item-name">無餐點明細</div></div>'}
                         ${order.note ? `
                             <div class="order-note-wrap">
                                 <div class="order-note-label">備註 Note</div>
-                                <div class="order-note-text">${order.note}</div>
+                                <div class="order-note-text">${esc(order.note)}</div>
                             </div>` : ''}
                     </div>
                 </div>`;
