@@ -16,11 +16,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--paper);color:var(--i
 h1{font-family:'Noto Serif TC',serif;font-size:2rem;letter-spacing:.18em;margin-top:10px}
 .wrap{max-width:760px;margin:-42px auto 60px;padding:0 18px;position:relative}
 .panel{background:white;border:1px solid var(--border);border-radius:22px;padding:24px;box-shadow:0 22px 60px rgba(0,77,64,.12)}
-.row{display:grid;grid-template-columns:1fr auto;gap:10px}
 label{display:block;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);font-weight:900;margin-bottom:8px}
+.field{margin-bottom:14px}
 input{width:100%;border:1.5px solid rgba(0,0,0,.08);border-radius:14px;padding:14px 16px;font-size:15px;outline:none;font-family:'Noto Sans TC',sans-serif;background:#fffdf8}
 input:focus{border-color:var(--pine);box-shadow:0 0 0 3px rgba(0,77,64,.08)}
-button{border:none;border-radius:14px;background:var(--pine);color:white;font-weight:900;padding:0 22px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;letter-spacing:.08em}
+button.query{width:100%;border:none;border-radius:14px;background:var(--pine);color:white;font-weight:900;padding:15px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;letter-spacing:.08em;font-size:15px;transition:opacity .2s}
+button.query:disabled{opacity:.6;cursor:not-allowed}
 .hint{font-size:12px;color:var(--stone);line-height:1.8;margin-top:12px}
 .result{margin-top:18px;display:grid;gap:12px}
 .card{border:1px solid var(--border);border-radius:18px;padding:18px;background:#fffdf8}
@@ -35,7 +36,7 @@ button{border:none;border-radius:14px;background:var(--pine);color:white;font-we
 .items{font-size:12px;color:var(--ink);line-height:1.8;border-top:1px solid var(--border);padding-top:12px}
 .empty{text-align:center;color:var(--stone);font-size:13px;padding:28px 8px;line-height:1.8}
 .back{display:block;text-align:center;color:var(--pine);font-weight:900;text-decoration:none;margin-top:18px;font-size:13px}
-@media(max-width:560px){.row{grid-template-columns:1fr}button{padding:14px}.hero{min-height:30vh}h1{font-size:1.65rem}}
+@media(max-width:560px){.hero{min-height:30vh}h1{font-size:1.65rem}}
 </style>
 </head>
 <body>
@@ -48,21 +49,35 @@ button{border:none;border-radius:14px;background:var(--pine);color:white;font-we
 </section>
 <main class="wrap">
   <div class="panel">
-    <label for="keyword">輸入電話或姓名</label>
-    <div class="row">
-      <input id="keyword" placeholder="例如：0912 或 王小明" autocomplete="tel" onkeydown="if(event.key==='Enter')searchOrders()">
-      <button onclick="searchOrders()">查詢</button>
+    <div class="field">
+      <label for="qname">姓名</label>
+      <input id="qname" placeholder="請輸入完整訂位姓名" autocomplete="name">
     </div>
-    <p class="hint">請輸入訂單留下的電話或姓名，系統會顯示最近符合的預點餐紀錄。</p>
+    <div class="field">
+      <label for="qphone">電話</label>
+      <input id="qphone" placeholder="請輸入完整聯絡電話" autocomplete="tel" inputmode="tel"
+             onkeydown="if(event.key==='Enter')searchOrders()">
+    </div>
+    <button class="query" id="qbtn" onclick="searchOrders()">查詢</button>
+    <p class="hint">為保護個資，需同時輸入「完整姓名」與「完整電話」，且兩者需與下單時一致，才會顯示您的紀錄。</p>
     <div id="result" class="result"></div>
     <a class="back" href="order.html">返回預點餐</a>
   </div>
 </main>
 <script>
 const SUPABASE_URL='https://pydlnqriztpzgxbjuohm.supabase.co';
+// 說明：publishable(anon) 金鑰本就是公開的，寫在前端沒問題。
+// 真正的防護在資料庫 RLS + Edge Function：此金鑰已無法直接讀取 orders。
 const SUPABASE_KEY='sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
 const _s=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let stores=[];
+
+// ── 防 XSS：塞進 innerHTML 前一律跳脫 ──
+function esc(v){
+  return String(v??'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 function fmtDate(v){
   if(!v)return '未指定';
@@ -77,50 +92,74 @@ function statusLabel(s){
   return ['確認中',''];
 }
 function itemText(items){
-  return (items||[]).map(i=>`${i.name||'餐點'}　$${i.price||0}`).join('<br>')||'無餐點明細';
+  return (items||[]).map(i=>`${esc(i.name||'餐點')}　$${esc(i.price||0)}`).join('<br>')||'無餐點明細';
 }
 function storeName(id){
   return stores.find(s=>String(s.id)===String(id||1))?.name||'真珠';
 }
 async function loadStores(){
-  const{data}=await _s.from('stores').select('id,name').eq('is_active',true);
-  stores=data||[];
+  // 01_lockdown.sql 已允許 anon 唯讀啟用中的店家(僅 id,name 非敏感欄位)
+  try{
+    const{data}=await _s.from('stores').select('id,name').eq('is_active',true);
+    stores=data||[];
+  }catch(_){stores=[];}
 }
 async function searchOrders(){
-  const kw=document.getElementById('keyword').value.trim();
+  const name=document.getElementById('qname').value.trim();
+  const phone=document.getElementById('qphone').value.trim();
+  const phoneDigits=phone.replace(/\D/g,'');
   const box=document.getElementById('result');
-  if(!kw){box.innerHTML='<div class="empty">請先輸入電話或姓名。</div>';return;}
+
+  if(!name){box.innerHTML='<div class="empty">請輸入完整姓名。</div>';return;}
+  if(phoneDigits.length<8){box.innerHTML='<div class="empty">請輸入完整電話號碼。</div>';return;}
+
+  const btn=document.getElementById('qbtn');
+  btn.textContent='查詢中...';btn.disabled=true;
   box.innerHTML='<div class="empty">查詢中...</div>';
-  const safe=kw.replace(/[,%]/g,'');
-  const{data,error}=await _s.from('orders')
-    .select('id,customer_name,phone,store_id,order_content,total_price,status,booking_date,created_at,is_takeout,note')
-    .or(`phone.ilike.%${safe}%,customer_name.ilike.%${safe}%`)
-    .order('created_at',{ascending:false})
-    .limit(10);
-  if(error){box.innerHTML='<div class="empty">查詢失敗，請稍後再試。</div>';return;}
-  if(!data?.length){box.innerHTML='<div class="empty">找不到符合的訂單，請確認電話或姓名是否與下單時一致。</div>';return;}
+
+  // 只走 Edge Function，前端不再直接讀 orders 資料表。
+  // 後端強制「姓名完全吻合 AND 電話完全吻合」，並回傳遮罩後個資。
+  let data=[],failed=false;
+  try{
+    const res=await _s.functions.invoke('customer-lookup',{
+      body:{action:'orders',name,phone}
+    });
+    if(res.error)failed=true;
+    else data=res.data?.orders||[];
+  }catch(_){failed=true;}
+
+  btn.textContent='查詢';btn.disabled=false;
+
+  if(failed){box.innerHTML='<div class="empty">查詢失敗，請稍後再試。</div>';return;}
+  if(!data.length){box.innerHTML='<div class="empty">找不到符合的訂單，請確認姓名與電話是否與下單時完全一致。</div>';return;}
+
   box.innerHTML=data.map(o=>{
     const [sl,cls]=statusLabel(o.status);
     return `<article class="card">
       <div class="card-head">
-        <div><div class="name">${o.customer_name||'未命名'}${o.is_takeout?'（外帶）':''}</div><div class="store">${storeName(o.store_id)}</div></div>
+        <div><div class="name">${esc(o.customer_name||'未命名')}${o.is_takeout?'（外帶）':''}</div><div class="store">${esc(storeName(o.store_id))}</div></div>
         <span class="status ${cls}">${sl}</span>
       </div>
       <div class="meta">
-        <div>預約 / 取餐時間<b>${fmtDate(o.booking_date)}</b></div>
-        <div>電話<b>${o.phone||'未填寫'}</b></div>
-        <div>總金額<b>$${o.total_price||0}</b></div>
+        <div>預約 / 取餐時間<b>${esc(fmtDate(o.booking_date))}</b></div>
+        <div>電話<b>${esc(o.phone||'未填寫')}</b></div>
+        <div>總金額<b>$${esc(o.total_price||0)}</b></div>
       </div>
       <div class="items">${itemText(o.order_content)}</div>
-      ${o.note?`<div class="items">備註：${o.note}</div>`:''}
+      ${o.note?`<div class="items">備註：${esc(o.note)}</div>`:''}
     </article>`;
   }).join('');
 }
 (async()=>{
   await loadStores();
+  // 舊版會用 ?phone= 或 ?q= 自動帶入單一欄位查詢。
+  // 新規則需要姓名+電話兩者，故僅自動帶入電話欄位、不自動送出，
+  // 避免用單一參數就觸發查詢。
   const p=new URLSearchParams(location.search);
-  const q=p.get('phone')||p.get('q')||'';
-  if(q){document.getElementById('keyword').value=q;searchOrders();}
+  const phone=p.get('phone')||'';
+  const name=p.get('name')||'';
+  if(phone)document.getElementById('qphone').value=phone;
+  if(name)document.getElementById('qname').value=name;
 })();
 </script>
 </body>
