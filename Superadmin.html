@@ -304,6 +304,7 @@ tbody tr:hover td{background:#fafcff;}
     <div class="fg"><label class="fl">地址</label><input class="fi" id="s-addr" placeholder="台中市..."></div>
     <div class="fr">
       <div class="fg"><label class="fl">電話</label><input class="fi" id="s-phone" placeholder="04-XXXXXXXX"></div>
+      <div class="fg"><label class="fl">LINE 連結</label><input class="fi" id="s-line-url" placeholder="https://line.me/ti/p/@xxxx"></div>
       <div class="fg"><label class="fl">排序</label><input class="fi" id="s-sort" placeholder="0" type="number"></div>
     </div>
 
@@ -453,7 +454,7 @@ function renderStores(){
     <div class="store-card">
       <div class="sid-badge">ID: ${s.id}</div>
       <div class="sn">🏪 ${s.name}</div>
-      <div class="sm">${s.address?`📍 ${s.address}<br>`:''}${s.phone?`📞 ${s.phone}<br>`:''}${s.slug?`🔑 ${s.slug}`:''}</div>
+      <div class="sm">${s.address?`📍 ${s.address}<br>`:''}${s.phone?`📞 ${s.phone}<br>`:''}${s.line_url?`💬 LINE 已設定<br>`:''}${s.slug?`🔑 ${s.slug}`:''}</div>
       <span class="s-badge ${s.is_active?'ba':'bi'}">${s.is_active?'✅ 營業中':'⏸ 暫停'}</span>
       <div class="sa">
         <button class="btn btn-g btn-sm" onclick="openStoreModal('${s.id}')">✏️ 編輯</button>
@@ -471,6 +472,7 @@ function openStoreModal(id=''){
   document.getElementById('s-slug').value=s.slug||'';
   document.getElementById('s-addr').value=s.address||'';
   document.getElementById('s-phone').value=s.phone||'';
+  document.getElementById('s-line-url').value=s.line_url||'';
   document.getElementById('s-sort').value=s.sort_order??0;
   document.getElementById('s-active').value=s.is_active!==false?'true':'false';
   document.getElementById('store-modal').classList.add('open');
@@ -485,6 +487,7 @@ async function saveStore(){
     slug:document.getElementById('s-slug').value.trim()||null,
     address:document.getElementById('s-addr').value.trim()||null,
     phone:document.getElementById('s-phone').value.trim()||null,
+    line_url:document.getElementById('s-line-url').value.trim()||null,
     sort_order:parseInt(document.getElementById('s-sort').value)||0,
     is_active:document.getElementById('s-active').value==='true',
   };
