@@ -1095,11 +1095,23 @@
             <div class="bg-white p-8 rounded-2xl border shadow-sm max-w-3xl space-y-8">
                 <div>
                     <label class="filter-label">1. 選擇活動代號</label>
-                    <select id="sel-campaign" class="filter-select mt-2 max-w-xs"></select>
+                    <select id="sel-campaign" class="filter-select mt-2 max-w-xs" onchange="loadEventDateConfig()"></select>
                 </div>
                 <div>
                     <label class="filter-label">2. 勾選欲顯示的分類（可多選，僅列隱藏分類）</label>
                     <div id="cat-checkbox-list" class="grid grid-cols-2 md:grid-cols-3 gap-3 mt-3"></div>
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="filter-label">3. 活動開放日期</label>
+                        <textarea id="event-dates-input" rows="6" class="filter-input font-mono text-xs resize-none mt-2" placeholder="每行一個日期，例如：&#10;2027-02-05&#10;2027-02-06&#10;2027-02-07"></textarea>
+                        <div class="text-[11px] text-slate-400 mt-1">客人只能選這裡設定的日期。未填則使用一般未來一個月。</div>
+                    </div>
+                    <div>
+                        <label class="filter-label">4. 活動專屬時段（選填）</label>
+                        <textarea id="event-slots-input" rows="6" class="filter-input font-mono text-xs resize-none mt-2" placeholder="每行格式：日期|時間,時間&#10;2027-02-05|11:00,11:30,12:00&#10;2027-02-06|17:00,17:30,18:00"></textarea>
+                        <div class="text-[11px] text-slate-400 mt-1">有填寫時，該日期會優先使用活動時段；未填則使用各分店時段。</div>
+                    </div>
                 </div>
                 <button onclick="bindEvent()" class="btn btn-primary w-full justify-center py-4 text-base">確認綁定並產生活動連結</button>
             </div>
@@ -3041,14 +3053,17 @@ async function loadMenu(){
     const{data}=await _s.from('menu_items').select('*,categories(name)').order('sort_order',{ascending:true}).order('created_at',{ascending:true});
     const filtered=(data||[]).filter(i=>i.name.toLowerCase().includes(search)&&(catF==='all'||i.category_id===catF));
     document.getElementById('menu-grid').innerHTML=filtered.map(i=>`
-        <div class="bg-white rounded-2xl border p-4 shadow-sm flex flex-col select-none" draggable="true" data-id="${i.id}" ondragstart="menuDragStart(event)" ondragover="menuDragOver(event)" ondrop="menuDrop(event)" ondragend="menuDragEnd(event)">
+        <div class="bg-white rounded-2xl border p-4 shadow-sm flex flex-col select-none ${i.is_hidden?'opacity-60 grayscale':''}" draggable="true" data-id="${i.id}" ondragstart="menuDragStart(event)" ondragover="menuDragOver(event)" ondrop="menuDrop(event)" ondragend="menuDragEnd(event)" style="${i.is_hidden?'border-color:#fecaca;background:#fffafa':''}">
             <div class="text-center text-slate-300 text-xs mb-2 cursor-grab">⠿ 拖曳排序</div>
-            <div class="h-28 bg-slate-50 rounded-xl mb-3 flex items-center justify-center overflow-hidden">
+            <div class="h-28 bg-slate-50 rounded-xl mb-3 flex items-center justify-center overflow-hidden relative">
+                ${i.is_hidden?'<div style="position:absolute;top:8px;left:8px;background:#dc2626;color:white;font-size:10px;font-weight:900;padding:3px 8px;border-radius:999px;z-index:2">已下架</div>':''}
                 <img src="${i.image_url||''}" class="max-h-full img-contain">
             </div>
             <div class="flex justify-between font-bold text-sm"><span>${i.name}</span><span style="color:var(--gold)">$${i.price}</span></div>
+            <div class="mt-2 text-[11px] font-bold ${i.is_hidden?'text-red-500':'text-emerald-700'}">${i.is_hidden?'前台不可點餐':'前台可點餐'}</div>
             <div class="flex gap-2 mt-auto pt-3">
                 <button onclick="editItem('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-slate-100 text-xs font-bold hover:bg-slate-200 shadow-sm">編輯</button>
+                <button onclick="toggleItemHidden('${i.id}',${i.is_hidden?'false':'true'})" class="flex-1 py-1.5 rounded-lg ${i.is_hidden?'bg-emerald-700 text-white hover:bg-emerald-800':'bg-red-50 text-red-600 hover:bg-red-100'} text-xs font-bold shadow-sm">${i.is_hidden?'上架':'下架'}</button>
                 ${i.is_set_menu?`<button onclick="openSetModal('${i.id}')" class="flex-1 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold shadow-sm">⚙️ 套餐</button>`:''}
                 <button onclick="delItem('${i.id}')" class="px-2 text-red-200 hover:text-red-400">✕</button>
             </div>
@@ -3133,12 +3148,22 @@ async function saveItem(){
     if(saved){await _s.from('item_flavor_relation').delete().eq('item_id',saved[0].id);const rels=Array.from(document.querySelectorAll('.flv-chk:checked')).map(c=>({item_id:saved[0].id,flavor_group_id:c.value}));if(rels.length)await _s.from('item_flavor_relation').insert(rels);closeMenuModal();loadMenu();toast('餐點已儲存');}
     else toast('儲存失敗','error');
 }
+async function toggleItemHidden(id,hidden){
+    const ok=hidden
+        ? await confirm2({icon:'🙈',title:'下架菜色',msg:'下架後前台將無法看到或點選此菜色；若它在套餐內，也會從前台套餐選項移除。',okText:'確認下架',danger:true})
+        : true;
+    if(!ok) return;
+    const{error}=await _s.from('menu_items').update({is_hidden:hidden}).eq('id',id);
+    if(error){toast('更新失敗：'+error.message,'error',5000);return;}
+    loadMenu();
+    toast(hidden?'菜色已下架，前台不可點餐':'菜色已上架，前台可點餐');
+}
 async function delItem(id){const ok=await confirm2({icon:'🍱',title:'刪除餐點',msg:'確定刪除此餐點？',okText:'刪除',danger:true});if(ok){await _s.from('menu_items').delete().eq('id',id);loadMenu();toast('已刪除');}}
 function closeMenuModal(){document.getElementById('menu-modal').classList.add('hidden');}
 
 // ── SET MENU ──
 let curItem=null,curPicks=[],pickerSelectedItems=[],currentEditingGroupId=null;
-async function openSetModal(id){curItem=id;resetSetForm();document.getElementById('set-modal').classList.remove('hidden');const{data}=await _s.from('menu_items').select('*,categories(name)').eq('is_set_menu',false).order('name');window.allPickerItems=data||[];renderPickerList(data);loadSavedSets();}
+async function openSetModal(id){curItem=id;resetSetForm();document.getElementById('set-modal').classList.remove('hidden');const{data}=await _s.from('menu_items').select('*,categories(name)').eq('is_set_menu',false).eq('is_hidden',false).order('name');window.allPickerItems=data||[];renderPickerList(data);loadSavedSets();}
 function closeSetModal(){document.getElementById('set-modal').classList.add('hidden');}
 function renderPickerList(items){
     const container=document.getElementById('item-picker-list');
@@ -3299,7 +3324,51 @@ async function initEventUrl(){
     const{data:cats}=await _s.from('categories').select('*').eq('is_visible',false);
     document.getElementById('cat-checkbox-list').innerHTML=(cats||[]).map(c=>`<div class="relative"><input type="checkbox" id="ecat-${c.id}" value="${c.id}" class="ecat-checkbox hidden"><label for="ecat-${c.id}" class="block border-2 p-3 rounded-xl cursor-pointer text-sm font-bold text-slate-500 transition hover:bg-slate-50">${c.name}</label></div>`).join('');
     document.querySelectorAll('.ecat-checkbox').forEach(cb=>{cb.addEventListener('change',function(){const lbl=document.querySelector(`label[for="${this.id}"]`);if(this.checked){lbl.style.borderColor='var(--gold)';lbl.style.backgroundColor='#fffbeb';}else{lbl.style.borderColor='';lbl.style.backgroundColor='';}});});
+    await loadEventDateConfig();
     loadActiveEvents();
+}
+
+function parseMaybeJson(v,fallback){
+    if(v==null||v==='')return fallback;
+    if(Array.isArray(v)||typeof v==='object')return v;
+    try{return JSON.parse(v);}catch(e){return fallback;}
+}
+
+function parseEventDatesInput(){
+    const raw=document.getElementById('event-dates-input')?.value||'';
+    return [...new Set(raw.split(/[\n,，、\s]+/).map(s=>s.trim()).filter(s=>/^\d{4}-\d{2}-\d{2}$/.test(s)))].sort();
+}
+
+function parseEventSlotsInput(){
+    const raw=document.getElementById('event-slots-input')?.value||'';
+    const map={};
+    raw.split('\n').map(s=>s.trim()).filter(Boolean).forEach(line=>{
+        const parts=line.split('|');
+        if(parts.length<2)return;
+        const date=parts[0].trim();
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
+        const slots=parts.slice(1).join('|').split(/[,，、\s]+/).map(s=>s.trim()).filter(s=>/^\d{1,2}:\d{2}$/.test(s));
+        if(slots.length)map[date]=[...new Set(slots)];
+    });
+    return map;
+}
+
+async function loadEventDateConfig(){
+    const code=document.getElementById('sel-campaign')?.value;
+    const dateEl=document.getElementById('event-dates-input');
+    const slotEl=document.getElementById('event-slots-input');
+    if(!code||!dateEl||!slotEl)return;
+    dateEl.value='';slotEl.value='';
+    let {data,error}=await _s.from('campaign_settings').select('event_dates,event_slots').eq('code_name',code).maybeSingle();
+    if(error&&/(event_dates|event_slots)/i.test(error.message||'')){
+        toast('尚未建立活動日期欄位，請先執行 SQL 更新','warn',4200);
+        return;
+    }
+    if(error)return;
+    const dates=parseMaybeJson(data?.event_dates,[]);
+    const slots=parseMaybeJson(data?.event_slots,{});
+    dateEl.value=(Array.isArray(dates)?dates:[]).join('\n');
+    slotEl.value=Object.entries(slots||{}).map(([date,list])=>`${date}|${(list||[]).join(',')}`).join('\n');
 }
 async function loadActiveEvents(){
     const{data}=await _s.from('categories').select('*').not('campaign_code','is',null);
@@ -3310,6 +3379,8 @@ async function bindEvent(){
     const camp=document.getElementById('sel-campaign').value;
     const checked=Array.from(document.querySelectorAll('.ecat-checkbox:checked')).map(el=>el.value);
     if(!camp||checked.length===0){toast('請選擇活動代號並勾選分類','warn');return;}
+    const event_dates=parseEventDatesInput();
+    const event_slots=parseEventSlotsInput();
     const{data:existing}=await _s.from('categories').select('id,name').eq('campaign_code',camp);
     const hasExisting=existing&&existing.length>0;
     let mode='add';
@@ -3320,6 +3391,12 @@ async function bindEvent(){
     }
     if(mode==='replace')await _s.from('categories').update({campaign_code:null}).eq('campaign_code',camp);
     await _s.from('categories').update({campaign_code:camp}).in('id',checked);
+    const {error:cfgErr}=await _s.from('campaign_settings')
+        .update({event_dates,event_slots})
+        .eq('code_name',camp);
+    if(cfgErr&&/(event_dates|event_slots)/i.test(cfgErr.message||'')){
+        toast('分類已綁定，但活動日期欄位尚未建立，請先執行 SQL 更新','warn',5200);
+    }
     toast(mode==='replace'?'重新設定成功':'新增綁定成功');
     loadActiveEvents();
     document.querySelectorAll('.ecat-checkbox').forEach(el=>{el.checked=false;const lbl=document.querySelector(`label[for="${el.id}"]`);if(lbl){lbl.style.borderColor='';lbl.style.backgroundColor='';}});
