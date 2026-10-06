@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>真珠 · 文心店 預點餐</title>
+    <title>真珠 台灣佳味</title>
     <link rel="icon" type="image/x-icon" href="https://www.jinzhu.com.tw/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700;900&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -102,6 +102,10 @@
         /* STEP 1 */
         #step-1{padding-top:80px;min-height:100svh;display:flex;align-items:center;justify-content:center;}
         #step-1.hidden{display:none;}
+        #mode-section{overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .3s ease;}
+        #date-card,#info-card{animation:cardIn .3s ease;}
+        @keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        #store-dropdown:focus{border-color:var(--pine);box-shadow:0 0 0 3px rgba(0,77,64,0.1);}
         .entry-card{background:white;border-radius:24px;padding:48px 32px;width:calc(100% - 48px);max-width:420px;box-shadow:0 32px 80px rgba(0,77,64,0.1),0 0 0 1px var(--border);position:relative;overflow:hidden;}
         .entry-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--pine),var(--gold),var(--pine),transparent);}
         .entry-title{font-family:'Noto Serif TC',serif;font-size:1.1rem;font-weight:700;color:var(--pine);text-align:center;letter-spacing:0.3em;margin-bottom:8px;}
@@ -288,32 +292,15 @@
 <nav class="side-menu" id="side-menu">
     <div class="menu-gold-line"></div>
     <div class="menu-decor">真珠 · Jin Zhu</div>
-    <a href="index.html" class="menu-nav-item" data-i18n="menuHome">首頁 Home</a>
-    <a href="query.html" class="menu-nav-item" data-i18n="menuQuery">訂單查詢 Tracking</a>
-    <a href="photo-search.html" class="menu-nav-item" data-i18n="menuPhoto">紀念照下載 Photos</a>
-    <div class="photo-search-wrap">
-        <span class="photo-label" data-i18n="photoLabel">📷 珍藏回憶 · 下載紀念照</span>
-        <input id="photo-keyword" type="text" class="photo-input" data-i18n-ph="photoPh">
-        <button class="photo-search-btn" onclick="doPhotoSearch()" data-i18n="photoBtn">立即搜尋 ✦</button>
-        <div id="photo-searching" data-i18n="photoSearching">搜尋中⋯</div>
-        <div id="photo-no-result" data-i18n="photoNoResult">找不到相關的紀念照</div>
-        <div id="photo-result-card">
-            <img id="photo-result-img" src="" alt="">
-            <div class="result-info">
-                <div class="result-name" id="photo-result-name"></div>
-                <div class="result-note" id="photo-result-note"></div>
-            </div>
-            <a id="photo-download-btn" href="" download="紀念照.jpg" class="dl-btn" data-i18n="photoDownload">⬇ 點此下載照片</a>
-        </div>
-    </div>
-    <div class="menu-footer">Jin Zhu Taichung · 文心店</div>
+    <a href="newquery.html" class="menu-nav-item" data-i18n="menuQuery">訂單查詢 Tracking</a>
+    <div class="menu-footer">Jin Zhu Taiwan · 盛宴款待</div>
 </nav>
 
 <div id="kv-area">
     <img id="kv-bg" class="kv-bg" src="https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg" alt="">
     <div class="kv-overlay"></div>
     <div class="kv-content">
-        <div class="kv-tag">Wenxin Branch · 文心店</div>
+        <div class="kv-tag">Jin Zhu · Banquet Pre-Order</div>
         <h1 class="kv-title">真珠</h1>
         <div class="kv-gold-line"></div>
         <p class="kv-subtitle" data-i18n="subtitle">傳承心意 · 玩味新意</p>
@@ -327,12 +314,27 @@
 </div>
 
 <main>
+
+
 <section id="step-1">
-    <!-- Step 1a：選擇內用/外帶 -->
+    <!-- Step 1a：選擇內用/外帶（整合選餐廳） -->
     <div class="entry-card" id="mode-card">
         <h2 class="entry-title" data-i18n="s1Title">線上預點餐</h2>
-        <p class="entry-sub" data-i18n="s1Sub">文心店 · Pre-order Service</p>
-        <p id="mode-select-hint" style="font-size:13px;font-weight:700;color:var(--stone);margin-bottom:18px;text-align:center" data-i18n="modeSelectTitle">請選擇用餐方式</p>
+        <p class="entry-sub" data-i18n="s1Sub">真珠盛宴 · 預點款待</p>
+
+        <!-- 選餐廳下拉（整合進來） -->
+        <div id="store-select-wrap" style="margin-bottom:20px">
+            <label style="display:block;font-size:11px;font-weight:700;color:var(--stone);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">🏪 選擇餐廳</label>
+            <select id="store-dropdown"
+                onchange="onStoreChange(this)"
+                style="width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:14px;font-size:14px;font-weight:700;font-family:'Noto Sans TC',sans-serif;color:var(--ink);background:white;outline:none;cursor:pointer;appearance:auto;transition:border-color .2s">
+                <option value="">— 請選擇餐廳 —</option>
+            </select>
+        </div>
+
+        <!-- 內用/外帶（選完餐廳後展開） -->
+        <div id="mode-section" style="overflow:hidden;max-height:0;opacity:0;transition:max-height .35s ease,opacity .25s ease">
+          <p id="mode-select-hint" style="font-size:13px;font-weight:700;color:var(--stone);margin-bottom:18px;text-align:center" data-i18n="modeSelectTitle">請選擇用餐方式</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:4px">
             <button id="mode-dine-btn" onclick="selectOrderMode('dine-in')" style="padding:22px 10px;border-radius:18px;border:2.5px solid var(--pine);background:rgba(0,77,64,0.06);cursor:pointer;transition:all 0.2s;font-family:'Noto Sans TC',sans-serif;box-shadow:0 4px 16px rgba(0,77,64,0.12)">
                 <div style="font-size:2.2rem;margin-bottom:8px">🍽</div>
@@ -345,6 +347,7 @@
                 <div style="font-size:11px;color:var(--stone);margin-top:3px">Takeout</div>
             </button>
         </div>
+        </div><!-- /mode-section -->
     </div>
 
     <!-- Step 1b：選擇日期（依模式不同） -->
@@ -386,13 +389,13 @@
         <h2 class="confirm-title" data-i18n="s3Title">已收到您的預點</h2>
         <div class="confirm-divider"></div>
         <p class="confirm-text" data-i18n="s3t1">真心款待，誠摯準備。</p>
-        <p class="confirm-text" data-i18n="s3t2" style="margin-top:8px">如需更改菜色，請致電與我們聯繫：</p>
+        <p class="confirm-text" data-i18n="s3t2" style="margin-top:8px">如需更改菜色，請致電或透過 LINE 與我們聯繫：</p>
         <a href="tel:0437027538" class="confirm-phone">04-3702-7538</a>
         <div class="confirm-btn-row">
             <a href="tel:0437027538" class="confirm-btn filled" data-i18n="s3call">📞 撥打電話</a>
-            <a href="https://line.me/ti/p/@435trmtc" target="_blank" class="confirm-btn" style="border-color:#06c755;color:#06c755">💬 LINE</a>
+            <a href="https://line.me/ti/p/@435trmtc" target="_blank" class="confirm-btn confirm-line" style="border-color:#06c755;color:#06c755">💬 LINE</a>
         </div>
-        <a href="query.html" class="confirm-btn" style="margin-top:10px" data-i18n="s3query">📋 前往訂單查詢</a>
+        <a href="newquery.html" class="confirm-btn" style="margin-top:10px" data-i18n="s3query">📋 前往訂單查詢</a>
         <a href="jinzhu-fortune.html" class="confirm-btn" style="margin-top:10px;border-color:var(--gold);color:var(--gold)" data-i18n="s3fortune">🎋 抽真珠好運籤</a>
     </div>
 </section>
@@ -495,11 +498,17 @@ const SUPABASE_KEY='sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
 const _s=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let menuData=[],cart=[],guest={},tempItem=null,currentQty=1;
+let selectedStoreId=null,selectedStoreName='';
 let orderMode="dine-in"; // "dine-in" | "takeout"
 let bookingDate="", pickupDate="", pickupTime="";
 let takeoutSlots=[]; // 從後台取得的可選時段
 let allCats=[],curCatIndex=0;
 let curLang=localStorage.getItem('jinzhu_lang')||'zh';
+const URL_PARAMS=new URLSearchParams(location.search);
+const EVENT_CODE=(URL_PARAMS.get('code')||URL_PARAMS.get('campaign')||'').trim();
+let eventSettings=null;
+let eventDates=[];
+let eventSlots={};
 
 // ── i18n ──
 const I18N={
@@ -509,7 +518,7 @@ const I18N={
         photoLabel:'📷 珍藏回憶 · 下載紀念照',photoPh:'輸入姓名 或 電話號碼',
         photoBtn:'立即搜尋 ✦',photoSearching:'搜尋中⋯',photoNoResult:'找不到相關的紀念照',
         photoDownload:'⬇ 點此下載照片',
-        s1Title:'線上預點餐',s1Sub:'文心店 · Pre-order Service',
+        s1Title:'線上預點餐',s1Sub:'真珠盛宴 · 預點款待',
         nameLabel:'姓名 Name',namePh:'請輸入訂位姓名',
         phoneLabel:'電話 Phone',phonePh:'請輸入聯絡電話',
         enterBtn:'進入菜單',
@@ -540,7 +549,7 @@ const I18N={
         photoLabel:'📷 Memories · Download Photos',photoPh:'Enter your name or phone number',
         photoBtn:'Search ✦',photoSearching:'Searching...',photoNoResult:'No photos found',
         photoDownload:'⬇ Download Photo',
-        s1Title:'Pre-Order',s1Sub:'Wenxin Branch',
+        s1Title:'Pre-Order',s1Sub:'Jin Zhu Banquet Pre-Order',
         nameLabel:'Name',namePh:'Your name for reservation',
         phoneLabel:'Phone',phonePh:'Enter 0 is fine',
         enterBtn:'Browse Menu',
@@ -574,7 +583,7 @@ const I18N={
         photoLabel:'📷 思い出 · 記念写真ダウンロード',photoPh:'お名前または電話番号を入力',
         photoBtn:'検索 ✦',photoSearching:'検索中...',photoNoResult:'写真が見つかりませんでした',
         photoDownload:'⬇ 写真をダウンロード',
-        s1Title:'事前注文',s1Sub:'文心店',
+        s1Title:'事前注文',s1Sub:'真珠のおもてなし',
         nameLabel:'お名前',namePh:'予約のお名前をご入力ください',
         phoneLabel:'電話番号',phonePh:'0と入力してもOKです',
         enterBtn:'メニューを見る',
@@ -608,7 +617,7 @@ const I18N={
         photoLabel:'📷 추억 · 기념사진 다운로드',photoPh:'이름 또는 전화번호를 입력하세요',
         photoBtn:'검색 ✦',photoSearching:'검색 중...',photoNoResult:'사진을 찾을 수 없습니다',
         photoDownload:'⬇ 사진 다운로드',
-        s1Title:'사전 주문',s1Sub:'원신점',
+        s1Title:'사전 주문',s1Sub:'진주 연회 예약 주문',
         nameLabel:'이름',namePh:'예약 이름을 입력해 주세요',
         phoneLabel:'전화번호',phonePh:'0을 입력해도 됩니다',
         enterBtn:'메뉴 보기',
@@ -754,16 +763,185 @@ async function initLiff(){
 }
 
 async function init(){
-    loadTakeoutSlots(); // 預先載入外帶時段設定
+    // 先用內建/快取店家資料秒出選單，再背景刷新 Supabase
+    await loadEventSettings();
+    loadStoreList();
     const isMob=window.innerWidth<=768;
     document.getElementById('kv-bg').src=isMob
         ?'https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg'
         :'https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_PC-KV.jpeg';
-    try{
-        const{data}=await _s.from('store_settings').select('logo_url').eq('id',1).single();
-        if(data?.logo_url) document.getElementById('main-logo').src=data.logo_url+'?t='+Date.now();
-    }catch(e){}
     applyLang();
+}
+
+function parseEventJson(value,fallback){
+    if(value==null||value==='') return fallback;
+    if(Array.isArray(value)) return value;
+    if(typeof value==='object') return value;
+    try{return JSON.parse(value);}catch(e){return fallback;}
+}
+
+function normalizeEventDates(value){
+    const raw=parseEventJson(value,[]);
+    const arr=Array.isArray(raw)?raw:String(raw||'').split(/[\n,，、\s]+/);
+    return [...new Set(arr.map(v=>String(v||'').trim()).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)))].sort();
+}
+
+async function loadEventSettings(){
+    if(!EVENT_CODE) return;
+    try{
+        let {data,error}=await _s.from('campaign_settings')
+            .select('code_name,event_dates,event_slots')
+            .eq('code_name',EVENT_CODE)
+            .maybeSingle();
+        if(error&&/(event_dates|event_slots)/i.test(error.message||'')){
+            const fallback=await _s.from('campaign_settings')
+                .select('code_name')
+                .eq('code_name',EVENT_CODE)
+                .maybeSingle();
+            data=fallback.data; error=fallback.error;
+        }
+        if(error) throw error;
+        eventSettings=data||{code_name:EVENT_CODE};
+        eventDates=normalizeEventDates(data?.event_dates);
+        eventSlots=parseEventJson(data?.event_slots,{})||{};
+        const subEl=document.querySelector('.entry-sub[data-i18n="s1Sub"]');
+        if(subEl) subEl.textContent='活動預點 · '+EVENT_CODE;
+    }catch(e){
+        console.warn('campaign load failed:',e);
+        eventSettings={code_name:EVENT_CODE};
+    }
+}
+
+// 儲存餐廳資料（供 selectStore 使用）
+let storesCache=[];
+const DEFAULT_STORE_ID=1;
+const STORE_CACHE_KEY='jz_stores_cache_v3';
+const MENU_CACHE_KEY='jz_shared_menu_cache_v2';
+const DEFAULT_STORES=[
+    {id:1,name:'台中文心店',slug:'wenxin',phone:'04-3702-7538',sort_order:0,is_active:true},
+    {id:6,name:'京站店',slug:'qsquare',phone:'02-2552-6898',sort_order:10,is_active:true},
+    {id:7,name:'微風南山店',slug:'nanshan',phone:'02-2722-8288',sort_order:20,is_active:true},
+    {id:8,name:'永和店',slug:'yonghe',phone:'02-2231-6898',sort_order:30,is_active:true},
+    {id:9,name:'小碧潭店',slug:'xiaobitan',phone:'02-7728-9536',sort_order:40,is_active:true},
+    {id:10,name:'中茂店',slug:'taoyuan',phone:'03-326-1683',sort_order:50,is_active:true},
+    {id:11,name:'竹北店',slug:'zhubei',phone:'03-622-3077',sort_order:60,is_active:true},
+    {id:12,name:'LaLaport台中店',slug:'lalaport',phone:'04-3700-7743',sort_order:70,is_active:true},
+    {id:13,name:'小北門店',slug:'xiaobeimen',phone:'06-251-8258',sort_order:80,is_active:true},
+    {id:14,name:'義享店',slug:'esky',phone:'07-556-5808',sort_order:90,is_active:true},
+];
+
+function activeStoreId(){
+    return selectedStoreId||DEFAULT_STORE_ID;
+}
+
+function renderStoreOptions(stores){
+    const sel=document.getElementById('store-dropdown');
+    if(!sel) return;
+    sel.innerHTML='<option value="">— 請選擇餐廳 —</option>'+
+        (stores||[]).map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+function warmStoreListFromCache(){
+    try{
+        const cached=JSON.parse(localStorage.getItem(STORE_CACHE_KEY)||'[]');
+        if(Array.isArray(cached)&&cached.length){
+            storesCache=cached;
+            renderStoreOptions(storesCache);
+            return true;
+        }
+    }catch(e){}
+    storesCache=DEFAULT_STORES;
+    renderStoreOptions(storesCache);
+    return false;
+}
+
+// 載入餐廳列表
+async function loadStoreList(){
+    const list=document.getElementById('store-list');
+    warmStoreListFromCache();
+    try{
+        let{data,error}=await _s.from('stores')
+            .select('id,name,slug,address,phone,line_url,is_active,sort_order')
+            .eq('is_active',true)
+            .order('sort_order')
+            .order('id');
+        if(error&&/line_url/i.test(error.message||'')){
+            const fallback=await _s.from('stores')
+                .select('id,name,slug,address,phone,is_active,sort_order')
+                .eq('is_active',true)
+                .order('sort_order')
+                .order('id');
+            data=fallback.data;
+            error=fallback.error;
+        }
+        if(error) throw error;
+        storesCache=data||[];
+        if(!storesCache.length){
+            if(list) list.innerHTML='<div style="text-align:center;padding:24px;color:var(--stone)">目前無可訂位的餐廳</div>';
+            return;
+        }
+        localStorage.setItem(STORE_CACHE_KEY,JSON.stringify(storesCache));
+        renderStoreOptions(storesCache);
+    }catch(e){
+        if(!storesCache.length){
+            if(list) list.innerHTML='<div style="color:var(--stone);text-align:center;padding:24px">載入失敗，請重試<br><button onclick="loadStoreList()" style="margin-top:10px;padding:8px 16px;background:var(--pine);color:white;border:none;border-radius:8px;cursor:pointer">重新載入</button></div>';
+        }
+    }
+}
+
+// 下拉選餐廳觸發
+function onStoreChange(sel){
+    const storeId=parseInt(sel.value);
+    if(!storeId){
+        // 收起 mode-section
+        const ms=document.getElementById('mode-section');
+        ms.style.maxHeight='0';ms.style.opacity='0';
+        return;
+    }
+    selectStore(storeId);
+}
+
+// 選擇餐廳後展開內用/外帶選項
+function selectStore(storeId){
+    const s=storesCache.find(x=>x.id===storeId);
+    if(!s) return;
+    selectedStoreId=storeId;
+    selectedStoreName=s.name;
+    updateConfirmStoreInfo();
+    // 平滑展開 mode-section
+    const ms=document.getElementById('mode-section');
+    ms.style.maxHeight='300px';
+    ms.style.opacity='1';
+    // 更新副標題
+    const subEl=document.querySelector('.entry-sub[data-i18n="s1Sub"]');
+    if(subEl) subEl.textContent=(EVENT_CODE?EVENT_CODE+' · ':'真珠款待 · ')+s.name;
+    // 背景載入外帶時段
+    loadTakeoutSlots();
+    // 背景更新 logo
+    getStoreSettings('logo_url')
+        .then(({data})=>{
+            if(data?.logo_url) document.getElementById('main-logo').src=data.logo_url+'?t='+Date.now();
+        }).catch(()=>{});
+}
+
+function updateConfirmStoreInfo(){
+    const s=storesCache.find(x=>x.id===activeStoreId())||{};
+    const phone=s.phone||'04-3702-7538';
+    const lineUrl=s.line_url||'https://line.me/ti/p/@435trmtc';
+    const tel=phone.replace(/[^\d+]/g,'');
+    document.querySelectorAll('.confirm-phone').forEach(a=>{
+        a.textContent=phone;
+        a.href='tel:'+tel;
+    });
+    const callBtn=document.querySelector('.confirm-btn.filled');
+    if(callBtn) callBtn.href='tel:'+tel;
+    const lineBtn=document.querySelector('.confirm-line');
+    if(lineBtn){
+        lineBtn.href=lineUrl;
+        lineBtn.style.display=lineUrl?'block':'none';
+    }
+    const title=document.querySelector('.confirm-title');
+    if(title&&s.name) title.textContent=s.name+' 已收到您的預點';
 }
 initLiff().then(()=>init());
 
@@ -798,8 +976,7 @@ function showDateCard(){
     document.getElementById('mode-card').style.display='none';
     document.getElementById('date-card').style.display='block';
     const inner=document.getElementById('date-card-inner');
-    const days=[];const today=new Date();
-    for(let i=0;i<30;i++){const d=new Date(today);d.setDate(today.getDate()+i);days.push(d);}
+    const days=getSelectableDates();
     // 日期格式化（純字串，不用 template literal）
     function fmtVal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function fmtLabel(d){var wd=['日','一','二','三','四','五','六'][d.getDay()];return (d.getMonth()+1)+'/'+(d.getDate())+'（週'+wd+'）';}
@@ -834,6 +1011,19 @@ function showDateCard(){
             +'<div id="time-slot-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+btnHtml+'</div>'
             +'</div>';
     }
+}
+
+function getSelectableDates(){
+    if(EVENT_CODE&&eventDates.length){
+        return eventDates.map(dateStr=>new Date(dateStr+'T12:00:00+08:00'));
+    }
+    const days=[];const today=new Date();
+    const endDate=new Date(today);
+    endDate.setMonth(today.getMonth()+1);
+    for(let d=new Date(today);d<=endDate;d.setDate(d.getDate()+1)){
+        days.push(new Date(d));
+    }
+    return days;
 }
 function selectTimeSlot(btn, time){
     pickupTime=time;
@@ -892,7 +1082,7 @@ let takeoutSlotsWeekday=[], takeoutSlotsWeekend=[], takeoutSlotsSpecial={};
 
 async function loadTakeoutSlots(){
     try{
-        const{data}=await _s.from('store_settings').select('takeout_slots,takeout_slots_weekend,takeout_slots_special').eq('id',1).single();
+        const{data}=await getStoreSettings('takeout_slots,takeout_slots_weekend,takeout_slots_special');
         if(data){
             takeoutSlotsWeekday=data.takeout_slots||[];
             takeoutSlotsWeekend=data.takeout_slots_weekend||[];
@@ -902,8 +1092,36 @@ async function loadTakeoutSlots(){
     }catch(e){}
 }
 
+async function getStoreSettings(columns='*'){
+    const sid=activeStoreId();
+    let res=await _s.from('store_settings').select(columns).eq('store_id',sid).maybeSingle();
+    if(res.error&&/store_id/i.test(res.error.message||'')){
+        res=await _s.from('store_settings').select(columns).eq('id',DEFAULT_STORE_ID).maybeSingle();
+    }
+    if(!res.data&&sid!==DEFAULT_STORE_ID){
+        const fallback=await _s.from('store_settings').select(columns).eq('id',DEFAULT_STORE_ID).maybeSingle();
+        if(fallback.data) return fallback;
+    }
+    return res;
+}
+
+async function selectStoreScoped(table, columns, setup){
+    const sid=activeStoreId();
+    let q=_s.from(table).select(columns);
+    if(typeof setup==='function') q=setup(q);
+    let scoped=q.or(`store_id.eq.${sid},store_id.is.null`);
+    const res=await scoped;
+    if(res.error&&/store_id/i.test(res.error.message||'')){
+        let fallback=_s.from(table).select(columns);
+        if(typeof setup==='function') fallback=setup(fallback);
+        return await fallback;
+    }
+    return res;
+}
+
 // 依選取日期決定顯示哪組時段
 function getSlotsForDate(dateStr){
+    if(EVENT_CODE&&dateStr&&eventSlots[dateStr]&&eventSlots[dateStr].length>0) return eventSlots[dateStr];
     // 1. 特殊日期優先
     if(takeoutSlotsSpecial[dateStr]&&takeoutSlotsSpecial[dateStr].length>0) return takeoutSlotsSpecial[dateStr];
     // 2. 依星期判斷
@@ -940,15 +1158,61 @@ function updateSlotsForDate(dateStr){
 }
 
 async function loadContent(){
-    const{data:cats}=await _s.from('categories').select('*').eq('is_visible',true).order('sort_order');
-    const{data:items}=await _s.from('menu_items')
-        .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))') 
-        .eq('is_hidden',false).order('sort_order',{ascending:true});
-    menuData=items||[];allCats=cats||[];
+    try{
+        const cacheKey=EVENT_CODE?MENU_CACHE_KEY+'_event_'+EVENT_CODE:MENU_CACHE_KEY;
+        const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
+        if(cached?.cats?.length&&cached?.items?.length){
+            allCats=cached.cats;menuData=normalizeMenuAvailability(cached.items);
+            reRenderMenu();curCatIndex=0;initSwipe();
+        }
+    }catch(e){}
+    let catQuery=_s.from('categories').select('*').order('sort_order');
+    if(EVENT_CODE){
+        catQuery=catQuery.eq('campaign_code',EVENT_CODE);
+    }else{
+        catQuery=catQuery.eq('is_visible',true);
+    }
+    const [{data:cats},{data:items}]=await Promise.all([
+        catQuery,
+        _s.from('menu_items')
+            .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))')
+            .eq('is_hidden',false).order('sort_order',{ascending:true})
+    ]);
+    menuData=normalizeMenuAvailability(items||[]);allCats=cats||[];
+    try{
+        const cacheKey=EVENT_CODE?MENU_CACHE_KEY+'_event_'+EVENT_CODE:MENU_CACHE_KEY;
+        localStorage.setItem(cacheKey,JSON.stringify({cats:allCats,items:menuData,ts:Date.now()}));
+    }catch(e){}
     reRenderMenu();curCatIndex=0;initSwipe();
 }
 
+function isMenuItemHidden(item){
+    return item?.is_hidden===true || item?.is_hidden==='true' || item?.is_hidden===1;
+}
+
+function normalizeMenuAvailability(items){
+    return (items||[])
+        .filter(item=>!isMenuItemHidden(item))
+        .map(item=>{
+            if(!item.set_menu_groups) return item;
+            const groups=(item.set_menu_groups||[]).map(group=>({
+                ...group,
+                set_menu_contents:(group.set_menu_contents||[]).filter(content=>content.menu_items&&!isMenuItemHidden(content.menu_items))
+            })).filter(group=>(group.set_menu_contents||[]).length>0);
+            return {...item,set_menu_groups:groups};
+        })
+        .filter(item=>!item.is_set_menu || !item.set_menu_groups || item.set_menu_groups.length>0);
+}
+
 function reRenderMenu(){
+    if(!allCats.length){
+        document.getElementById('cat-nav').innerHTML='';
+        document.getElementById('menu-swipe-track').innerHTML=
+            '<div class="menu-section"><div style="text-align:center;padding:56px 24px;color:var(--stone);font-size:14px;font-weight:700;background:white;border-radius:24px;border:1px solid var(--border)">'
+            +(EVENT_CODE?'目前尚無活動菜單，請確認活動代號已綁定分類。':'目前尚無可顯示菜單。')
+            +'</div></div>';
+        return;
+    }
     document.getElementById('cat-nav').innerHTML=allCats.map((c,i)=>
         `<button class="cat-btn${i===curCatIndex?' active':''}" onclick="goToSlide(${i})">${getLangCatName(c)}</button>`
     ).join('');
@@ -1388,7 +1652,12 @@ let upsellSettings=null, upsellSelectedIds=new Set();
 
 async function loadUpsellSettings(){
     try{
-        const{data,error}=await _s.from('upsell_settings').select('*').eq('id',1).single();
+        let {data,error}=await _s.from('upsell_settings').select('*').eq('store_id',activeStoreId()).maybeSingle();
+        if(error&&/store_id/i.test(error.message||'')) ({data,error}=await _s.from('upsell_settings').select('*').eq('id',1).single());
+        if(!data&&activeStoreId()!==DEFAULT_STORE_ID){
+            const fallback=await _s.from('upsell_settings').select('*').eq('id',1).maybeSingle();
+            data=fallback.data; error=fallback.error;
+        }
         if(error) console.warn('upsell load err:',error);
         upsellSettings=data||null;
     }catch(e){
@@ -1488,16 +1757,26 @@ async function doFinalSubmit(){
     const displayName=orderMode==='takeout'?guest.name+'（外帶）':guest.name;
     const orderPayload={
         customer_name:displayName,phone:guest.phone,
+        store_id:selectedStoreId||1,
         order_content:cart.map(i=>({name:i.nameCN||i.name,price:i.price})),
         total_price:cart.reduce((s,i)=>s+i.price,0),
         note:document.getElementById('order-note').value,
-        booking_date:finalBookingDate
+        booking_date:finalBookingDate,
+        campaign_code:EVENT_CODE||null
     };
     // 嘗試帶 is_takeout，若欄位不存在則 fallback
     let result=await _s.from('orders').insert([{...orderPayload,is_takeout:orderMode==='takeout'}]);
     if(result.error&&result.error.message&&result.error.message.includes('is_takeout')){
         // 欄位不存在，用不帶 is_takeout 的方式送出
         result=await _s.from('orders').insert([orderPayload]);
+    }
+    if(result.error&&/campaign_code/i.test(result.error.message||'')){
+        const fallbackPayload={...orderPayload};
+        delete fallbackPayload.campaign_code;
+        result=await _s.from('orders').insert([{...fallbackPayload,is_takeout:orderMode==='takeout'}]);
+        if(result.error&&result.error.message&&result.error.message.includes('is_takeout')){
+            result=await _s.from('orders').insert([fallbackPayload]);
+        }
     }
     const{error}=result;
     if(!error){
@@ -1507,6 +1786,9 @@ async function doFinalSubmit(){
         document.getElementById('cart-bar').classList.remove('visible');
         document.getElementById('step-3').classList.add('visible');
         applyLang();
+        updateConfirmStoreInfo();
+        const qLink=document.querySelector('a[data-i18n="s3query"]');
+        if(qLink) qLink.href='newquery.html?phone='+encodeURIComponent(guest.phone||'');
         window.scrollTo({top:0,behavior:'smooth'});
         // 在 LIFF 內：顯示完成頁後 3 秒自動關閉
         if(typeof liff!=='undefined'&&liff.isInClient()){
@@ -1520,7 +1802,9 @@ async function doFinalSubmit(){
 }
 
 function resetPhotoSearch(){
-    document.getElementById('photo-keyword').value='';
+    const keyword=document.getElementById('photo-keyword');
+    if(!keyword) return;
+    keyword.value='';
     document.getElementById('photo-result-card').style.display='none';
     document.getElementById('photo-no-result').style.display='none';
     document.getElementById('photo-searching').style.display='none';
@@ -1548,7 +1832,7 @@ async function doPhotoSearch(){
 let cachedAnnouncement=null;
 
 async function loadAnnouncement(){
-    const{data}=await _s.from('announcements').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1);
+    const{data}=await selectStoreScoped('announcements','*',q=>q.eq('is_active',true).order('created_at',{ascending:false}).limit(1));
     if(data&&data.length>0){
         cachedAnnouncement=data[0];
     } else if(curLang!=='zh'){
