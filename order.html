@@ -504,6 +504,12 @@ let bookingDate="", pickupDate="", pickupTime="";
 let takeoutSlots=[]; // 從後台取得的可選時段
 let allCats=[],curCatIndex=0;
 let curLang=localStorage.getItem('jinzhu_lang')||'zh';
+const URL_PARAMS=new URLSearchParams(location.search);
+const EVENT_CODE=(URL_PARAMS.get('code')||URL_PARAMS.get('campaign')||'').trim();
+const EVENT_CONTENT_MODE=Boolean(EVENT_CODE)||/(?:^|\/)event\.html$/i.test(location.pathname);
+let eventSettings=null;
+let eventDates=[];
+let eventSlots={};
 
 // ── i18n ──
 const I18N={
@@ -759,12 +765,52 @@ async function initLiff(){
 
 async function init(){
     // 先用內建/快取店家資料秒出選單，再背景刷新 Supabase
+    await loadEventSettings();
     loadStoreList();
     const isMob=window.innerWidth<=768;
     document.getElementById('kv-bg').src=isMob
         ?'https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg'
         :'https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_PC-KV.jpeg';
     applyLang();
+}
+
+function parseEventJson(value,fallback){
+    if(value==null||value==='') return fallback;
+    if(Array.isArray(value)) return value;
+    if(typeof value==='object') return value;
+    try{return JSON.parse(value);}catch(e){return fallback;}
+}
+
+function normalizeEventDates(value){
+    const raw=parseEventJson(value,[]);
+    const arr=Array.isArray(raw)?raw:String(raw||'').split(/[\n,，、\s]+/);
+    return [...new Set(arr.map(v=>String(v||'').trim()).filter(v=>/^\d{4}-\d{2}-\d{2}$/.test(v)))].sort();
+}
+
+async function loadEventSettings(){
+    if(!EVENT_CODE) return;
+    try{
+        let {data,error}=await _s.from('campaign_settings')
+            .select('code_name,event_dates,event_slots')
+            .eq('code_name',EVENT_CODE)
+            .maybeSingle();
+        if(error&&/(event_dates|event_slots)/i.test(error.message||'')){
+            const fallback=await _s.from('campaign_settings')
+                .select('code_name')
+                .eq('code_name',EVENT_CODE)
+                .maybeSingle();
+            data=fallback.data; error=fallback.error;
+        }
+        if(error) throw error;
+        eventSettings=data||{code_name:EVENT_CODE};
+        eventDates=normalizeEventDates(data?.event_dates);
+        eventSlots=parseEventJson(data?.event_slots,{})||{};
+        const subEl=document.querySelector('.entry-sub[data-i18n="s1Sub"]');
+        if(subEl) subEl.textContent='活動預點 · '+EVENT_CODE;
+    }catch(e){
+        console.warn('campaign load failed:',e);
+        eventSettings={code_name:EVENT_CODE};
+    }
 }
 
 // 儲存餐廳資料（供 selectStore 使用）
@@ -869,7 +915,7 @@ function selectStore(storeId){
     ms.style.opacity='1';
     // 更新副標題
     const subEl=document.querySelector('.entry-sub[data-i18n="s1Sub"]');
-    if(subEl) subEl.textContent='真珠款待 · '+s.name;
+    if(subEl) subEl.textContent=(EVENT_CODE?EVENT_CODE+' · ':'真珠款待 · ')+s.name;
     // 背景載入外帶時段
     loadTakeoutSlots();
     // 背景更新 logo
@@ -931,12 +977,7 @@ function showDateCard(){
     document.getElementById('mode-card').style.display='none';
     document.getElementById('date-card').style.display='block';
     const inner=document.getElementById('date-card-inner');
-    const days=[];const today=new Date();
-    const endDate=new Date(today);
-    endDate.setMonth(today.getMonth()+1);
-    for(let d=new Date(today);d<=endDate;d.setDate(d.getDate()+1)){
-        days.push(new Date(d));
-    }
+    const days=getSelectableDates();
     // 日期格式化（純字串，不用 template literal）
     function fmtVal(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function fmtLabel(d){var wd=['日','一','二','三','四','五','六'][d.getDay()];return (d.getMonth()+1)+'/'+(d.getDate())+'（週'+wd+'）';}
@@ -971,6 +1012,19 @@ function showDateCard(){
             +'<div id="time-slot-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'+btnHtml+'</div>'
             +'</div>';
     }
+}
+
+function getSelectableDates(){
+    if(EVENT_CODE&&eventDates.length){
+        return eventDates.map(dateStr=>new Date(dateStr+'T12:00:00+08:00'));
+    }
+    const days=[];const today=new Date();
+    const endDate=new Date(today);
+    endDate.setMonth(today.getMonth()+1);
+    for(let d=new Date(today);d<=endDate;d.setDate(d.getDate()+1)){
+        days.push(new Date(d));
+    }
+    return days;
 }
 function selectTimeSlot(btn, time){
     pickupTime=time;
@@ -1021,7 +1075,7 @@ function startOrder(){
     document.getElementById('step-1').style.display='none';
     document.getElementById('step-2').classList.add('visible');
     document.getElementById('cart-bar').classList.add('visible');
-    loadContent();loadAnnouncement();loadUpsellSettings();
+    loadContent();loadAnnouncement();upsellSettingsReady=loadUpsellSettings();
 }
 
 // 儲存全部時段設定（依日期動態決定）
@@ -1068,6 +1122,7 @@ async function selectStoreScoped(table, columns, setup){
 
 // 依選取日期決定顯示哪組時段
 function getSlotsForDate(dateStr){
+    if(EVENT_CODE&&dateStr&&eventSlots[dateStr]&&eventSlots[dateStr].length>0) return eventSlots[dateStr];
     // 1. 特殊日期優先
     if(takeoutSlotsSpecial[dateStr]&&takeoutSlotsSpecial[dateStr].length>0) return takeoutSlotsSpecial[dateStr];
     // 2. 依星期判斷
@@ -1105,20 +1160,30 @@ function updateSlotsForDate(dateStr){
 
 async function loadContent(){
     try{
-        const cached=JSON.parse(localStorage.getItem(MENU_CACHE_KEY)||'null');
+        const cacheKey=EVENT_CODE?MENU_CACHE_KEY+'_event_'+EVENT_CODE:MENU_CACHE_KEY;
+        const cached=JSON.parse(localStorage.getItem(cacheKey)||'null');
         if(cached?.cats?.length&&cached?.items?.length){
             allCats=cached.cats;menuData=normalizeMenuAvailability(cached.items);
             reRenderMenu();curCatIndex=0;initSwipe();
         }
     }catch(e){}
+    let catQuery=_s.from('categories').select('*').order('sort_order');
+    if(EVENT_CODE){
+        catQuery=catQuery.eq('campaign_code',EVENT_CODE);
+    }else{
+        catQuery=catQuery.eq('is_visible',true);
+    }
     const [{data:cats},{data:items}]=await Promise.all([
-        _s.from('categories').select('*').eq('is_visible',true).order('sort_order'),
+        catQuery,
         _s.from('menu_items')
             .select('*,item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))')
             .eq('is_hidden',false).order('sort_order',{ascending:true})
     ]);
     menuData=normalizeMenuAvailability(items||[]);allCats=cats||[];
-    try{localStorage.setItem(MENU_CACHE_KEY,JSON.stringify({cats:allCats,items:menuData,ts:Date.now()}));}catch(e){}
+    try{
+        const cacheKey=EVENT_CODE?MENU_CACHE_KEY+'_event_'+EVENT_CODE:MENU_CACHE_KEY;
+        localStorage.setItem(cacheKey,JSON.stringify({cats:allCats,items:menuData,ts:Date.now()}));
+    }catch(e){}
     reRenderMenu();curCatIndex=0;initSwipe();
 }
 
@@ -1141,6 +1206,14 @@ function normalizeMenuAvailability(items){
 }
 
 function reRenderMenu(){
+    if(!allCats.length){
+        document.getElementById('cat-nav').innerHTML='';
+        document.getElementById('menu-swipe-track').innerHTML=
+            '<div class="menu-section"><div style="text-align:center;padding:56px 24px;color:var(--stone);font-size:14px;font-weight:700;background:white;border-radius:24px;border:1px solid var(--border)">'
+            +(EVENT_CODE?'目前尚無活動菜單，請確認活動代號已綁定分類。':'目前尚無可顯示菜單。')
+            +'</div></div>';
+        return;
+    }
     document.getElementById('cat-nav').innerHTML=allCats.map((c,i)=>
         `<button class="cat-btn${i===curCatIndex?' active':''}" onclick="goToSlide(${i})">${getLangCatName(c)}</button>`
     ).join('');
@@ -1577,9 +1650,22 @@ function removeItem(idx){
 
 // ── UPSELL ──
 let upsellSettings=null, upsellSelectedIds=new Set();
+let upsellSettingsReady=Promise.resolve(), upsellSettingsVersion=0;
 
 async function loadUpsellSettings(){
+    const version=++upsellSettingsVersion;
+    const storeId=activeStoreId();
+    upsellSettings=null;
     try{
+        if(EVENT_CONTENT_MODE){
+            if(!EVENT_CODE)return;
+            const{data,error}=await _s.from('event_upsell_settings').select('*')
+                .eq('campaign_code',EVENT_CODE).eq('store_id',storeId).maybeSingle();
+            if(version!==upsellSettingsVersion||storeId!==activeStoreId())return;
+            if(error)console.warn('event upsell load err:',error);
+            upsellSettings=error?null:(data||null);
+            return;
+        }
         let {data,error}=await _s.from('upsell_settings').select('*').eq('store_id',activeStoreId()).maybeSingle();
         if(error&&/store_id/i.test(error.message||'')) ({data,error}=await _s.from('upsell_settings').select('*').eq('id',1).single());
         if(!data&&activeStoreId()!==DEFAULT_STORE_ID){
@@ -1587,10 +1673,11 @@ async function loadUpsellSettings(){
             data=fallback.data; error=fallback.error;
         }
         if(error) console.warn('upsell load err:',error);
+        if(version!==upsellSettingsVersion||storeId!==activeStoreId())return;
         upsellSettings=data||null;
     }catch(e){
         console.warn('upsell exception:',e);
-        upsellSettings=null;
+        if(version===upsellSettingsVersion)upsellSettings=null;
     }
 }
 
@@ -1655,7 +1742,7 @@ async function confirmUpsell(){
     // 把選到的加購品項加入 cart
     if(upsellSelectedIds.size>0){
         const ids=upsellSettings.item_ids;
-        const{data:items}=await _s.from('menu_items').select('*').in('id',[...upsellSelectedIds]);
+        const{data:items}=await _s.from('menu_items').select('*').in('id',[...upsellSelectedIds]).eq('is_hidden',false);
         (items||[]).forEach(i=>{
             const displayName=getLangName(i,'name');
             cart.push({name:displayName,nameCN:i.name,price:i.price});
@@ -1667,6 +1754,7 @@ async function confirmUpsell(){
 let isSubmitting=false;
 async function finalSubmit(){
     if(isSubmitting)return;
+    await upsellSettingsReady;
     openUpsellModal();
 }
 
@@ -1689,13 +1777,22 @@ async function doFinalSubmit(){
         order_content:cart.map(i=>({name:i.nameCN||i.name,price:i.price})),
         total_price:cart.reduce((s,i)=>s+i.price,0),
         note:document.getElementById('order-note').value,
-        booking_date:finalBookingDate
+        booking_date:finalBookingDate,
+        campaign_code:EVENT_CODE||null
     };
     // 嘗試帶 is_takeout，若欄位不存在則 fallback
     let result=await _s.from('orders').insert([{...orderPayload,is_takeout:orderMode==='takeout'}]);
     if(result.error&&result.error.message&&result.error.message.includes('is_takeout')){
         // 欄位不存在，用不帶 is_takeout 的方式送出
         result=await _s.from('orders').insert([orderPayload]);
+    }
+    if(result.error&&/campaign_code/i.test(result.error.message||'')){
+        const fallbackPayload={...orderPayload};
+        delete fallbackPayload.campaign_code;
+        result=await _s.from('orders').insert([{...fallbackPayload,is_takeout:orderMode==='takeout'}]);
+        if(result.error&&result.error.message&&result.error.message.includes('is_takeout')){
+            result=await _s.from('orders').insert([fallbackPayload]);
+        }
     }
     const{error}=result;
     if(!error){
@@ -1749,12 +1846,23 @@ async function doPhotoSearch(){
 }
 
 let cachedAnnouncement=null;
+let announcementVersion=0;
 
 async function loadAnnouncement(){
-    const{data}=await selectStoreScoped('announcements','*',q=>q.eq('is_active',true).order('created_at',{ascending:false}).limit(1));
+    const version=++announcementVersion;
+    const storeId=activeStoreId();
+    cachedAnnouncement=null;
+    closeAnnouncePopup();
+    if(EVENT_CONTENT_MODE&&!EVENT_CODE)return;
+    const{data,error}=EVENT_CONTENT_MODE
+        ?await _s.from('event_announcements').select('*').eq('campaign_code',EVENT_CODE)
+            .eq('store_id',storeId).eq('is_active',true).order('created_at',{ascending:false}).limit(1)
+        :await selectStoreScoped('announcements','*',q=>q.eq('is_active',true).order('created_at',{ascending:false}).limit(1));
+    if(version!==announcementVersion||storeId!==activeStoreId())return;
+    if(error){console.warn('announcement load err:',error);return;}
     if(data&&data.length>0){
         cachedAnnouncement=data[0];
-    } else if(curLang!=='zh'){
+    } else if(!EVENT_CONTENT_MODE&&curLang!=='zh'){
         // 無公告時，非中文語系顯示預設歡迎訊息
         cachedAnnouncement={
             title:t('defaultAnnTitle'),
