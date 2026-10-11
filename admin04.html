@@ -820,6 +820,10 @@
         <!-- 公告管理 -->
         <div id="ss-announce" class="ss-panel hidden space-y-4">
             <div class="flex items-center gap-3 flex-wrap">
+                <label for="announce-target" class="filter-label">公告適用頁面</label>
+                <select id="announce-target" class="filter-select max-w-xs" onchange="closeAnnounceModal();loadAnnouncements()"><option value="">一般點餐</option></select>
+            </div>
+            <div class="flex items-center gap-3 flex-wrap">
                 <div class="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-xs text-amber-800 font-semibold min-w-0">
                     💡 啟用中的公告會在顧客進入點餐頁面時自動彈出顯示
                 </div>
@@ -830,6 +834,10 @@
 
         <!-- 加購設定 -->
         <div id="ss-upsell" class="ss-panel hidden space-y-6">
+            <div class="flex items-center gap-3 flex-wrap">
+                <label for="upsell-target" class="filter-label">加購適用頁面</label>
+                <select id="upsell-target" class="filter-select max-w-xs" onchange="loadUpsell()"><option value="">一般點餐</option></select>
+            </div>
             <div class="bg-white rounded-2xl border shadow-sm p-6 space-y-5">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -4307,6 +4315,39 @@ async function testSummaryNotify(){
 // ── UPSELL ──
 let upsellData={enabled:true,title:'加購推薦',title_en:'Add-on Recommendations',title_ja:'オプション追加',title_ko:'추가 주문',item_ids:[]};
 let upsellAllItems=[];
+let upsellLoadVersion=0, upsellLoadedScopeKey=null;
+let announcementLoadVersion=0, announceEditTarget=null;
+
+async function loadContentTargets(kind){
+    const el=document.getElementById(kind+'-target');
+    const{data,error}=await _s.from('campaign_settings').select('code_name').order('code_name');
+    if(error){toast('活動代號讀取失敗：'+error.message,'error');return;}
+    const codes=[...new Set((data||[]).map(c=>c.code_name).filter(Boolean))];
+    const selected=el.value;
+    el.replaceChildren(new Option('一般點餐',''),...codes.map(code=>new Option('活動：'+code,code)));
+    el.value=codes.includes(selected)?selected:'';
+}
+function contentTarget(kind){
+    return {code:document.getElementById(kind+'-target').value,storeId:currentStoreId};
+}
+function contentScopeKey(target){return JSON.stringify([target.storeId,target.code]);}
+function announcementScope(q,target=contentTarget('announce')){
+    return target.code?q.eq('campaign_code',target.code).eq('store_id',target.storeId):applyStoreScope(q);
+}
+function announcementTable(target=contentTarget('announce')){
+    return target.code?'event_announcements':'announcements';
+}
+function upsellReady(){
+    if(upsellLoadedScopeKey===contentScopeKey(contentTarget('upsell')))return true;
+    toast('請等待加購設定載入完成','warn');return false;
+}
+async function writeUpsell(payload,target=contentTarget('upsell')){
+    if(!target.code)return _s.from('upsell_settings').update(payload).eq('id',1);
+    const fields={};
+    ['enabled','title','title_en','title_ja','title_ko','item_ids'].forEach(k=>fields[k]=upsellData[k]);
+    return _s.from('event_upsell_settings').upsert({...fields,...payload,
+        campaign_code:target.code,store_id:target.storeId},{onConflict:'campaign_code,store_id'});
+}
 
 // 特殊日期暫存（{ "2025-06-01": ["11:00","12:00"], ... }）
 let specialSlotsMap={};
@@ -4381,9 +4422,17 @@ async function saveSpecialSlots(){
 }
 
 async function loadUpsell(){
+    const version=++upsellLoadVersion;
+    upsellLoadedScopeKey=null;
+    await loadContentTargets('upsell');
+    if(version!==upsellLoadVersion)return;
+    const target=contentTarget('upsell');
     // 載入設定
-    const{data:s}=await _s.from('upsell_settings').select('*').eq('id',1).single();
-    if(s) upsellData={...upsellData,...s};
+    const query=target.code?_s.from('event_upsell_settings').select('*').eq('campaign_code',target.code).eq('store_id',target.storeId):_s.from('upsell_settings').select('*').eq('id',1);
+    const{data:s,error}=await query.maybeSingle();
+    if(version!==upsellLoadVersion)return;
+    if(error){toast('加購設定讀取失敗，請確認 SQL 已更新：'+error.message,'error');return;}
+    upsellData={enabled:!target.code,title:'加購推薦',title_en:'Add-on Recommendations',title_ja:'オプション追加',title_ko:'추가 주문',item_ids:[],...(s||{})};
 
     // 更新 UI
     const enabled=upsellData.enabled;
@@ -4399,6 +4448,7 @@ async function loadUpsell(){
     // 載入菜單
     const{data:cats}=await _s.from('categories').select('*').order('sort_order');
     const{data:items}=await _s.from('menu_items').select('*,categories(name)').eq('is_hidden',false).order('sort_order');
+    if(version!==upsellLoadVersion)return;
     upsellAllItems=items||[];
 
     document.getElementById('upsell-cat-filter').innerHTML=
@@ -4407,6 +4457,7 @@ async function loadUpsell(){
 
     renderUpsellPicker();
     updateUpsellCount();
+    upsellLoadedScopeKey=contentScopeKey(target);
 }
 
 function renderUpsellPicker(){
@@ -4445,6 +4496,7 @@ function renderUpsellPicker(){
 }
 
 function toggleUpsellItem(id){
+    if(!upsellReady())return;
     const ids=(upsellData.item_ids||[]).map(String);
     const idx=ids.indexOf(String(id));
     if(idx>-1) ids.splice(idx,1);
@@ -4461,9 +4513,8 @@ function updateUpsellCount(){
 }
 
 async function saveUpsellItems(){
-    const{error}=await _s.from('upsell_settings')
-        .update({item_ids:upsellData.item_ids, updated_at:new Date().toISOString()})
-        .eq('id',1);
+    if(!upsellReady())return;
+    const{error}=await writeUpsell({item_ids:upsellData.item_ids, updated_at:new Date().toISOString()});
     if(error){
         console.error('upsell save error:',error);
         toast('儲存失敗：'+error.message,'error');
@@ -4473,6 +4524,7 @@ async function saveUpsellItems(){
 }
 
 async function saveUpsellSettings(){
+    if(!upsellReady())return;
     const payload={
         enabled:upsellData.enabled,
         title:document.getElementById('upsell-title-zh').value.trim()||'加購推薦',
@@ -4482,19 +4534,21 @@ async function saveUpsellSettings(){
         item_ids:upsellData.item_ids,
         updated_at:new Date().toISOString()
     };
-    const{error}=await _s.from('upsell_settings').update(payload).eq('id',1);
+    const target=contentTarget('upsell');
+    const{error}=await writeUpsell(payload,target);
     if(error){ toast('儲存失敗：'+error.message,'error'); return; }
-    upsellData={...upsellData,...payload};
+    if(contentScopeKey(target)===contentScopeKey(contentTarget('upsell')))upsellData={...upsellData,...payload};
     toast('加購設定已儲存');
 }
 
 async function toggleUpsellEnabled(){
+    if(!upsellReady())return;
     upsellData.enabled=!upsellData.enabled;
     const enabled=upsellData.enabled;
     document.getElementById('upsell-toggle-dot').style.transform=enabled?'translateX(18px)':'translateX(0)';
     document.getElementById('upsell-toggle-bg').style.background=enabled?'var(--pine)':'#94a3b8';
     document.getElementById('upsell-enabled-label').textContent=enabled?'啟用中':'已停用';
-    const{error}=await _s.from('upsell_settings').update({enabled, updated_at:new Date().toISOString()}).eq('id',1);
+    const{error}=await writeUpsell({enabled, updated_at:new Date().toISOString()});
     if(error) toast('更新失敗：'+error.message,'error');
     else toast(enabled?'加購功能已啟用':'加購功能已停用');
 }
@@ -4509,8 +4563,14 @@ function upsellTitleTab(lang){
 
 // ── ANNOUNCEMENTS ──
 async function loadAnnouncements(){
-    const{data,error}=await applyStoreScope(_s.from('announcements').select('*')).order('created_at',{ascending:false});
+    const version=++announcementLoadVersion;
     const container=document.getElementById('announce-list');
+    container.textContent='載入中…';
+    await loadContentTargets('announce');
+    if(version!==announcementLoadVersion)return;
+    const target=contentTarget('announce');
+    const{data,error}=await announcementScope(_s.from(announcementTable(target)).select('*'),target).order('created_at',{ascending:false});
+    if(version!==announcementLoadVersion)return;
     if(error){container.innerHTML=`<p class="text-red-400 text-sm font-bold">${error.message}</p>`;return;}
     if(!data?.length){container.innerHTML='<div class="empty-state"><div class="empty-state-icon">📢</div><div class="empty-state-title">尚無公告</div><div class="empty-state-sub">點右上角「新增公告」讓顧客在點餐時看到訊息</div></div>';return;}
     container.innerHTML=data.map(a=>`<div class="bg-white rounded-2xl border shadow-sm p-5 ${a.is_active?'border-emerald-200':''}">
@@ -4547,6 +4607,7 @@ function switchAnnTab(lang){
 
 function openAnnounceModal(isEdit){
     if(!isEdit){
+        announceEditTarget=contentTarget('announce');
         ['ann-id','ann-title','ann-content','ann-title-en','ann-content-en','ann-title-ja','ann-content-ja','ann-title-ko','ann-content-ko','ann-image-url']
             .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
         document.getElementById('ann-active').checked=true;
@@ -4577,8 +4638,12 @@ function clearAnnImg(){
 }
 
 async function editAnnouncement(id){
-    const{data}=await applyStoreScope(_s.from('announcements').select('*')).eq('id',id).single();
+    const target=contentTarget('announce');
+    const{data,error}=await announcementScope(_s.from(announcementTable(target)).select('*'),target).eq('id',id).single();
+    if(error){toast('公告讀取失敗：'+error.message,'error');return;}
+    if(contentScopeKey(target)!==contentScopeKey(contentTarget('announce')))return;
     if(!data)return;
+    announceEditTarget=target;
     document.getElementById('ann-id').value=data.id;
     document.getElementById('ann-title').value=data.title;
     document.getElementById('ann-content').value=data.content||'';
@@ -4604,6 +4669,8 @@ async function editAnnouncement(id){
 }
 
 async function saveAnnouncement(){
+    const target=announceEditTarget||contentTarget('announce');
+    if(contentScopeKey(target)!==contentScopeKey(contentTarget('announce'))){toast('頁面已切換，請重新開啟公告','warn');return;}
     const id=document.getElementById('ann-id').value;
     const title=document.getElementById('ann-title').value.trim();
     if(!title){toast('請輸入中文公告標題','warn');switchAnnTab('zh');return;}
@@ -4620,6 +4687,7 @@ async function saveAnnouncement(){
             imageUrl=urlData.publicUrl;
         } else {
             toast('圖片上傳失敗','error');
+            return;
         }
     }
 
@@ -4635,12 +4703,25 @@ async function saveAnnouncement(){
         image_url:imageUrl,
         is_active:document.getElementById('ann-active').checked
     };
-    if(id) await applyStoreScope(_s.from('announcements').update(payload)).eq('id',id);
-    else await _s.from('announcements').insert([storePayload(payload)]);
+    const table=announcementTable(target);
+    const result=id?await announcementScope(_s.from(table).update(payload),target).eq('id',id)
+        :await _s.from(table).insert([target.code?{...payload,campaign_code:target.code,store_id:target.storeId}:storePayload(payload)]);
+    if(result.error){toast('公告儲存失敗：'+result.error.message,'error');return;}
     closeAnnounceModal();loadAnnouncements();toast('公告已儲存');
 }
-async function toggleAnnouncement(id,current){await applyStoreScope(_s.from('announcements').update({is_active:!current})).eq('id',id);loadAnnouncements();}
-async function deleteAnnouncement(id){const ok=await confirm2({icon:'📢',title:'刪除公告',msg:'確定刪除此公告？',okText:'刪除',danger:true});if(ok){await applyStoreScope(_s.from('announcements').delete()).eq('id',id);loadAnnouncements();toast('已刪除');}}
+async function toggleAnnouncement(id,current){
+    const target=contentTarget('announce');
+    const{error}=await announcementScope(_s.from(announcementTable(target)).update({is_active:!current}),target).eq('id',id);
+    if(error){toast('更新失敗：'+error.message,'error');return;}loadAnnouncements();
+}
+async function deleteAnnouncement(id){
+    const target=contentTarget('announce');
+    const ok=await confirm2({icon:'📢',title:'刪除公告',msg:'確定刪除此公告？',okText:'刪除',danger:true});
+    if(ok){
+        const{error}=await announcementScope(_s.from(announcementTable(target)).delete(),target).eq('id',id);
+        if(error){toast('刪除失敗：'+error.message,'error');return;}loadAnnouncements();toast('已刪除');
+    }
+}
 
 // ── LOGIN ──
 async function checkLogin(){const{data:{session}}=await _s.auth.getSession();document.getElementById('login-screen').classList.toggle('hidden',!!session);}
@@ -5266,4 +5347,3 @@ async function updateOrdersKpi(){
 
 </body>
 </html>
-
