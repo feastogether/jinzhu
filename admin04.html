@@ -365,6 +365,8 @@
         #flavor-modal.visible { display: flex; }
         #flavor-modal-box { background: white; border-radius: 20px; padding: 28px; width: 100%; max-width: 420px; box-shadow: 0 24px 64px rgba(0,0,0,0.2); animation: scaleIn 0.25s ease both; }
     </style>
+<link rel="stylesheet" href="internal-notices.css">
+<script src="internal-notices.js"></script>
 </head>
 <body class="min-h-screen flex text-slate-700">
 
@@ -506,6 +508,7 @@
 
     <nav class="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
         <button id="btn-home"       onclick="switchTab('home')"       class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🌾</span><span class="nav-label">文化首頁</span></button>
+        <button id="btn-notices" onclick="switchTab('notices')" class="nav-btn nav-btn-tab in-nav w-full text-left" title="公告提醒"><span class="nav-emoji">🔔</span><span class="nav-label">公告提醒</span><span class="in-badge" data-internal-unread hidden></span></button>
         <button id="btn-orders"     onclick="switchTab('orders')"     class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">📋</span><span class="nav-label">訂單監控</span></button>
         <button id="btn-campaigns"  onclick="switchTab('campaigns')"  class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🎗️</span><span class="nav-label">活動代號</span></button>
         <button id="btn-categories" onclick="switchTab('categories')" class="nav-btn nav-btn-tab w-full text-left"><span class="nav-emoji">🗂️</span><span class="nav-label">分類管理</span></button>
@@ -551,9 +554,11 @@
         </p>
         <img src="https://www.feastogether.com/images/photo/home/photo_MVP.jpg" alt="企業文化 Mission Vision Passion"
             style="width:100%;display:block">
+        <div data-internal-preview></div>
     </div>
 </section>
 
+<section id="sec-notices" class="hidden"><div data-internal-feed></div></section>
 <!-- 訂單監控 -->
 <section id="sec-orders" class="hidden space-y-4">
     <!-- 即時 KPI 橫條 -->
@@ -1684,6 +1689,7 @@ async function loadCurrentUserContext(){
     currentRole=su?.role||'staff';
     window._currentStoreId=currentStoreId;
     window._currentRole=currentRole;
+    InternalNotices.init({client:_s,userId:session.user.id,canManage:false,openFeed:()=>switchTab('notices')});
     const label=document.getElementById('admin-current-store-label');
     if(label) label.textContent='目前門市：'+(su?.stores?.name||'真珠');
     await loadAdminStoreSwitcher();
@@ -1811,6 +1817,8 @@ function toggleSidebar() {
 
 // ── TAB ──
 async function switchTab(t, options={}) {
+    if(t==='notices'&&window.innerWidth<=760)document.getElementById('sidebar').classList.add('collapsed');
+    if(t==='notices')InternalNotices.refresh();
     document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('.nav-btn-tab').forEach(b => b.classList.remove('sidebar-active'));
     document.getElementById(`sec-${t}`).classList.remove('hidden');
