@@ -8,6 +8,8 @@
 <link rel="shortcut icon" href="https://www.jinzhu.com.tw/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="internal-notices.css">
+<script src="internal-notices.js"></script>
 <style>
 :root{--pine:#004d40;--pine2:#00695c;--gold:#b89150;--ink:#1a1a2e;--stone:#64748b;--border:#e2e8f0;--paper:#f0f4f8;--red:#dc2626;--blue:#2563eb;--green:#16a34a;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -161,6 +163,8 @@ tbody tr:hover td{background:#fafcff;}
     </div>
     <nav>
       <div class="ni on" onclick="go('home')" id="ni-home"><span class="ni-icon">🌾</span>文化首頁</div>
+      <div class="ni in-nav" onclick="go('notices')" id="ni-notices" title="公告提醒"><span class="ni-icon">🔔</span>公告提醒<span class="in-badge" data-internal-unread hidden></span></div>
+      <div class="ni" onclick="go('internal-manage')" id="ni-internal-manage"><span class="ni-icon">📣</span>內部公告管理</div>
       <div class="ni" onclick="go('overview')" id="ni-overview"><span class="ni-icon">📊</span>門市總覽</div>
       <div class="ni" onclick="go('stores')" id="ni-stores"><span class="ni-icon">🏪</span>店家管理</div>
       <div class="ni" onclick="go('users')" id="ni-users"><span class="ni-icon">👤</span>帳號管理</div>
@@ -189,9 +193,12 @@ tbody tr:hover td{background:#fafcff;}
         </div>
         <div class="culture-copy">真珠承接饗賓餐旅對料理、服務與氛圍的堅持，讓每一次接待都回到款待本質，穩定傳遞有溫度的用餐體驗。</div>
         <img class="culture-image" src="https://www.feastogether.com/images/photo/home/photo_MVP.jpg" alt="企業文化 Mission Vision Passion">
+        <div data-internal-preview></div>
       </div>
     </div>
 
+    <div class="page" id="page-notices"><div data-internal-feed></div></div>
+    <div class="page" id="page-internal-manage"><div data-internal-manage></div></div>
     <!-- ① 總覽 -->
     <div class="page" id="page-overview">
       <div class="ph"><div class="pt">門市總覽</div><div class="ps">所有店家即時數據</div></div>
@@ -420,6 +427,7 @@ async function boot(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('cur-email').textContent=session.user.email;
+  InternalNotices.init({client:_s,userId:session.user.id,canManage:true,openFeed:()=>go('notices')});
   await loadStores();
   loadOverview();
   document.getElementById('of-date').value=new Date().toISOString().split('T')[0];
@@ -427,6 +435,8 @@ async function boot(){
 
 // ── PAGES ──
 function go(p){
+  if(window.innerWidth<=760&&['notices','internal-manage'].includes(p))document.querySelector('.sb').classList.add('collapsed');
+  if(p==='notices'||p==='internal-manage')InternalNotices.refresh();
   document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('page-'+p).classList.add('on');
