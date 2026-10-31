@@ -265,6 +265,37 @@
 
         /* TOAST */
         .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:white;padding:12px 24px;border-radius:999px;font-size:12px;font-weight:700;z-index:9000;white-space:nowrap;animation:fadeUp 0.3s ease both;pointer-events:none;}
+        .spring-only{display:none;}
+        .spring-theme #kv-area{height:calc(100svh - 150px);min-height:460px;max-height:760px;background:#6f1e25;}
+        .spring-theme .kv-overlay{background:rgba(48,12,19,.48);}
+        .spring-theme .kv-content{width:calc(100% - 220px);max-width:560px;}
+        .spring-theme .kv-title{font-size:4rem;letter-spacing:0;color:#fff8df;}
+        .spring-theme .kv-tag,.spring-theme .kv-subtitle,.spring-theme .kv-scroll-hint{display:none;}
+        .spring-theme .spring-only{display:block;}
+        .spring-theme .spring-banner{color:#f9e4a0;font-family:'Noto Serif TC',serif;font-size:1rem;font-weight:700;margin:0 auto 26px;letter-spacing:0;}
+        .spring-theme .spring-event-name{font-family:'Noto Serif TC',serif;color:#fff8df;font-size:1.35rem;line-height:1.7;overflow-wrap:anywhere;}
+        .spring-theme .spring-greeting{color:#f9e4a0;font-size:.85rem;margin-top:14px;line-height:1.8;}
+        .spring-theme .spring-couplet{position:absolute;z-index:10;top:50%;transform:translateY(-50%);padding:24px 15px;background:#a52832;border:1px solid #d0a45e;outline:4px solid #851e29;box-shadow:0 8px 30px rgba(0,0,0,.2);color:#ffe6a0;font-family:'Noto Serif TC',serif;font-size:1.5rem;font-weight:700;writing-mode:vertical-rl;text-orientation:upright;line-height:1.6;letter-spacing:0;pointer-events:none;}
+        .spring-couplet b{font-size:1.25em;}
+        .spring-couplet-right{right:max(26px,calc(50% - 430px));}
+        .spring-couplet-left{left:max(26px,calc(50% - 430px));}
+        .spring-theme .cat-btn.active{color:#9b2630;border-bottom-color:#b89150;}
+        @media(max-width:600px){
+            .spring-theme #kv-area{min-height:440px;max-height:680px;}
+            .spring-theme .kv-content{width:calc(100% - 150px);}
+            .spring-theme .kv-title{font-size:2.8rem;}
+            .spring-theme .spring-banner{font-size:.8rem;margin-bottom:24px;}
+            .spring-theme .spring-event-name{font-size:1.1rem;}
+            .spring-theme .spring-greeting{font-size:.7rem;}
+            .spring-theme .spring-couplet{font-size:1.2rem;padding:22px 8px;}
+            .spring-couplet-left{left:18px;}.spring-couplet-right{right:18px;}
+        }
+        @media(max-height:500px){
+            .spring-theme #kv-area{height:calc(100svh - 90px);min-height:280px;}
+            .spring-theme .spring-couplet{font-size:1rem;padding:12px 8px;}
+            .spring-theme .spring-banner{margin-bottom:10px;}
+            .spring-theme .kv-gold-line{margin:12px auto;}
+        }
     </style>
 </head>
 <body>
@@ -299,10 +330,15 @@
 <div id="kv-area">
     <img id="kv-bg" class="kv-bg" src="https://www.jinzhu.com.tw/storage/website/kv/jinzhu20230904143032_Mobile-KV.jpeg" alt="">
     <div class="kv-overlay"></div>
+    <div class="spring-only spring-couplet spring-couplet-right" aria-hidden="true"><b>真</b>味迎春添百福</div>
+    <div class="spring-only spring-couplet spring-couplet-left" aria-hidden="true"><b>珠</b>光納喜慶團圓</div>
     <div class="kv-content">
+        <div class="spring-only spring-banner">真珠迎春 · 家味團圓</div>
         <div class="kv-tag">Jin Zhu · Banquet Pre-Order</div>
         <h1 class="kv-title">真珠</h1>
         <div class="kv-gold-line"></div>
+        <p class="spring-only spring-event-name" id="spring-event-name"></p>
+        <p class="spring-only spring-greeting">團圓有味，歲歲真珠</p>
         <p class="kv-subtitle" data-i18n="subtitle">傳承心意 · 玩味新意</p>
     </div>
     <div class="kv-scroll-hint">
@@ -794,7 +830,7 @@ async function loadEventSettings(){
     if(!EVENT_CODE) return;
     try{
         let {data,error}=await _s.from('campaign_settings')
-            .select('code_name,event_dates,event_slots')
+            .select('*')
             .eq('code_name',EVENT_CODE)
             .maybeSingle();
         if(error&&/(event_dates|event_slots)/i.test(error.message||'')){
@@ -806,6 +842,7 @@ async function loadEventSettings(){
         }
         if(error) throw error;
         eventSettings=data||{code_name:EVENT_CODE};
+        applyEventTheme();
         eventDates=normalizeEventDates(data?.event_dates);
         eventSlots=parseEventJson(data?.event_slots,{})||{};
         const subEl=document.querySelector('.entry-sub[data-i18n="s1Sub"]');
@@ -813,7 +850,14 @@ async function loadEventSettings(){
     }catch(e){
         console.warn('campaign load failed:',e);
         eventSettings={code_name:EVENT_CODE};
+        applyEventTheme();
     }
+}
+
+function applyEventTheme(){
+    const enabled=Boolean(EVENT_CODE)&&eventSettings?.event_theme==='spring';
+    document.body.classList.toggle('spring-theme',enabled);
+    document.getElementById('spring-event-name').textContent=enabled?EVENT_CODE:'';
 }
 
 // 儲存餐廳資料（供 selectStore 使用）
