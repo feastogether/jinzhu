@@ -1122,6 +1122,13 @@
                     </div>
                 </div>
                 <button onclick="bindEvent()" class="btn btn-primary w-full justify-center py-4 text-base">確認綁定並產生活動連結</button>
+                <div class="border-t pt-5 flex items-center justify-between gap-4 flex-wrap">
+                    <label class="flex items-center gap-3 text-sm font-bold" style="color:var(--pine)">
+                        <input type="checkbox" id="event-spring-theme" class="accent-green-700 w-4 h-4">
+                        春節樣式
+                    </label>
+                    <button type="button" onclick="saveEventAppearance()" class="btn btn-ghost">儲存活動樣式</button>
+                </div>
             </div>
             <div class="max-w-3xl">
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">目前運作中的活動</h3>
@@ -1638,6 +1645,7 @@ const SUPABASE_KEY = 'sb_publishable_ISKUWOXUR9A-1y81xCOUXg_8-zNle3v';
 const _s = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allMenuItems=[], allCategories=[], allCampaigns=[], curEditOrder=null, editCart=[];
+let editMenuLoadVersion=0, editOrderCategories=[];
 let currentStoreId=1, currentRole='staff', adminStoreOverride=false;
 
 function isSuperAdmin(){ return currentRole==='Andy'&&!adminStoreOverride; }
@@ -2347,16 +2355,46 @@ function exportXls(){
 // ── EDIT ORDER ──
 let curEditItem=null,curEditPopSels={flavors:{},groups:{}},reEditIndex=-1;
 async function openEditOrder(id){
-    curEditOrder=window.ordersRef.find(o=>o.id===id);
-    editCart=JSON.parse(JSON.stringify(curEditOrder.order_content));
+    const version=++editMenuLoadVersion;
+    curEditOrder=(window.ordersRef||[]).find(o=>String(o.id)===String(id));
+    if(!curEditOrder){toast('找不到訂單，請重新整理','warn');return;}
+    editCart=JSON.parse(JSON.stringify(curEditOrder.order_content||[]));
     document.getElementById('order-edit-modal').classList.remove('hidden');
-    const{data:items}=await _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true});
-    allMenuItems=items||[];
-    const{data:cats}=await _s.from('categories').select('*').order('sort_order');
-    allCategories=cats||[];
-    document.getElementById('edit-cat-nav').innerHTML=(cats||[]).map(c=>`<button onclick="renderEditMenu('${c.id}')" class="px-5 py-2 bg-white border border-slate-200 rounded-full text-xs font-bold mr-2 hover:border-green-700 transition">${c.name}</button>`).join('');
-    if(cats.length)renderEditMenu(cats[0].id);
+    document.getElementById('edit-cat-nav').textContent='載入菜單中…';
+    document.getElementById('edit-menu-grid').textContent='';
     refreshEditCart();
+    const[{data:items,error:itemsError},{data:cats,error:catsError}]=await Promise.all([
+        _s.from('menu_items').select('*,categories(name),item_flavor_relation(flavor_groups(*,flavor_options(*))),set_menu_groups(*,set_menu_contents(*,price_adjustment,menu_items(*,item_flavor_relation(flavor_groups(*,flavor_options(*))))))').eq('is_hidden',false).order('sort_order',{ascending:true}),
+        _s.from('categories').select('*').order('sort_order')
+    ]);
+    if(version!==editMenuLoadVersion)return;
+    if(itemsError||catsError){
+        document.getElementById('edit-cat-nav').textContent='菜單載入失敗';
+        toast('菜單載入失敗：'+(itemsError||catsError).message,'error');return;
+    }
+    allMenuItems=items||[];
+    editOrderCategories=cats||[];
+    renderEditCategoryNav();
+}
+function renderEditCategoryNav(showAll=false){
+    const code=curEditOrder?.campaign_code;
+    const cats=code&&!showAll?editOrderCategories.filter(c=>c.campaign_code===code):editOrderCategories;
+    const nav=document.getElementById('edit-cat-nav');
+    nav.replaceChildren();
+    cats.forEach(c=>{
+        const button=document.createElement('button');
+        button.type='button';button.textContent=c.name;button.dataset.categoryId=String(c.id);
+        button.className='edit-cat-btn px-5 py-2 bg-white border border-slate-200 rounded-full text-xs font-bold mr-2 hover:border-green-700 transition';
+        button.onclick=()=>renderEditMenu(c.id);nav.appendChild(button);
+    });
+    if(code){
+        const toggle=document.createElement('button');
+        toggle.type='button';toggle.textContent=showAll?'返回活動菜單':'全部分類';
+        toggle.className='btn btn-ghost btn-sm';toggle.onclick=()=>renderEditCategoryNav(!showAll);
+        nav.appendChild(toggle);
+    }
+    if(cats.length)renderEditMenu(cats[0].id);
+    else document.getElementById('edit-menu-grid').textContent='此活動尚未綁定菜單分類，可切換全部分類。';
 }
 function refreshEditCart(){
     document.getElementById('edit-cart-list').innerHTML=editCart.map((item,idx)=>{
@@ -2701,7 +2739,13 @@ async function saveOrderChange(){
     else toast('更新失敗','error');
 }
 function renderEditMenu(cid){
-    const filtered=allMenuItems.filter(i=>i.category_id===cid).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const filtered=allMenuItems.filter(i=>String(i.category_id)===String(cid)).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    document.querySelectorAll('#edit-cat-nav .edit-cat-btn').forEach(button=>{
+        const active=button.dataset.categoryId===String(cid);
+        button.setAttribute('aria-pressed',String(active));
+        button.style.borderColor=active?'var(--pine)':'';
+        button.style.color=active?'var(--pine)':'';
+    });
     document.getElementById('edit-menu-grid').innerHTML=filtered.map(i=>`
         <div onclick="openEditPop('${i.id}')" class="bg-white rounded-xl border border-slate-100 cursor-pointer shadow-sm hover:border-amber-300 transition overflow-hidden flex flex-col">
             <div class="h-20 bg-slate-50 flex items-center justify-center overflow-hidden p-2">
@@ -2714,7 +2758,7 @@ function renderEditMenu(cid){
             </div>
         </div>`).join('');
 }
-function closeEditModal(){document.getElementById('order-edit-modal').classList.add('hidden');}
+function closeEditModal(){++editMenuLoadVersion;document.getElementById('order-edit-modal').classList.add('hidden');}
 function closeEditPop(){document.getElementById('edit-flavor-popup').classList.add('hidden');}
 
 // ── CAMPAIGNS ──
@@ -3367,16 +3411,28 @@ async function loadEventDateConfig(){
     const slotEl=document.getElementById('event-slots-input');
     if(!code||!dateEl||!slotEl)return;
     dateEl.value='';slotEl.value='';
-    let {data,error}=await _s.from('campaign_settings').select('event_dates,event_slots').eq('code_name',code).maybeSingle();
+    document.getElementById('event-spring-theme').checked=false;
+    let {data,error}=await _s.from('campaign_settings').select('*').eq('code_name',code).maybeSingle();
+    if(document.getElementById('sel-campaign').value!==code)return;
     if(error&&/(event_dates|event_slots)/i.test(error.message||'')){
         toast('尚未建立活動日期欄位，請先執行 SQL 更新','warn',4200);
         return;
     }
     if(error)return;
+    document.getElementById('event-spring-theme').checked=data?.event_theme==='spring';
     const dates=parseMaybeJson(data?.event_dates,[]);
     const slots=parseMaybeJson(data?.event_slots,{});
     dateEl.value=(Array.isArray(dates)?dates:[]).join('\n');
     slotEl.value=Object.entries(slots||{}).map(([date,list])=>`${date}|${(list||[]).join(',')}`).join('\n');
+}
+async function saveEventAppearance(){
+    const code=document.getElementById('sel-campaign').value;
+    if(!code){toast('請先選擇活動代號','warn');return;}
+    const event_theme=document.getElementById('event-spring-theme').checked?'spring':'standard';
+    const{data,error}=await _s.from('campaign_settings').update({event_theme}).eq('code_name',code).select('code_name');
+    if(error){toast('樣式儲存失敗，請確認已執行樣式 SQL：'+error.message,'error');return;}
+    if(!data?.length){toast('未更新任何活動，請確認管理權限','warn');return;}
+    toast(event_theme==='spring'?'已啟用春節樣式':'已恢復一般樣式');
 }
 async function loadActiveEvents(){
     const{data}=await _s.from('categories').select('*').not('campaign_code','is',null);
@@ -3400,11 +3456,9 @@ async function bindEvent(){
     if(mode==='replace')await _s.from('categories').update({campaign_code:null}).eq('campaign_code',camp);
     await _s.from('categories').update({campaign_code:camp}).in('id',checked);
     const {error:cfgErr}=await _s.from('campaign_settings')
-        .update({event_dates,event_slots})
+        .update({event_dates,event_slots,event_theme:document.getElementById('event-spring-theme').checked?'spring':'standard'})
         .eq('code_name',camp);
-    if(cfgErr&&/(event_dates|event_slots)/i.test(cfgErr.message||'')){
-        toast('分類已綁定，但活動日期欄位尚未建立，請先執行 SQL 更新','warn',5200);
-    }
+    if(cfgErr){toast('分類已綁定，但活動設定儲存失敗，請確認 SQL 已更新：'+cfgErr.message,'error',5200);return;}
     toast(mode==='replace'?'重新設定成功':'新增綁定成功');
     loadActiveEvents();
     document.querySelectorAll('.ecat-checkbox').forEach(el=>{el.checked=false;const lbl=document.querySelector(`label[for="${el.id}"]`);if(lbl){lbl.style.borderColor='';lbl.style.backgroundColor='';}});
