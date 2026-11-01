@@ -643,10 +643,44 @@ html{height:100%;-webkit-text-size-adjust:100%;}body.mobile-admin{display:block;
 @media(max-width:600px){.mobile-admin .grid-cols-3,.mobile-admin .grid-cols-4,.mobile-admin .grid-cols-5,.mobile-admin .md\:grid-cols-3,.mobile-admin .lg\:grid-cols-4{grid-template-columns:repeat(2,minmax(0,1fr));}.mobile-admin .grid-cols-7{grid-template-columns:repeat(7,minmax(0,1fr));}.mobile-admin .grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr));}.mobile-admin .section-title+.flex{flex-wrap:wrap;}.mobile-admin .order-fields-grid{gap:10px;}.mobile-admin #sec-orders>div:first-child{gap:8px;padding:10px;flex-wrap:wrap;}.mobile-admin #sec-orders>div:first-child>div:last-child{width:100%;margin-left:0;}.mobile-admin #ss-upsell>div,.mobile-admin #ss-announce>div,.mobile-admin #ss-logo>div{padding:16px;}.mobile-admin #ss-logo .grid-cols-2,.mobile-admin #ss-eventurl>.grid,.mobile-admin #sec-report .grid-cols-4{grid-template-columns:minmax(0,1fr);}.mobile-admin .ss-panel .max-w-xs{max-width:100%;}.mobile-admin .ss-panel .flex.justify-between{flex-wrap:wrap;gap:12px;}.mobile-admin #menu-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.mobile-admin #sec-campaigns>div.flex{flex-wrap:wrap;}.mobile-admin #sec-campaigns input{width:100%;}.mobile-admin .p-8{padding:18px;}.mobile-admin .px-8{padding-left:16px;padding-right:16px;}}
 @media(max-width:350px){.mobile-admin main{padding:14px 10px 28px;}.mobile-admin .order-fields-grid{grid-template-columns:minmax(0,1fr);}.mobile-admin #ss-eventurl .grid-cols-2{grid-template-columns:minmax(0,1fr);}.mobile-admin .mobile-top img{width:58px;}.mobile-admin .pax-grid{gap:5px;}}
 
+/* Compact phone layout; keep the device viewport and browser zoom available. */
+:root{--mobile-top:calc(50px + env(safe-area-inset-top,0px));--mobile-bottom:calc(58px + env(safe-area-inset-bottom,0px));}
+html:has(body.mobile-admin){font-size:14px;}
+body.mobile-admin{font-size:13px;}
+.mobile-top{gap:12px;padding-left:16px;padding-right:16px;}.mobile-top img{width:66px;height:28px;}.mobile-title-wrap h1{font-size:13px;}.mobile-store-name{font-size:10px;}.mobile-bottom button>span:first-child{font-size:18px;}
+.mobile-admin main{padding:12px 12px 24px;}.mobile-admin .section-title{font-size:18px;margin-bottom:14px;}
+.mobile-admin :is(input,select,textarea){font-size:14px!important;}
+.mobile-admin :is(input,select,textarea):focus{font-size:16px!important;}
+.mobile-admin .btn{min-height:34px;padding:7px 10px;font-size:12px;}.mobile-admin .btn-sm{min-height:32px;}.mobile-admin .ss-btn{min-height:38px;}
+.mobile-admin .mobile-order-kpi{display:flex!important;flex-wrap:nowrap!important;gap:12px!important;padding:9px 10px!important;align-items:center;min-height:38px;}
+.mobile-admin .mobile-order-kpi>div{width:auto!important;margin:0!important;gap:5px;}.mobile-admin .mobile-order-kpi>div:last-child{display:none;}.mobile-admin .mobile-order-kpi span{white-space:nowrap;font-size:11px;}.mobile-admin .mobile-order-kpi .font-serif{font-size:16px;}
+.mobile-admin #mobile-order-filter-card{margin-bottom:12px!important;}.mobile-admin .mobile-order-view-row{padding:7px 9px;gap:6px;min-height:40px;flex-wrap:wrap;justify-content:space-between;}
+.mobile-admin .mobile-order-view-row>div:first-child{gap:6px;}.mobile-admin .mobile-order-view-row button{min-height:30px;padding:4px 9px;font-size:11px;}.mobile-admin #cal-month-nav{gap:2px;}
+.mobile-order-search-row{display:grid;grid-template-columns:minmax(0,1fr) 56px;gap:8px;padding:8px 9px;}.mobile-order-search-row[hidden],#mobile-order-filter-fields[hidden]{display:none!important;}
+.mobile-admin .mobile-order-search-row input{width:100%;min-width:0!important;height:34px;min-height:34px;padding:6px 9px!important;}.mobile-admin #mobile-filter-toggle{height:34px;margin:0;padding:4px 7px;}
+.mobile-admin #mobile-order-filter-fields{padding:0 9px 9px;background:#f7faf8;border-top:1px solid var(--border);}.mobile-admin #list-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding-top:9px;}.mobile-admin #list-filters.hidden{display:none;}
+.mobile-admin #list-filters :is(input,select){width:100%!important;height:34px;min-height:34px;padding:5px 8px!important;font-size:13px!important;}.mobile-admin #filter-toggle-btn{display:none!important;}.mobile-admin #filter-expand{padding:10px 0 0;background:transparent;}.mobile-admin #filter-expand .filter-label{font-size:10px;}
+.mobile-admin .order-card{border-width:1.5px!important;}.mobile-admin .order-card input[type=checkbox]{width:16px!important;min-width:16px;max-width:16px;flex:0 0 16px;}
+.mobile-admin .order-header.mobile-order-header-compact{display:grid;grid-template-columns:16px 7px minmax(0,1fr) auto 14px;column-gap:7px;row-gap:4px;padding:11px 10px;align-items:center;}
+.mobile-order-header-compact>input[type=checkbox]{grid-column:1;grid-row:1 / span 3;margin:0;}.mobile-order-header-compact>.order-status-dot{grid-column:2;grid-row:1;width:7px;height:7px;margin:0;}
+.mobile-order-name-wrap{grid-column:3;grid-row:1;display:flex;align-items:center;gap:5px;min-width:0;}.mobile-admin .mobile-order-name-wrap .order-name{font-size:14px;line-height:20px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.mobile-order-name-wrap>span{font-size:9px!important;padding:1px 4px!important;}
+.mobile-admin .mobile-order-header-compact>.order-badge{grid-column:4;grid-row:1;font-size:10px;padding:2px 6px;line-height:17px;justify-self:end;white-space:nowrap;}
+.mobile-admin .mobile-order-header-compact>.mobile-order-phone{grid-column:3;grid-row:2;font-size:11px;line-height:18px;white-space:nowrap;}.mobile-admin .mobile-order-header-compact>.order-amount{grid-column:4;grid-row:2;font-size:17px;line-height:22px;margin:0;justify-self:end;white-space:nowrap;}
+.mobile-admin .mobile-order-header-compact>.mobile-order-dates{grid-column:3 / span 2;grid-row:3;display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;text-align:left;margin:0;min-width:0;}.mobile-admin .mobile-order-dates>div:first-child{font-size:11px!important;line-height:18px;white-space:nowrap;}.mobile-admin .mobile-order-dates .order-time-badge{font-size:9px!important;line-height:16px;margin:0!important;}.mobile-admin .mobile-order-header-compact>svg{grid-column:5;grid-row:1 / span 3;width:13px;height:13px;margin:0;}
+.mobile-admin .order-body{padding:13px;}.mobile-admin .order-section{margin-bottom:12px;}.mobile-admin .order-section-label{font-size:11px;margin-bottom:7px;}.mobile-admin .order-fields-grid{gap:9px;margin-bottom:10px;}.mobile-admin .order-fields-grid>.order-field{min-width:0;}.mobile-admin .order-field>label,.mobile-admin .pax-grid label{font-size:10px;margin-bottom:4px;}
+.mobile-admin .order-field :is(input,select),.mobile-admin .pax-grid input{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:36px;min-height:36px;padding:6px 8px;line-height:normal;font-size:14px!important;}
+.mobile-admin .order-field input[type=date],.mobile-admin .order-field input[type=time]{appearance:none;-webkit-appearance:none;inline-size:100%;min-inline-size:0;max-inline-size:100%;overflow:hidden;}
+.mobile-admin input::-webkit-date-and-time-value{min-width:0;text-align:left;}.mobile-admin input::-webkit-datetime-edit{padding:0;}.mobile-admin .order-field>div:has(button[data-checked])>input{width:0;flex:1 1 0;}.mobile-admin .order-field button[data-checked]{height:36px;max-width:62px;padding:4px 6px!important;}
+.mobile-admin #sec-notices .in-head{padding:3px 0 12px;gap:12px;}.mobile-admin #sec-notices .in-head h2{font-size:19px;}.mobile-admin #sec-notices .in-sub{font-size:11px;margin-top:4px;}
+.mobile-admin #sec-notices .in-tools{display:grid;grid-template-columns:auto minmax(0,1fr) 32px;gap:6px;width:100%;align-items:center;}.mobile-admin #sec-notices .in-filter{height:32px;}.mobile-admin #sec-notices .in-filter button{font-size:11px;padding:4px 8px;}
+.mobile-admin #sec-notices .in-search{height:32px;min-height:32px;padding:5px 8px;font-size:13px!important;max-width:100%;width:100%;}.mobile-admin #sec-notices .in-search:focus{font-size:16px!important;}.mobile-admin #sec-notices .in-icon{width:32px;height:32px;min-height:32px;padding:0;font-size:16px!important;}
+.mobile-admin .in-row{padding:15px 5px;gap:9px;}.mobile-admin .in-row-title{font-size:14px;line-height:1.6;}.mobile-admin .in-excerpt{font-size:12px;line-height:1.7;}.mobile-admin .in-meta{font-size:10px;gap:7px;margin-bottom:5px;}.mobile-admin .in-article h2{font-size:20px;}.mobile-admin .in-body{font-size:14px;line-height:1.9;}
+@media(max-width:350px){.mobile-admin main{padding:10px 9px 22px;}.mobile-admin .order-fields-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.mobile-admin .order-body{padding:10px;}.mobile-admin .order-field :is(input,select){padding:6px;font-size:12px!important;}.mobile-admin .mobile-order-name-wrap .order-name{font-size:13px;}.mobile-admin #sec-notices .in-filter button{padding:4px 6px;font-size:10px;}}
+
 </style>
 </head>
 <body class="mobile-admin min-h-screen text-slate-700">
-<header class="mobile-top"><button type="button" class="mobile-icon-button" id="mobile-drawer-toggle" aria-label="開啟功能選單" aria-expanded="false" aria-controls="sidebar">≡</button><img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠"><div class="mobile-title-wrap"><h1 id="mobile-page-title">文化首頁</h1><div id="mobile-store-name" class="mobile-store-name">目前門市：讀取中</div></div></header>
+<header class="mobile-top"><img src="https://www.jinzhu.com.tw/images/Jinzhu_logo.svg" alt="真珠"><div class="mobile-title-wrap"><h1 id="mobile-page-title">文化首頁</h1><div id="mobile-store-name" class="mobile-store-name">目前門市：讀取中</div></div></header>
 <button type="button" id="mobile-drawer-mask" class="mobile-drawer-mask" aria-label="關閉功能選單" hidden></button>
 <nav class="mobile-bottom" aria-label="主要功能"><button type="button" data-mobile-tab="home" aria-current="page" onclick="mobileRoute('home')"><span aria-hidden="true">🌾</span><span>首頁</span></button><button type="button" data-mobile-tab="orders" onclick="mobileRoute('orders')"><span aria-hidden="true">📋</span><span>訂單</span></button><button type="button" data-mobile-tab="menu" onclick="mobileRoute('menu')"><span aria-hidden="true">🍱</span><span>菜單</span></button><button type="button" data-mobile-tab="notices" onclick="mobileRoute('notices')"><span aria-hidden="true">🔔</span><span>公告</span><span class="in-badge" data-internal-unread hidden></span></button><button type="button" id="mobile-more" data-mobile-tab="more" aria-expanded="false" aria-controls="sidebar"><span aria-hidden="true">≡</span><span>更多</span></button></nav>
 
@@ -5643,7 +5677,6 @@ function mobileSetDrawer(open){
     if(open){mobileDrawerReturn=document.activeElement;sidebar.classList.remove('collapsed');}
     document.body.classList.toggle('mobile-drawer-open',open);mask.hidden=!open;
     sidebar.inert=!open;sidebar.setAttribute('aria-hidden',String(!open));
-    document.getElementById('mobile-drawer-toggle').setAttribute('aria-expanded',String(open));
     document.getElementById('mobile-more').setAttribute('aria-expanded',String(open));
     if(open)sidebar.querySelector('.nav-btn')?.focus();else mobileDrawerReturn?.focus();
     mobileSyncTelegram();
@@ -5666,6 +5699,7 @@ function mobileUpdateShell(tab){
     mobileWrapTables();mobileSyncTelegram();
 }
 function mobileWrapTables(){
+    mobileCompactOrderHeaders();
     document.querySelectorAll('main table').forEach(table=>{
         if(table.closest('.mobile-table-scroll'))return;
         const wrap=document.createElement('div');wrap.className='mobile-table-scroll';
@@ -5673,6 +5707,44 @@ function mobileWrapTables(){
         table.before(wrap);wrap.appendChild(table);
     });
 }
+function mobileCompactOrderHeaders(){
+    document.querySelectorAll('.order-card>.order-header').forEach(header=>{
+        if(header.dataset.mobileCompact)return;
+        const name=header.querySelector('.order-name'),amount=header.querySelector('.order-amount');
+        if(!name||!amount)return;
+        header.dataset.mobileCompact='true';header.classList.add('mobile-order-header-compact');
+        const nameWrap=document.createElement('div');nameWrap.className='mobile-order-name-wrap';name.before(nameWrap);nameWrap.appendChild(name);
+        const directSpans=[...header.children].filter(node=>node.tagName==='SPAN'&&!node.classList.contains('order-badge'));
+        directSpans.forEach(span=>{if(span.textContent.includes('外帶'))nameWrap.appendChild(span);else span.classList.add('mobile-order-phone');});
+        const time=[...header.children].find(node=>node.tagName==='DIV'&&node.classList.contains('text-right'));
+        if(time)time.classList.add('mobile-order-dates');
+    });
+}
+function mobileInitOrderFilters(){
+    const filters=document.getElementById('list-filters'),toolbar=filters.parentElement,card=toolbar.parentElement;
+    card.id='mobile-order-filter-card';toolbar.classList.add('mobile-order-view-row');
+    document.querySelector('#sec-orders>div:first-child').classList.add('mobile-order-kpi');
+    const search=document.getElementById('filter-search');
+    const searchRow=document.createElement('div');searchRow.className='mobile-order-search-row';
+    const toggle=document.createElement('button');toggle.type='button';toggle.id='mobile-filter-toggle';toggle.className='btn btn-ghost btn-sm';toggle.textContent='篩選';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls','mobile-order-filter-fields');
+    const panel=document.createElement('div');panel.id='mobile-order-filter-fields';panel.hidden=true;
+    searchRow.append(search,toggle);card.append(searchRow,panel);panel.appendChild(filters);
+    const extra=document.getElementById('filter-expand');extra.classList.remove('hidden');panel.appendChild(extra);
+    document.getElementById('filter-toggle-btn').hidden=true;
+    toggle.onclick=()=>{panel.hidden=!panel.hidden;toggle.setAttribute('aria-expanded',String(!panel.hidden));};
+    let searchTimer;
+    search.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>loadOrders(),300);});
+    search.addEventListener('keydown',event=>{if(event.key==='Enter'){clearTimeout(searchTimer);loadOrders();search.blur();}});
+}
+const mobileDesktopSwitchOrderView=switchOrderView;
+switchOrderView=function(mode){
+    const row=document.querySelector('.mobile-order-search-row'),panel=document.getElementById('mobile-order-filter-fields');
+    if(row)row.hidden=mode!=='list';
+    if(panel&&mode!=='list'){panel.hidden=true;document.getElementById('mobile-filter-toggle').setAttribute('aria-expanded','false');}
+    const result=mobileDesktopSwitchOrderView(mode);
+    if(mode==='list')document.getElementById('filter-expand').classList.remove('hidden');
+    return result;
+};
 function mobileEditView(view){
     const modal=document.getElementById('order-edit-modal');modal.dataset.mobileEditView=view;
     document.querySelectorAll('[data-mobile-edit-tab]').forEach(button=>{
@@ -5780,7 +5852,7 @@ function mobileSyncTelegram(){
     const tabs=document.createElement('div');tabs.className='mobile-edit-tabs';tabs.setAttribute('role','tablist');
     tabs.innerHTML='<button type="button" role="tab" data-mobile-edit-tab="cart" aria-controls="mobile-edit-cart-pane" aria-selected="true" onclick="mobileEditView(\'cart\')">已選餐點</button><button type="button" role="tab" data-mobile-edit-tab="menu" aria-controls="mobile-edit-menu-pane" aria-selected="false" onclick="mobileEditView(\'menu\')">加入餐點</button>';
     menu.parentElement.before(tabs);menu.setAttribute('role','tabpanel');cart.setAttribute('role','tabpanel');mobileEditView('cart');
-    document.getElementById('mobile-drawer-toggle').addEventListener('click',()=>mobileSetDrawer(true));
+    mobileInitOrderFilters();
     document.getElementById('mobile-more').addEventListener('click',()=>mobileSetDrawer(true));
     document.getElementById('mobile-drawer-mask').addEventListener('click',()=>mobileSetDrawer(false));
     document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('mobile-drawer-open'))mobileSetDrawer(false);});
