@@ -1394,7 +1394,7 @@
                     <p class="filter-label mb-3">分組設定</p>
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div><label class="filter-label">分組名稱</label><input id="g-name" class="filter-input mt-1" placeholder="例：主食"></div>
-                        <div id="g-limit-wrap"><label class="filter-label">任選數量</label><input id="g-limit" type="number" min="1" value="1" class="filter-input mt-1 text-center font-bold"></div>
+                        <div id="g-limit-wrap"><label class="filter-label" for="g-limit">任選數量</label><input id="g-limit" type="number" min="0" max="2147483647" value="1" class="filter-input mt-1 text-center font-bold"></div>
                     </div>
                     <div>
                         <label class="filter-label mb-2">分組類型</label>
@@ -1421,6 +1421,10 @@
                                 </div>
                             </label>
                         </div>
+                        <label id="g-require-full-wrap" class="mt-3 items-center gap-2 text-xs font-bold text-slate-700" style="display:none">
+                            <input id="g-require-full" type="checkbox" onchange="onGroupTypeChange()" class="accent-blue-600">
+                            必須選滿設定份數
+                        </label>
                     </div>
                 </div>
                 <div class="flex-1 flex flex-col overflow-hidden px-6 py-4">
@@ -1689,7 +1693,7 @@ async function loadCurrentUserContext(){
     currentRole=su?.role||'staff';
     window._currentStoreId=currentStoreId;
     window._currentRole=currentRole;
-    InternalNotices.init({client:_s,userId:session.user.id,canManage:false,openFeed:()=>switchTab('notices')});
+    InternalNotices.init({client:_s,userId:session.user.id,storeId:currentStoreId,canManage:false,openFeed:()=>switchTab('notices')});
     const label=document.getElementById('admin-current-store-label');
     if(label) label.textContent='目前門市：'+(su?.stores?.name||'真珠');
     await loadAdminStoreSwitcher();
@@ -3286,6 +3290,7 @@ async function editSetGroup(gid){
         document.getElementById('g-type-include').checked = g.selection_type==='include';
         document.getElementById('g-type-multi').checked   = g.selection_type==='multi';
         document.getElementById('g-type-choose').checked  = g.selection_type==='choose';
+        document.getElementById('g-require-full').checked = g.require_full_selection===true;
         onGroupTypeChange();
         document.getElementById('set-modal-title').textContent='編輯分組';
         document.getElementById('btn-save-group').textContent='儲存更新';
@@ -3299,13 +3304,15 @@ function onGroupTypeChange(){
     const isInclude = document.getElementById('g-type-include').checked;
     const isMulti   = document.getElementById('g-type-multi').checked;
     const isChoose  = document.getElementById('g-type-choose').checked;
-    // 任選數量：include/multi 時隱藏或提示
     const limitWrap = document.getElementById('g-limit-wrap');
+    const requireFull=isMulti&&document.getElementById('g-require-full').checked;
+    document.getElementById('g-require-full-wrap').style.display=isMulti?'flex':'none';
+    document.getElementById('g-limit').min=requireFull?'1':'0';
     limitWrap.style.opacity = isInclude ? '0.4' : '1';
     limitWrap.style.pointerEvents = isInclude ? 'none' : '';
     // 數量欄位說明
     const limitLabel = limitWrap.querySelector('label');
-    if(limitLabel) limitLabel.textContent = isMulti ? '數量上限（0=無上限）' : '任選數量（0=無上限）';
+    if(limitLabel) limitLabel.textContent = requireFull ? '必選份數' : isMulti ? '份數上限（0=不限）' : '任選數量（0=無上限）';
     // 邊框樣式
     document.getElementById('type-choose-label').style.borderColor  = isChoose ? 'var(--pine)' : '';
     document.getElementById('type-choose-label').style.background   = isChoose ? '#f0fdf4' : '';
@@ -3320,6 +3327,7 @@ function resetSetForm(){
     document.getElementById('g-name').value='';
     document.getElementById('g-limit').value=1;
     document.getElementById('g-type-choose').checked=true;
+    document.getElementById('g-require-full').checked=false;
     onGroupTypeChange();
     document.getElementById('temp-pick-display').innerHTML='';
     document.getElementById('set-modal-title').textContent='套餐分組設定';
@@ -3329,18 +3337,29 @@ function resetSetForm(){
 }
 async function saveFullSet(){
     const n=document.getElementById('g-name').value;
-    const l=document.getElementById('g-limit').value;
+    const limitInput=document.getElementById('g-limit');
     const stype=document.getElementById('g-type-include').checked?'include':document.getElementById('g-type-multi').checked?'multi':'choose';
+    const requireFull=stype==='multi'&&document.getElementById('g-require-full').checked;
+    const limit=stype==='include'?0:limitInput.valueAsNumber;
     if(!n||!curPicks.length){toast('請填寫分組名稱並加入品項','warn');return;}
+    if(!Number.isInteger(limit)||limit<(requireFull?1:0)||limit>2147483647){
+        toast(requireFull?'必選份數請填大於 0 的整數':'請填寫有效的份數','warn');return;
+    }
+    const settings={group_name:n,selection_limit:limit,selection_type:stype,require_full_selection:requireFull};
     let gid=currentEditingGroupId;
     if(gid){
-        await _s.from('set_menu_groups').update({group_name:n,selection_limit:parseInt(l),selection_type:stype}).eq('id',gid);
-        await _s.from('set_menu_contents').delete().eq('group_id',gid);
+        const{error}=await _s.from('set_menu_groups').update(settings).eq('id',gid);
+        if(error){toast('分組儲存失敗：'+error.message,'error');return;}
+        const{error:removeError}=await _s.from('set_menu_contents').delete().eq('group_id',gid);
+        if(removeError){toast('分組品項更新失敗：'+removeError.message,'error');return;}
     } else {
-        const{data:g}=await _s.from('set_menu_groups').insert([{parent_set_id:curItem,group_name:n,selection_limit:parseInt(l),selection_type:stype}]).select();
-        if(g)gid=g[0].id;
+        const{data:g,error}=await _s.from('set_menu_groups').insert([{parent_set_id:curItem,...settings}]).select();
+        if(error||!g?.length){toast('分組儲存失敗'+(error?'：'+error.message:''),'error');return;}
+        gid=g[0].id;
     }
-    if(gid){await _s.from('set_menu_contents').insert(curPicks.map((p,i)=>({group_id:gid,item_id:p.id,sort_order:i,max_qty:p.max_qty||1,price_adjustment:p.price_adjustment||0})));resetSetForm();loadSavedSets();toast('分組已儲存');}
+    const{error}=await _s.from('set_menu_contents').insert(curPicks.map((p,i)=>({group_id:gid,item_id:p.id,sort_order:i,max_qty:p.max_qty||1,price_adjustment:p.price_adjustment||0})));
+    if(error){toast('分組品項儲存失敗：'+error.message,'error');return;}
+    resetSetForm();loadSavedSets();toast('分組已儲存');
 }
 async function loadSavedSets(){
     const{data}=await _s.from('set_menu_groups').select('*,set_menu_contents(*,price_adjustment,menu_items(*))').eq('parent_set_id',curItem).order('sort_order',{ascending:true});
@@ -3349,7 +3368,7 @@ async function loadSavedSets(){
         const badge = g.selection_type==='include'
             ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-600">包含</span>`
             : g.selection_type==='multi'
-            ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">複選${g.selection_limit>0?' 上限'+g.selection_limit:''}</span>`
+            ? `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">複選${g.selection_limit>0?(g.require_full_selection?' 需選滿 ':' 最多 ')+g.selection_limit:' 不限上限'}</span>`
             : `<span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">任選 ${g.selection_limit||'無限'}</span>`;
         const itemSummary = g.set_menu_contents.map(c => {
             const mq = c.max_qty||1;
