@@ -574,6 +574,7 @@ const I18N={
         announcClose:'我知道了',
         toastFill:'請填寫姓名與電話',toastAdded:'已加入預點清單 ✓',
         toastFlv:'請選取客製口味',toastSetFull:'本區上限為',toastSetItem:'尚未選滿',
+        setQtyMax:'最多 {n} 份',setQtyExact:'需選滿 {n} 份',setQtyAny:'至少 1 份',menuChanged:'菜單已更新，請重新選擇',
         noteFlavor:'請選擇',noteDesc:'真心款待，誠摯滋味。',
         selectCta:'選擇',setChoose:'任選',setInclude:'含',upsellSkip:'不用了，直接送出',upsellConfirm:'加入並送出',
         modeSelectTitle:'請選擇用餐方式',dineIn:'內用',takeout:'外帶',
@@ -608,6 +609,7 @@ const I18N={
         toastFill:'Please enter your name and phone',toastAdded:'Added to order ✓',
         toastFlv:'Please select flavor options',toastSetFull:'Max items in this section:',
         toastSetItem:'Please complete your selection',
+        setQtyMax:'Up to {n} portions',setQtyExact:'Select exactly {n}',setQtyAny:'At least 1 portion',menuChanged:'The menu has changed. Please select again.',
         noteFlavor:'Please select',noteDesc:'Heartfelt flavors, crafted with care.',
         selectCta:'Select',setChoose:'Choose',setInclude:'Includes',upsellSkip:'Skip, just submit',upsellConfirm:'Add & Submit',
         modeSelectTitle:'How would you like to dine?',dineIn:'Dine-in',takeout:'Takeout',
@@ -642,6 +644,7 @@ const I18N={
         toastFill:'お名前と電話番号を入力してください',toastAdded:'カートに追加しました ✓',
         toastFlv:'フレーバーを選択してください',toastSetFull:'このセクションの上限：',
         toastSetItem:'まだ選択が完了していません',
+        setQtyMax:'最大 {n} 人前',setQtyExact:'{n} 人前を選択',setQtyAny:'1 人前以上',menuChanged:'メニューが更新されました。選び直してください。',
         noteFlavor:'選択してください',noteDesc:'心を込めた味わい。',
         selectCta:'選ぶ',setChoose:'選択',setInclude:'含む',upsellSkip:'スキップして送信',upsellConfirm:'追加して送信',
         modeSelectTitle:'食事スタイルをお選びください',dineIn:'店内飲食',takeout:'テイクアウト',
@@ -676,6 +679,7 @@ const I18N={
         toastFill:'이름과 전화번호를 입력해 주세요',toastAdded:'주문에 추가되었습니다 ✓',
         toastFlv:'맛 옵션을 선택해 주세요',toastSetFull:'이 섹션의 최대 수량：',
         toastSetItem:'선택을 완료해 주세요',
+        setQtyMax:'최대 {n}인분',setQtyExact:'{n}인분 필수 선택',setQtyAny:'최소 1인분',menuChanged:'메뉴가 변경되었습니다. 다시 선택해 주세요.',
         noteFlavor:'선택하세요',noteDesc:'마음을 담은 맛.',
         selectCta:'선택',setChoose:'선택',setInclude:'포함',upsellSkip:'건너뛰고 주문하기',upsellConfirm:'추가하고 주문',
         modeSelectTitle:'식사 방법을 선택해 주세요',dineIn:'매장 식사',takeout:'포장',
@@ -867,7 +871,7 @@ function applyEventTheme(){
 let storesCache=[];
 const DEFAULT_STORE_ID=1;
 const STORE_CACHE_KEY='jz_stores_cache_v3';
-const MENU_CACHE_KEY='jz_shared_menu_cache_v2';
+const MENU_CACHE_KEY='jz_shared_menu_cache_v3';
 const DEFAULT_STORES=[
     {id:1,name:'台中文心店',slug:'wenxin',phone:'04-3702-7538',sort_order:0,is_active:true},
     {id:6,name:'京站店',slug:'qsquare',phone:'02-2552-6898',sort_order:10,is_active:true},
@@ -1273,7 +1277,8 @@ function normalizeMenuAvailability(items){
             const groups=(item.set_menu_groups||[]).map(group=>({
                 ...group,
                 set_menu_contents:(group.set_menu_contents||[]).filter(content=>content.menu_items&&!isMenuItemHidden(content.menu_items))
-            })).filter(group=>(group.set_menu_contents||[]).length>0);
+            })).filter(group=>group.set_menu_contents.length>0||
+                (group.selection_type==='multi'&&group.require_full_selection===true));
             return {...item,set_menu_groups:groups};
         })
         .filter(item=>!item.is_set_menu || !item.set_menu_groups || item.set_menu_groups.length>0);
@@ -1460,8 +1465,9 @@ function renderSetGroup(g){
             + '<div class="set-items-grid">'+sortedContents.map((sc,idx)=>renderSetGroupItem(g,sc,idx)).join('')+'</div>'
             + '</div>';
     } else if(stype==='multi'){
-        var lbl = limit>0 ? t('setChoose')+' '+limit : (curLang==='zh'?'至少選一':'Select items');
-        return '<div class="set-group group-block" data-name="'+g.group_name+'" data-limit="'+limit+'" data-type="multi">'
+        const requireFull=g.require_full_selection===true;
+        const lbl=t(requireFull?'setQtyExact':limit>0?'setQtyMax':'setQtyAny').replace('{n}',limit);
+        return '<div class="set-group group-block" data-name="'+g.group_name+'" data-limit="'+limit+'" data-type="multi" data-require-full="'+requireFull+'">'
             + '<div class="set-group-header"><span class="set-group-name">'+g.group_name+'</span><span class="set-group-limit" style="background:#2563eb">'+lbl+'</span></div>'
             + '<div class="set-items-grid">'+sortedContents.map((sc,idx)=>renderSetGroupMultiItem(g,sc,idx)).join('')+'</div>'
             + '</div>';
@@ -1657,7 +1663,22 @@ function updateMultiCardStyle(card, selected){
 }
 
 
-function confirmAdd(){
+async function confirmAdd(){
+    const item=tempItem;
+    if(!item)return;
+    if(item.is_set_menu){
+        if(menuLoadPromise)await menuLoadPromise;
+        if(item!==tempItem||!document.getElementById('detail-modal').classList.contains('visible'))return;
+        const current=menuData.find(i=>i.id===item.id);
+        const rules=i=>JSON.stringify((i.set_menu_groups||[]).filter(g=>g.selection_type==='multi')
+            .map(g=>[g.id,g.selection_limit,g.require_full_selection===true,
+                ...(g.require_full_selection===true?[g.set_menu_contents.map(c=>String(c.menu_items.id)).sort()]:[])])
+            .sort((a,b)=>String(a[0]).localeCompare(String(b[0]))));
+        if(!current||rules(item)!==rules(current)){
+            if(current)openDetail(current.id);else closeDetail();
+            showToast(t('menuChanged'));return;
+        }
+    }
     let mn='';
     if(tempItem.item_flavor_relation?.length>0){
         const sels=Array.from(document.querySelectorAll('#flavor-container .flv-opt.selected'));
@@ -1666,7 +1687,7 @@ function confirmAdd(){
     }
     let snCN=[], sn=[], totalPriceAdj=0;
     if(tempItem.is_set_menu){
-        for(let b of document.querySelectorAll('.group-block')){
+        for(let b of document.querySelectorAll('#set-group-container .group-block')){
             const btype    = b.dataset.type; // include | choose | multi
             const isInclude= btype==='include';
             const isMulti  = btype==='multi';
@@ -1681,8 +1702,15 @@ function confirmAdd(){
                 if(!isMulti && blimit === 0 && sels.length === 0){
                     showToast(`【${b.dataset.name}】請至少選一項`); return;
                 }
-                if(isMulti && sels.length === 0){
-                    showToast(`【${b.dataset.name}】請至少選一項`); return;
+                if(isMulti){
+                    const selectedQty=Array.from(sels).reduce((sum,card)=>sum+Number(card.dataset.chosenQty),0);
+                    const requireFull=b.dataset.requireFull==='true';
+                    const minQty=requireFull?blimit:1;
+                    if(!Number.isInteger(selectedQty)||selectedQty<minQty||(blimit>0&&selectedQty>blimit)){
+                        const message=requireFull?t('setQtyExact').replace('{n}',blimit)+' ('+selectedQty+'/'+blimit+')'
+                            :t(selectedQty>blimit&&blimit>0?'setQtyMax':'setQtyAny').replace('{n}',blimit);
+                        showToast(`【${b.dataset.name}】${message}`);return;
+                    }
                 }
             }
 
@@ -1773,14 +1801,20 @@ async function loadUpsellSettings(){
     }
 }
 
+function canQuickAddUpsell(item){
+    return !item.is_set_menu||!(item.set_menu_groups||[]).some(g=>
+        g.selection_type==='multi'&&g.require_full_selection===true);
+}
+
 async function openUpsellModal(){
     if(!upsellSettings?.enabled||!upsellSettings?.item_ids?.length){
         await doFinalSubmit();return;
     }
     // 確保 ids 都是字串
     const ids=(upsellSettings.item_ids||[]).map(String);
-    const{data:items}=await _s.from('menu_items').select('*').in('id',ids).eq('is_hidden',false);
-    if(!items||!items.length){await doFinalSubmit();return;}
+    const{data}=await _s.from('menu_items').select('*,set_menu_groups(*)').in('id',ids).eq('is_hidden',false);
+    const items=(data||[]).filter(canQuickAddUpsell);
+    if(!items.length){await doFinalSubmit();return;}
 
     upsellSelectedIds=new Set();
 
@@ -1833,9 +1867,8 @@ async function confirmUpsell(){
     document.getElementById('upsell-modal').classList.remove('visible');
     // 把選到的加購品項加入 cart
     if(upsellSelectedIds.size>0){
-        const ids=upsellSettings.item_ids;
-        const{data:items}=await _s.from('menu_items').select('*').in('id',[...upsellSelectedIds]).eq('is_hidden',false);
-        (items||[]).forEach(i=>{
+        const{data:items}=await _s.from('menu_items').select('*,set_menu_groups(*)').in('id',[...upsellSelectedIds]).eq('is_hidden',false);
+        (items||[]).filter(canQuickAddUpsell).forEach(i=>{
             const displayName=getLangName(i,'name');
             cart.push({name:displayName,nameCN:i.name,price:i.price});
         });
